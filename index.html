@@ -203,6 +203,7 @@
     .deepl-key-input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); font: 12px var(--sans); }
     .deepl-security-note, .deepl-status { margin: 0; color: var(--muted); font-size: 11px; }
     .deepl-status { min-height: 16px; }
+    .deepl-status.is-low { color: var(--blue-dark); }
     .translation-button-group { display: flex; flex-wrap: wrap; gap: 8px; }
 
     .translation-grid {
@@ -520,7 +521,7 @@
                 <button class="quiet-button" id="remove-deepl-key" type="button">Xóa key</button>
               </div>
             </div>
-            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; không triển khai key trong ứng dụng công khai. Gọi API trực tiếp cũng có thể bị trình duyệt chặn bởi CORS.</p>
+            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; văn bản nguồn sẽ được gửi tới DeepL khi bạn yêu cầu dịch. Gọi API trực tiếp cũng có thể bị trình duyệt chặn bởi CORS.</p>
             <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.</p>
           </div>
         </details>
@@ -809,6 +810,7 @@
     const HISTORY_KEY = "lingua-lab-practice-history-v1";
     const MAX_HISTORY_ITEMS = 30;
     const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
+    const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
     const translationMode = document.querySelector("#translation-mode");
@@ -818,6 +820,7 @@
     const answerText = document.querySelector("#answer-text");
     const referenceAnswer = document.querySelector("#reference-answer");
     const personalKeywords = document.querySelector("#personal-keywords");
+    const deeplApiKeyInput = document.querySelector("#deepl-api-key");
     const youtubeUrlInput = document.querySelector("#youtube-url");
     const feedback = document.querySelector("#translation-feedback");
     const transcript = document.querySelector("#transcript");
@@ -1047,6 +1050,135 @@
         reason: enteredKeywords.length ? "Từ khóa do bạn ghi chú để tự rà soát." : "Token xuất hiện trong đáp án gợi ý; hãy tự xác định vai trò trong ngữ cảnh."
       })));
       document.querySelector("#answer-breakdown").hidden = false;
+    }
+
+    function renderDeepLBreakdown(translatedText) {
+      const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
+      const keywords = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(translatedText);
+      document.querySelector("#breakdown-title").textContent = "Gợi ý bản dịch từ DeepL";
+      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Từ nổi bật trong bản dịch";
+      document.querySelector("#model-answer").textContent = translatedText;
+      document.querySelector("#translation-context").textContent = "Bản dịch tự động cần được rà soát về thuật ngữ, sắc thái và ngữ cảnh trước khi sử dụng.";
+      renderKeyTerms(keywords.map((word) => ({
+        source: word,
+        translation: "",
+        reason: enteredKeywords.length ? "Từ khóa do bạn ghi chú để tự rà soát." : "Token được trích từ bản dịch để bạn chú ý khi biên tập."
+      })));
+      document.querySelector("#answer-breakdown").hidden = false;
+    }
+
+    function setDeepLStatus(message, isError = false) {
+      const status = document.querySelector("#deepl-status");
+      status.textContent = message;
+      status.classList.toggle("is-low", isError);
+    }
+
+    function loadDeepLKey() {
+      try {
+        const savedKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
+        deeplApiKeyInput.value = savedKey;
+        setDeepLStatus(savedKey ? "Đã có key lưu trên trình duyệt này." : "Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.");
+      } catch (error) {
+        setDeepLStatus("Không thể truy cập localStorage trên trình duyệt này.", true);
+      }
+    }
+
+    function saveDeepLKey() {
+      const key = deeplApiKeyInput.value.trim();
+      if (!key || key.length < 20 || /\s/.test(key)) {
+        setDeepLStatus("Hãy nhập Authentication Key DeepL hợp lệ trước khi lưu.", true);
+        return;
+      }
+      try {
+        window.localStorage.setItem(DEEPL_KEY_STORAGE_KEY, key);
+        setDeepLStatus("Đã lưu key trong localStorage. Key không được mã hóa; chỉ dùng trên thiết bị cá nhân.");
+      } catch (error) {
+        setDeepLStatus("Không thể lưu key. Hãy kiểm tra quyền hoặc dung lượng localStorage.", true);
+      }
+    }
+
+    function removeDeepLKey() {
+      try {
+        window.localStorage.removeItem(DEEPL_KEY_STORAGE_KEY);
+        deeplApiKeyInput.value = "";
+        setDeepLStatus("Đã xóa key khỏi localStorage.");
+      } catch (error) {
+        setDeepLStatus("Không thể xóa key khỏi localStorage.", true);
+      }
+    }
+
+    async function suggestWithDeepL() {
+      const button = document.querySelector("#suggest-deepl");
+      const settings = document.querySelector("#deepl-settings");
+      let apiKey = "";
+      try {
+        apiKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
+      } catch (error) {
+        setDeepLStatus("Không thể đọc key trong localStorage.", true);
+        settings.open = true;
+        return;
+      }
+
+      if (!apiKey) {
+        settings.open = true;
+        deeplApiKeyInput.focus();
+        setDeepLStatus(deeplApiKeyInput.value.trim()
+          ? "Key chưa được lưu. Bấm Lưu key hoặc đăng ký gói DeepL API Free rồi thử lại."
+          : "Chưa có API Key. Đăng ký DeepL API Free, nhập Authentication Key ở trên hoặc tiếp tục luyện tập không cần DeepL.", true);
+        return;
+      }
+
+      const source = sourceText.value.trim();
+      if (!source) {
+        setDeepLStatus("Văn bản nguồn đang trống.", true);
+        return;
+      }
+      if (new TextEncoder().encode(source).length > 120000) {
+        setDeepLStatus("Đoạn văn vượt giới hạn gửi an toàn 120 KB. Hãy chia nhỏ văn bản.", true);
+        return;
+      }
+
+      button.disabled = true;
+      button.textContent = "Đang dịch...";
+      setDeepLStatus("Đang gửi văn bản tới DeepL API Free...");
+      try {
+        const response = await fetch("https://api-free.deepl.com/v2/translate", {
+          method: "POST",
+          headers: {
+            "Authorization": `DeepL-Auth-Key ${apiKey}`,
+            "Content-Type": "application/json"
+          },
+          body: JSON.stringify({ text: [source], target_lang: "VI" })
+        });
+
+        if (!response.ok) {
+          const errorMessages = {
+            401: "DeepL không chấp nhận key. Hãy kiểm tra Authentication Key.",
+            403: "DeepL từ chối key hoặc quyền truy cập (403). Hãy kiểm tra key và loại tài khoản.",
+            429: "DeepL đang giới hạn tần suất request (429). Hãy chờ rồi thử lại.",
+            456: "Đã hết quota DeepL API Free (456). Quota sẽ được đặt lại theo chu kỳ của DeepL."
+          };
+          throw new Error(errorMessages[response.status] || `DeepL trả lỗi HTTP ${response.status}. Hãy thử lại sau.`);
+        }
+
+        const result = await response.json();
+        const translatedText = result.translations?.[0]?.text?.trim();
+        if (!translatedText) throw new Error("DeepL không trả về nội dung bản dịch.");
+        referenceAnswer.value = translatedText;
+        if (activeTranslationMode === "personal") capturePersonalDraft();
+        renderDeepLBreakdown(translatedText);
+        feedback.className = "feedback is-visible";
+        feedback.textContent = "Đã nhận gợi ý DeepL. Hãy rà soát bản dịch trước khi dùng.";
+        setDeepLStatus("Đã điền gợi ý vào breakdown và ô đáp án gợi ý.");
+      } catch (error) {
+        const message = error instanceof TypeError
+          ? "Không kết nối được DeepL. Có thể do mất mạng hoặc trình duyệt chặn CORS; không gửi key qua proxy không tin cậy."
+          : error.message || "Không thể hoàn tất yêu cầu DeepL.";
+        setDeepLStatus(message, true);
+      } finally {
+        button.disabled = false;
+        button.textContent = "Gợi ý bằng DeepL";
+      }
     }
 
     function readPersonalMaterials() {
@@ -1565,6 +1697,9 @@
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
     document.querySelector("#save-material").addEventListener("click", savePersonalMaterial);
     document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
+    document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
+    document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
+    document.querySelector("#suggest-deepl").addEventListener("click", suggestWithDeepL);
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
     youtubeUrlInput.addEventListener("input", () => {
       if (getYouTubeVideoId(youtubeUrlInput.value)) {
@@ -1632,6 +1767,7 @@
     }
 
     window.addEventListener("pagehide", releaseMediaResources);
+    loadDeepLKey();
     populateExercises();
     populateSavedMaterials();
     renderTimer();
