@@ -295,14 +295,14 @@
     .term-item strong { display: block; margin-bottom: 2px; color: var(--blue-dark); }
     .context-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
 
-    .interpret-body { padding: 22px; }
+    .interpret-body { padding: 18px; }
 
     .interpret-toolbar {
       display: flex;
       align-items: end;
       justify-content: space-between;
-      gap: 18px;
-      margin-bottom: 20px;
+      gap: 12px;
+      margin-bottom: 14px;
     }
 
     .language-control { width: min(100%, 240px); }
@@ -315,8 +315,8 @@
     @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, .2); } }
 
     .transcript {
-      min-height: 245px;
-      padding: 18px;
+      min-height: 190px;
+      padding: 14px;
       border: 1px solid var(--line);
       border-radius: 6px;
       background: #f8fbff;
@@ -332,13 +332,14 @@
       display: flex;
       justify-content: space-between;
       gap: 12px;
-      margin-top: 8px;
+      margin-top: 5px;
       color: var(--muted);
       font-size: 11px;
     }
 
-    .speech-recording-preview { display: grid; gap: 8px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft-blue); }
-    .speech-recording-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .speech-recording-preview { display: grid; gap: 7px; margin-top: 9px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft-blue); }
+    .speech-recording-preview .field-label { margin-bottom: 0; }
+    .speech-recording-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
     .speech-recording-controls audio { flex: 1 1 260px; width: min(100%, 520px); }
     .speech-recording-status { margin: 0; color: var(--muted); font-size: 11px; }
 
@@ -347,13 +348,18 @@
       align-items: center;
       justify-content: space-between;
       gap: 12px;
-      margin-top: 18px;
+      margin-top: 10px;
     }
 
-    .timer-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .timer-display { min-width: 78px; color: var(--blue-dark); font: 700 20px/1 var(--sans); font-variant-numeric: tabular-nums; }
-    .history { margin-top: 22px; border-top: 1px solid var(--line); }
-    .history summary { padding: 15px 0; cursor: pointer; font-size: 13px; font-weight: 700; }
+    .timer-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 6px; }
+    .timer-display { min-width: 64px; color: var(--blue-dark); font: 700 18px/1 var(--sans); font-variant-numeric: tabular-nums; }
+    .transcript-tools { position: relative; }
+    .transcript-tools > summary { padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 650; list-style: none; }
+    .transcript-tools > summary::-webkit-details-marker { display: none; }
+    .transcript-tool-list { position: absolute; z-index: 2; top: calc(100% + 5px); right: 0; display: grid; min-width: 150px; gap: 5px; padding: 7px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); box-shadow: 0 8px 20px rgba(29, 78, 216, .1); }
+    .transcript-tool-list button { justify-content: flex-start; min-height: 32px; border: 0; text-align: left; }
+    .history { margin-top: 16px; border-top: 1px solid var(--line); }
+    .history summary { padding: 11px 0; cursor: pointer; font-size: 13px; font-weight: 700; }
     .history-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .history-message { color: var(--muted); font-size: 11px; }
     .history-list { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
@@ -361,22 +367,27 @@
     .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
     .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .history-empty { color: var(--muted); font-size: 12px; }
-    .media-practice { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
-    .media-heading { margin: 0; font: 700 20px var(--serif); }
-    .media-description { margin: 4px 0 16px; color: var(--muted); font-size: 12px; }
-    .media-dropzone { display: grid; justify-items: center; gap: 7px; padding: 22px; border: 1px dashed #93c5fd; border-radius: 7px; background: #f8fbff; text-align: center; transition: background .15s, border-color .15s; }
+    .media-practice { margin-top: 18px; padding-top: 16px; border-top: 1px solid var(--line); }
+    .media-heading { margin: 0; font: 700 18px var(--serif); }
+    .media-description { margin: 3px 0 10px; color: var(--muted); font-size: 11px; }
+    .media-dropzone { display: flex; align-items: center; gap: 10px; min-height: 56px; padding: 8px 11px; border: 1px dashed #93c5fd; border-radius: 7px; background: #f8fbff; text-align: left; transition: background .15s, border-color .15s; }
     .media-dropzone.is-dragging { border-color: var(--blue); background: var(--soft-blue); }
-    .media-drop-title { margin: 0; font-size: 13px; font-weight: 700; }
-    .media-drop-note, .media-status { margin: 0; color: var(--muted); font-size: 11px; }
+    .media-drop-copy { display: grid; gap: 1px; min-width: 0; margin-right: auto; }
+    .media-drop-title { margin: 0; font-size: 12px; font-weight: 700; }
+    .media-drop-note, .media-status { margin: 0; color: var(--muted); font-size: 10px; }
+    #media-file-status { max-width: 240px; overflow-wrap: anywhere; text-align: right; }
     .media-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
     .media-preview { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbff; }
     .media-preview audio, .media-preview video, .recorded-preview audio { display: block; width: 100%; max-height: 360px; }
     .media-file-name { margin: 0 0 8px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
-    .media-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+    .media-fields { display: grid; grid-template-columns: minmax(0, 1fr); gap: 10px; margin-top: 12px; }
     .media-field { display: grid; align-content: start; gap: 7px; min-width: 0; }
-    .media-field .text-area { min-height: 145px; font: 14px/1.6 var(--sans); }
-    .media-field-full { grid-column: 1 / -1; }
+    .media-field .text-area { min-height: 96px; font: 13px/1.55 var(--sans); }
+    .media-field-full { grid-column: auto; }
     .media-field .keyword-input { width: 100%; }
+    .media-extra { margin-top: 10px; border: 1px solid var(--line); border-radius: 6px; }
+    .media-extra summary { padding: 9px 11px; color: var(--muted); cursor: pointer; font-size: 11px; font-weight: 650; }
+    .media-extra-content { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; padding: 0 11px 11px; }
     .recording-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
     .recorded-preview { display: grid; gap: 7px; width: min(100%, 520px); margin-top: 12px; }
     .media-feedback { margin: 16px 0 0; padding: 13px 15px; border-left: 3px solid var(--blue); background: var(--soft-blue); font-size: 12px; }
@@ -434,7 +445,10 @@
       .history-meta { flex-direction: column; gap: 2px; }
       .media-fields { grid-template-columns: 1fr; }
       .media-field-full { grid-column: auto; }
-      .media-dropzone { padding: 18px 12px; }
+      .media-extra-content { grid-template-columns: 1fr; }
+      .media-dropzone { flex-wrap: wrap; padding: 9px; }
+      #media-file-status { flex: 1 1 100%; max-width: none; text-align: left; }
+      .transcript-tool-list { left: 0; right: auto; }
       .mode-tab { padding: 0 13px; }
     }
   </style>
@@ -586,7 +600,7 @@
             <p class="speech-recording-status" id="speech-recording-status" role="status" aria-live="polite"></p>
           </div>
 
-          <div class="interpret-actions">
+          <div class="interpret-actions practice-controls">
             <div class="action-group">
               <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
               <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
@@ -594,22 +608,25 @@
             <div class="timer-tools" aria-label="Đồng hồ luyện tập">
               <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
               <button class="quiet-button" id="toggle-timer" type="button">Bắt đầu giờ</button>
-              <button class="quiet-button" id="reset-timer" type="button">Đặt lại</button>
+              <details class="transcript-tools">
+                <summary aria-label="Thao tác bổ sung">Thêm</summary>
+                <div class="transcript-tool-list">
+                  <button class="quiet-button" id="reset-timer" type="button">Đặt lại đồng hồ</button>
+                  <button class="quiet-button" id="copy-transcript" type="button">Sao chép transcript</button>
+                  <button class="quiet-button" id="clear-transcript" type="button">Xóa transcript</button>
+                  <button class="quiet-button" id="save-practice" type="button">Lưu lịch sử luyện tập</button>
+                </div>
+              </details>
             </div>
-          </div>
-          <div class="interpret-actions">
-            <div class="action-group">
-              <button class="quiet-button" id="copy-transcript" type="button">Sao chép</button>
-              <button class="quiet-button" id="clear-transcript" type="button">Xóa transcript</button>
-            </div>
-            <button class="primary-button" id="save-practice" type="button">Lưu lịch sử luyện tập</button>
           </div>
           <section class="media-practice" aria-labelledby="media-heading">
             <h3 class="media-heading" id="media-heading">Luyện phiên dịch với file nghe</h3>
             <p class="media-description">File được phát trực tiếp trên thiết bị, không tải lên máy chủ. Dùng tai nghe để micro không thu lẫn âm thanh gốc; lịch sử chỉ lưu văn bản, không lưu file âm thanh.</p>
             <div class="media-dropzone" id="media-dropzone" tabindex="0" role="button" aria-label="Chọn hoặc kéo thả file MP3, WAV, MP4">
-              <p class="media-drop-title">Kéo thả file âm thanh/video vào đây</p>
-              <p class="media-drop-note">Hỗ trợ MP3, WAV, MP4 · tối đa 100 MB</p>
+              <div class="media-drop-copy">
+                <p class="media-drop-title">Thả file âm thanh/video vào đây</p>
+                <p class="media-drop-note">MP3 · WAV · MP4, tối đa 100 MB</p>
+              </div>
               <button class="quiet-button" id="choose-media" type="button">Chọn file</button>
               <input class="media-file-input" id="media-file" type="file" accept=".mp3,.wav,.mp4,audio/mpeg,audio/wav,audio/x-wav,video/mp4">
               <p class="media-status" id="media-file-status" role="status" aria-live="polite">Chưa chọn file</p>
@@ -631,19 +648,25 @@
             </div>
 
             <div class="media-fields">
-              <label class="media-field" for="media-source-transcript">
-                <span class="field-label">Transcript gốc / nội dung bài nghe</span>
-                <textarea class="text-area" id="media-source-transcript" placeholder="Dán transcript gốc hoặc ghi lại nội dung nghe được..."></textarea>
-              </label>
-              <label class="media-field" for="media-notes">
-                <span class="field-label">Ghi chú nhanh</span>
-                <textarea class="text-area" id="media-notes" placeholder="Tên riêng, con số, ý chính cần nhớ..."></textarea>
-              </label>
               <label class="media-field media-field-full" for="media-translation">
                 <span class="field-label">Bản dịch của bạn</span>
                 <textarea class="text-area" id="media-translation" placeholder="Nhập bản dịch hoặc dùng nút ghi âm để thu phần nói..."></textarea>
               </label>
             </div>
+
+            <details class="media-extra">
+              <summary>Transcript gốc và ghi chú nhanh (tùy chọn)</summary>
+              <div class="media-extra-content">
+                <label class="media-field" for="media-source-transcript">
+                  <span class="field-label">Transcript gốc / nội dung bài nghe</span>
+                  <textarea class="text-area" id="media-source-transcript" placeholder="Dán transcript gốc hoặc ghi lại nội dung nghe được..."></textarea>
+                </label>
+                <label class="media-field" for="media-notes">
+                  <span class="field-label">Ghi chú nhanh</span>
+                  <textarea class="text-area" id="media-notes" placeholder="Tên riêng, con số, ý chính cần nhớ..."></textarea>
+                </label>
+              </div>
+            </details>
 
             <details class="media-reference">
               <summary>Đáp án mẫu chuẩn / từ khóa (tùy chọn)</summary>
