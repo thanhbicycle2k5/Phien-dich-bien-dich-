@@ -1238,6 +1238,9 @@
 
     function setMode(mode) {
       const translating = mode === "translate";
+      document.querySelector("#page-title").textContent = translating
+        ? "Đọc kỹ. Cân nhắc. Viết chuẩn xác."
+        : "Nghe kỹ. Chuyển ý. Nói tự tin.";
       document.querySelector("#translate-panel").hidden = !translating;
       document.querySelector("#interpret-panel").hidden = translating;
       document.querySelector("#tab-translate").setAttribute("aria-selected", String(translating));
