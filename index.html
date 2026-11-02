@@ -194,6 +194,16 @@
     .reference-fields { display: grid; gap: 12px; padding: 0 13px 13px; }
     .reference-fields .text-area { min-height: 100px; font-family: var(--sans); font-size: 13px; }
     .keyword-input { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
+    .deepl-settings { margin: 12px 22px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbff; }
+    .deepl-settings summary { padding: 9px 12px; color: var(--blue-dark); cursor: pointer; font-size: 12px; font-weight: 700; }
+    .deepl-settings-body { display: grid; gap: 9px; padding: 0 12px 12px; }
+    .deepl-key-row { display: flex; align-items: end; gap: 8px; }
+    .deepl-key-field { flex: 1; min-width: 0; }
+    .deepl-key-field .field-label { margin-bottom: 5px; }
+    .deepl-key-input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); font: 12px var(--sans); }
+    .deepl-security-note, .deepl-status { margin: 0; color: var(--muted); font-size: 11px; }
+    .deepl-status { min-height: 16px; }
+    .translation-button-group { display: flex; flex-wrap: wrap; gap: 8px; }
 
     .translation-grid {
       display: grid;
@@ -413,6 +423,8 @@
       .feedback { margin-right: 18px; margin-left: 18px; }
       .answer-breakdown { margin-right: 18px; margin-left: 18px; }
       .reference-editor { margin-right: 18px; margin-left: 18px; }
+      .deepl-settings { margin-right: 18px; margin-left: 18px; }
+      .deepl-key-row { align-items: stretch; flex-direction: column; }
       .term-list { grid-template-columns: 1fr; }
       .interpret-body { padding: 18px; }
       .interpret-toolbar { align-items: start; flex-direction: column; }
@@ -495,6 +507,24 @@
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
+        <details class="deepl-settings" id="deepl-settings">
+          <summary>Cài đặt DeepL API (tùy chọn)</summary>
+          <div class="deepl-settings-body">
+            <div class="deepl-key-row">
+              <label class="deepl-key-field" for="deepl-api-key">
+                <span class="field-label">DeepL API Free Authentication Key</span>
+                <input class="deepl-key-input" id="deepl-api-key" type="password" autocomplete="new-password" spellcheck="false" placeholder="xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx:fx">
+              </label>
+              <div class="action-group">
+                <button class="quiet-button" id="save-deepl-key" type="button">Lưu key</button>
+                <button class="quiet-button" id="remove-deepl-key" type="button">Xóa key</button>
+              </div>
+            </div>
+            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; không triển khai key trong ứng dụng công khai. Gọi API trực tiếp cũng có thể bị trình duyệt chặn bởi CORS.</p>
+            <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.</p>
+          </div>
+        </details>
+
         <div class="translation-grid">
           <section class="translation-pane" aria-labelledby="source-label">
             <div class="pane-top">
@@ -526,7 +556,10 @@
 
         <div class="workspace-actions">
           <span class="score-note" id="translation-score-note">So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa</span>
-          <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem gợi ý <span aria-hidden="true">→</span></button>
+          <div class="translation-button-group">
+            <button class="quiet-button" id="suggest-deepl" type="button">Gợi ý bằng DeepL</button>
+            <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem gợi ý <span aria-hidden="true">→</span></button>
+          </div>
         </div>
         <div class="feedback" id="translation-feedback" role="status" aria-live="polite"></div>
         <section class="answer-breakdown" id="answer-breakdown" aria-live="polite" hidden>
