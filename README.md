@@ -14,8 +14,9 @@ Sau đó mở http://localhost:8000. Trình duyệt có thể yêu cầu quyền
 
 ## Có gì trong bản mẫu
 
-- **Biên dịch:** bài tập Anh–Việt/Việt–Anh có sẵn đáp án tham khảo cục bộ. Điểm tương đồng dựa trên khoảng cách chỉnh sửa từ; đây chỉ là gợi ý đối chiếu từ vựng, không đánh giá được độ đúng nghĩa hay chất lượng bản dịch.
-- **Phiên dịch:** dùng `SpeechRecognition`/`webkitSpeechRecognition` trong trình duyệt để hiện lời nói thành văn bản; có thể chọn ngôn ngữ, bắt đầu/dừng, đọc lại transcript và sao chép.
+- **Biên dịch:** 12 bài Anh–Việt, chia đều cho Kinh tế - Tài chính, Công nghệ thông tin, Chính trị - Xã hội và Y khoa. Mỗi bài có đáp án mẫu, thuật ngữ cốt lõi và ghi chú ngữ cảnh/văn phong. Điểm tương đồng dựa trên khoảng cách chỉnh sửa token; đây chỉ là gợi ý đối chiếu từ vựng, không đánh giá được độ đúng nghĩa hay chất lượng bản dịch.
+- **Phiên dịch:** dùng `SpeechRecognition`/`webkitSpeechRecognition` trong trình duyệt để hiện lời nói thành văn bản; có thể chọn ngôn ngữ, bắt đầu/dừng, sao chép transcript và bấm giờ luyện tập.
+- **Lịch sử:** nút lưu ghi transcript, ngôn ngữ, thời điểm và thời lượng vào `localStorage`, giữ tối đa 30 buổi gần nhất trên trình duyệt hiện tại. Lịch sử không được mã hóa; người dùng chung hồ sơ trình duyệt có thể xem dữ liệu. Có thể xóa lịch sử trong giao diện hoặc xóa dữ liệu trang của trình duyệt.
 - **Đọc văn bản:** dùng `speechSynthesis` có sẵn trong trình duyệt nếu trình duyệt hỗ trợ giọng nói tương ứng.
 
 ## Lộ trình chạy AI hoàn toàn local

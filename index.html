@@ -174,6 +174,11 @@
       font-size: 12px;
     }
 
+    .selector-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .selector-row label { min-width: 150px; }
+    .selector-row .field-label { margin-bottom: 5px; }
+    .selector-row select { max-width: 220px; }
+
     .translation-grid {
       display: grid;
       grid-template-columns: 1fr 1fr;
@@ -260,6 +265,20 @@
     .feedback strong { display: block; margin-bottom: 2px; }
     .feedback.is-low { border-color: var(--coral); background: var(--soft-coral); }
 
+    .answer-breakdown {
+      margin: 0 22px 22px;
+      padding-top: 20px;
+      border-top: 1px solid var(--line);
+    }
+
+    .breakdown-heading { margin: 0 0 10px; font: 700 16px var(--serif); }
+    .model-answer { margin: 0 0 18px; font: 17px/1.65 var(--serif); }
+    .breakdown-subheading { margin: 0 0 8px; font-size: 12px; font-weight: 750; }
+    .term-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
+    .term-item { padding: 10px 12px; border-radius: 5px; background: #f3f5ef; font-size: 12px; }
+    .term-item strong { display: block; margin-bottom: 2px; color: var(--green-dark); }
+    .context-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
+
     .interpret-body { padding: 22px; }
 
     .interpret-toolbar {
@@ -310,6 +329,18 @@
       margin-top: 18px;
     }
 
+    .timer-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .timer-display { min-width: 78px; color: var(--green-dark); font: 700 20px/1 var(--sans); font-variant-numeric: tabular-nums; }
+    .history { margin-top: 22px; border-top: 1px solid var(--line); }
+    .history summary { padding: 15px 0; cursor: pointer; font-size: 13px; font-weight: 700; }
+    .history-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
+    .history-message { color: var(--muted); font-size: 11px; }
+    .history-list { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
+    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #fbfaf6; }
+    .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
+    .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
+    .history-empty { color: var(--muted); font-size: 12px; }
+
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .notice { margin: 15px 0 0; color: var(--muted); font-size: 11px; }
 
@@ -335,12 +366,19 @@
       .translation-pane { padding: 18px; }
       .translation-pane + .translation-pane { border-top: 1px solid var(--line); border-left: 0; }
       .workspace-head { padding: 12px 16px; }
+      .selector-row { width: 100%; }
+      .selector-row label { flex: 1 1 135px; }
+      .selector-row select { width: 100%; max-width: none; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
       .feedback { margin-right: 18px; margin-left: 18px; }
+      .answer-breakdown { margin-right: 18px; margin-left: 18px; }
+      .term-list { grid-template-columns: 1fr; }
       .interpret-body { padding: 18px; }
       .interpret-toolbar { align-items: start; flex-direction: column; }
       .language-control { width: 100%; }
       .interpret-actions, .page-foot { align-items: start; flex-direction: column; }
+      .timer-tools { width: 100%; }
+      .history-meta { flex-direction: column; gap: 2px; }
       .mode-tab { padding: 0 13px; }
     }
   </style>
@@ -375,10 +413,16 @@
             <h2 class="workspace-title">Bài dịch ngắn</h2>
             <p class="workspace-caption">Chọn một câu mẫu để bắt đầu</p>
           </div>
-          <label>
-            <span class="field-label">Bài tập</span>
-            <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
-          </label>
+          <div class="selector-row">
+            <label>
+              <span class="field-label">Chuyên ngành</span>
+              <select class="exercise-select" id="industry-select" aria-label="Chọn chuyên ngành"></select>
+            </label>
+            <label>
+              <span class="field-label">Bài tập</span>
+              <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
+            </label>
+          </div>
         </div>
 
         <div class="translation-grid">
@@ -402,9 +446,19 @@
 
         <div class="workspace-actions">
           <span class="score-note">So sánh cục bộ bằng khoảng cách chỉnh sửa từ</span>
-          <button class="primary-button" id="check-answer" type="button">Kiểm tra bản dịch <span aria-hidden="true">→</span></button>
+          <div class="action-group">
+            <button class="quiet-button" id="show-model-answer" type="button">Xem đáp án mẫu</button>
+            <button class="primary-button" id="check-answer" type="button">Kiểm tra bản dịch <span aria-hidden="true">→</span></button>
+          </div>
         </div>
         <div class="feedback" id="translation-feedback" role="status" aria-live="polite"></div>
+        <section class="answer-breakdown" id="answer-breakdown" aria-live="polite" hidden>
+          <h3 class="breakdown-heading">Đáp án mẫu</h3>
+          <p class="model-answer" id="model-answer"></p>
+          <h4 class="breakdown-subheading">Thuật ngữ cốt lõi</h4>
+          <ul class="term-list" id="key-terms"></ul>
+          <p class="context-note" id="translation-context"></p>
+        </section>
       </section>
 
       <section class="workspace" id="interpret-panel" role="tabpanel" aria-labelledby="tab-interpret" hidden>
@@ -437,13 +491,29 @@
           <div class="interpret-actions">
             <div class="action-group">
               <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
-              <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng</button>
+              <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
             </div>
+            <div class="timer-tools" aria-label="Đồng hồ luyện tập">
+              <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
+              <button class="quiet-button" id="toggle-timer" type="button">Bắt đầu giờ</button>
+              <button class="quiet-button" id="reset-timer" type="button">Đặt lại</button>
+            </div>
+          </div>
+          <div class="interpret-actions">
             <div class="action-group">
               <button class="quiet-button" id="copy-transcript" type="button">Sao chép</button>
               <button class="quiet-button" id="clear-transcript" type="button">Xóa transcript</button>
             </div>
+            <button class="primary-button" id="save-practice" type="button">Lưu lịch sử luyện tập</button>
           </div>
+          <details class="history" id="history-panel">
+            <summary id="history-summary">Lịch sử luyện tập</summary>
+            <div class="history-tools">
+              <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
+              <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
+            </div>
+            <ul class="history-list" id="history-list"></ul>
+          </details>
           <p class="notice" id="speech-notice">Nhận dạng giọng nói cần được trình duyệt hỗ trợ và có thể cần kết nối Internet. Xem README để biết giới hạn quyền riêng tư và lựa chọn Whisper offline.</p>
         </div>
       </section>
@@ -456,30 +526,156 @@
   </div>
 
   <script>
-    const exercises = [
+    const exerciseGroups = [
       {
-        direction: "EN → VI",
-        sourceLanguage: "EN",
-        targetLanguage: "VI",
-        source: "Good morning. How may I help you?",
-        answers: ["Chào buổi sáng. Tôi có thể giúp gì cho bạn?", "Chào buổi sáng, tôi có thể giúp gì cho bạn?"]
+        id: "economics",
+        label: "Kinh tế - Tài chính",
+        exercises: [
+          {
+            source: "The central bank kept its benchmark interest rate unchanged to support economic recovery.",
+            answers: ["Ngân hàng trung ương giữ nguyên lãi suất tham chiếu để hỗ trợ phục hồi kinh tế."],
+            keyTerms: [
+              { source: "central bank", translation: "ngân hàng trung ương", reason: "Cơ quan quản lý tiền tệ cấp quốc gia, không phải một ngân hàng thương mại." },
+              { source: "benchmark interest rate", translation: "lãi suất tham chiếu", reason: "Thuật ngữ kinh tế chỉ mức lãi suất cơ sở để định hướng các mức lãi suất khác." },
+              { source: "economic recovery", translation: "phục hồi kinh tế", reason: "Cụm danh từ thường dùng trong tin tức và báo cáo kinh tế." }
+            ],
+            context: "Văn phong báo chí kinh tế trang trọng; cấu trúc keep something unchanged được chuyển thành “giữ nguyên” + tân ngữ."
+          },
+          {
+            source: "The company reported a 12 percent increase in quarterly revenue.",
+            answers: ["Công ty báo cáo doanh thu quý tăng 12 phần trăm."],
+            keyTerms: [
+              { source: "reported", translation: "báo cáo / ghi nhận", reason: "Dùng “ghi nhận” tự nhiên trong báo cáo kết quả kinh doanh." },
+              { source: "quarterly revenue", translation: "doanh thu quý", reason: "Revenue là doanh thu, khác với profit (lợi nhuận); quarterly chỉ chu kỳ ba tháng." },
+              { source: "a 12 percent increase", translation: "mức tăng 12 phần trăm", reason: "Diễn đạt tỷ lệ tăng, không phải doanh thu đạt 12 phần trăm." }
+            ],
+            context: "Văn phong báo cáo doanh nghiệp; giữ rõ quan hệ giữa tỷ lệ tăng và doanh thu trong kỳ."
+          },
+          {
+            source: "Investors are awaiting further guidance on inflation.",
+            answers: ["Các nhà đầu tư đang chờ thêm định hướng về lạm phát."],
+            keyTerms: [
+              { source: "investors", translation: "nhà đầu tư", reason: "Thuật ngữ chỉ cá nhân hoặc tổ chức phân bổ vốn để đầu tư." },
+              { source: "guidance", translation: "định hướng / dự báo", reason: "Trong tài chính, từ này thường chỉ thông tin định hướng, không đơn thuần là hướng dẫn thao tác." },
+              { source: "inflation", translation: "lạm phát", reason: "Thuật ngữ kinh tế chỉ mức tăng chung của giá cả." }
+            ],
+            context: "Văn phong tin tức tài chính; hiện tại tiếp diễn nhấn mạnh việc chờ đợi đang diễn ra."
+          }
+        ]
       },
       {
-        direction: "EN → VI",
-        sourceLanguage: "EN",
-        targetLanguage: "VI",
-        source: "The meeting has been postponed until Friday.",
-        answers: ["Cuộc họp đã được hoãn đến thứ Sáu.", "Cuộc họp đã bị hoãn đến thứ Sáu."]
+        id: "technology",
+        label: "Công nghệ thông tin",
+        exercises: [
+          {
+            source: "The update encrypts user data before it is sent to the server.",
+            answers: ["Bản cập nhật mã hóa dữ liệu người dùng trước khi dữ liệu được gửi đến máy chủ."],
+            keyTerms: [
+              { source: "update", translation: "bản cập nhật", reason: "Chỉ phiên bản phần mềm mới được cài đặt, không phải toàn bộ hệ thống." },
+              { source: "encrypts", translation: "mã hóa", reason: "Thuật ngữ bảo mật cho việc biến dữ liệu thành dạng chỉ có thể đọc bằng khóa phù hợp." },
+              { source: "server", translation: "máy chủ", reason: "Thiết bị hoặc hệ thống cung cấp dữ liệu, dịch vụ cho các máy khách." }
+            ],
+            context: "Văn phong tài liệu kỹ thuật trung tính; mệnh đề bị động “is sent” tập trung vào dữ liệu được truyền đi."
+          },
+          {
+            source: "We need to migrate the database without interrupting the service.",
+            answers: ["Chúng ta cần di chuyển cơ sở dữ liệu mà không làm gián đoạn dịch vụ."],
+            keyTerms: [
+              { source: "migrate", translation: "di chuyển / chuyển đổi", reason: "Trong CNTT, chỉ việc chuyển dữ liệu hoặc hệ thống sang môi trường mới." },
+              { source: "database", translation: "cơ sở dữ liệu", reason: "Cách dịch chuẩn trong tài liệu và trao đổi chuyên môn CNTT." },
+              { source: "interrupting the service", translation: "làm gián đoạn dịch vụ", reason: "Cụm mô tả yêu cầu duy trì hoạt động liên tục khi triển khai." }
+            ],
+            context: "Văn phong trao đổi kỹ thuật; cấu trúc without + V-ing diễn tả điều kiện cần tránh."
+          },
+          {
+            source: "The model's output should be reviewed for accuracy and bias.",
+            answers: ["Đầu ra của mô hình cần được rà soát về độ chính xác và thiên lệch."],
+            keyTerms: [
+              { source: "model's output", translation: "đầu ra của mô hình", reason: "Cách gọi phần nội dung hoặc kết quả do mô hình tạo ra." },
+              { source: "reviewed", translation: "rà soát / đánh giá", reason: "Nhấn mạnh việc con người kiểm tra kết quả trước khi sử dụng." },
+              { source: "bias", translation: "thiên lệch", reason: "Thuật ngữ thường dùng khi nói về sai lệch có hệ thống trong dữ liệu hoặc kết quả." }
+            ],
+            context: "Văn phong hướng dẫn AI có trách nhiệm; câu bị động dùng để nhấn mạnh yêu cầu kiểm tra đầu ra."
+          }
+        ]
       },
       {
-        direction: "VI → EN",
-        sourceLanguage: "VI",
-        targetLanguage: "EN",
-        source: "Vui lòng gửi tài liệu trước ngày mai.",
-        answers: ["Please send the documents before tomorrow.", "Please send the materials before tomorrow."]
+        id: "society",
+        label: "Chính trị - Xã hội",
+        exercises: [
+          {
+            source: "The committee called for greater transparency in public spending.",
+            answers: ["Ủy ban kêu gọi tăng cường tính minh bạch trong chi tiêu công."],
+            keyTerms: [
+              { source: "committee", translation: "ủy ban", reason: "Nhóm người được giao nhiệm vụ xem xét hoặc quyết định một vấn đề." },
+              { source: "called for", translation: "kêu gọi / yêu cầu", reason: "Cụm động từ trang trọng dùng khi đề xuất một thay đổi hoặc hành động." },
+              { source: "public spending", translation: "chi tiêu công", reason: "Khoản chi của chính quyền hoặc khu vực công." }
+            ],
+            context: "Văn phong chính sách trang trọng; greater transparency diễn đạt yêu cầu tăng cường tính minh bạch."
+          },
+          {
+            source: "Both sides agreed to resume negotiations next month.",
+            answers: ["Hai bên nhất trí nối lại đàm phán vào tháng tới."],
+            keyTerms: [
+              { source: "both sides", translation: "hai bên", reason: "Cách gọi trung tính cho hai phía tham gia đối thoại hoặc tranh chấp." },
+              { source: "resume", translation: "nối lại / tiếp tục", reason: "Hàm ý hoạt động từng bị tạm dừng và nay sẽ được tiếp tục." },
+              { source: "negotiations", translation: "đàm phán", reason: "Thuật ngữ thường dùng trong ngoại giao, chính trị và quan hệ lao động." }
+            ],
+            context: "Văn phong tin tức ngoại giao; agreed to có thể dịch gọn là “nhất trí”."
+          },
+          {
+            source: "The policy aims to expand access to affordable housing.",
+            answers: ["Chính sách này nhằm mở rộng khả năng tiếp cận nhà ở có giá phải chăng."],
+            keyTerms: [
+              { source: "policy", translation: "chính sách", reason: "Biện pháp hoặc định hướng do tổ chức hay chính quyền đề ra." },
+              { source: "expand access", translation: "mở rộng khả năng tiếp cận", reason: "Cụm thường dùng trong các nội dung về dịch vụ và phúc lợi xã hội." },
+              { source: "affordable housing", translation: "nhà ở có giá phải chăng", reason: "Nhà ở có mức giá phù hợp với khả năng chi trả của người dân mục tiêu." }
+            ],
+            context: "Văn phong chính sách xã hội; aims to nêu mục tiêu, không khẳng định kết quả đã đạt được."
+          }
+        ]
+      },
+      {
+        id: "medical",
+        label: "Y khoa",
+        exercises: [
+          {
+            source: "The patient should take this medication with food twice a day.",
+            answers: ["Bệnh nhân nên uống thuốc này cùng với thức ăn, mỗi ngày hai lần."],
+            keyTerms: [
+              { source: "patient", translation: "bệnh nhân", reason: "Người đang được khám hoặc điều trị tại cơ sở y tế." },
+              { source: "medication", translation: "thuốc", reason: "Cách gọi chung cho dược phẩm được dùng để điều trị hoặc phòng bệnh." },
+              { source: "twice a day", translation: "mỗi ngày hai lần", reason: "Chỉ tần suất dùng thuốc; cần giữ rõ số lần trong hướng dẫn y tế." }
+            ],
+            context: "Văn phong hướng dẫn chăm sóc sức khỏe; should mang nghĩa khuyến nghị, không nhất thiết là mệnh lệnh tuyệt đối."
+          },
+          {
+            source: "Early diagnosis can improve treatment outcomes.",
+            answers: ["Chẩn đoán sớm có thể cải thiện kết quả điều trị."],
+            keyTerms: [
+              { source: "early diagnosis", translation: "chẩn đoán sớm", reason: "Phát hiện và xác định bệnh ở giai đoạn sớm." },
+              { source: "can improve", translation: "có thể cải thiện", reason: "Can chỉ khả năng, nên không dịch thành cam kết chắc chắn." },
+              { source: "treatment outcomes", translation: "kết quả điều trị", reason: "Kết quả sức khỏe đạt được sau quá trình điều trị." }
+            ],
+            context: "Văn phong thông tin y tế phổ thông; giữ sắc thái thận trọng của can."
+          },
+          {
+            source: "The study included adults with no history of cardiovascular disease.",
+            answers: ["Nghiên cứu bao gồm những người trưởng thành không có tiền sử bệnh tim mạch."],
+            keyTerms: [
+              { source: "study included", translation: "nghiên cứu bao gồm", reason: "Cách diễn đạt phạm vi người tham gia trong bài báo khoa học." },
+              { source: "no history of", translation: "không có tiền sử", reason: "Cụm y khoa chỉ thông tin bệnh lý trước đây của người tham gia." },
+              { source: "cardiovascular disease", translation: "bệnh tim mạch", reason: "Thuật ngữ bao quát các bệnh liên quan đến tim và hệ mạch máu." }
+            ],
+            context: "Văn phong nghiên cứu lâm sàng; đây là tiêu chí mô tả nhóm tham gia, không phải kết luận y khoa."
+          }
+        ]
       }
     ];
 
+    const HISTORY_KEY = "lingua-lab-practice-history-v1";
+    const MAX_HISTORY_ITEMS = 30;
+    const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
     const sourceText = document.querySelector("#source-text");
     const answerText = document.querySelector("#answer-text");
@@ -488,13 +684,31 @@
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let recognition = null;
     let finalTranscript = "";
+    let timerElapsedMs = 0;
+    let timerStartedAt = null;
+    let timerInterval = null;
 
-    exercises.forEach((exercise, index) => {
+    exerciseGroups.forEach((group) => {
       const option = document.createElement("option");
-      option.value = String(index);
-      option.textContent = `${exercise.direction} · Câu ${index + 1}`;
-      exerciseSelect.append(option);
+      option.value = group.id;
+      option.textContent = group.label;
+      industrySelect.append(option);
     });
+
+    function currentExercises() {
+      return exerciseGroups.find((group) => group.id === industrySelect.value).exercises;
+    }
+
+    function populateExercises() {
+      exerciseSelect.replaceChildren();
+      currentExercises().forEach((exercise, index) => {
+        const option = document.createElement("option");
+        option.value = String(index);
+        option.textContent = `Câu ${index + 1} · ${exercise.source.slice(0, 42)}${exercise.source.length > 42 ? "..." : ""}`;
+        exerciseSelect.append(option);
+      });
+      loadExercise();
+    }
 
     function wordCount(text) {
       return (text.trim().match(/[\p{L}\p{N}]+/gu) || []).length;
@@ -507,13 +721,15 @@
     }
 
     function loadExercise() {
-      const exercise = exercises[Number(exerciseSelect.value)];
+      const exercise = currentExercises()[Number(exerciseSelect.value)];
+      if (!exercise) return;
       sourceText.value = exercise.source;
-      document.querySelector("#source-language").textContent = exercise.sourceLanguage;
-      document.querySelector("#target-language").textContent = exercise.targetLanguage;
+      document.querySelector("#source-language").textContent = "EN";
+      document.querySelector("#target-language").textContent = "VI";
       answerText.value = "";
       feedback.className = "feedback";
       feedback.textContent = "";
+      document.querySelector("#answer-breakdown").hidden = true;
       updateCounts();
     }
 
@@ -540,7 +756,7 @@
 
     function checkTranslation() {
       const answer = tokenize(answerText.value);
-      const exercise = exercises[Number(exerciseSelect.value)];
+      const exercise = currentExercises()[Number(exerciseSelect.value)];
       if (answer.length === 0) {
         feedback.className = "feedback is-visible is-low";
         feedback.innerHTML = "<strong>Chưa có bản dịch</strong>Hãy nhập câu trả lời trước khi kiểm tra.";
@@ -557,6 +773,25 @@
       feedback.innerHTML = `<strong>Độ tương đồng từ vựng: ${similarity}%</strong>${message} Đây không phải điểm đánh giá chất lượng bản dịch.`;
     }
 
+    function showModelAnswer() {
+      const exercise = currentExercises()[Number(exerciseSelect.value)];
+      document.querySelector("#model-answer").textContent = exercise.answers[0];
+      document.querySelector("#translation-context").textContent = `Ngữ cảnh và cấu trúc: ${exercise.context}`;
+      const termsList = document.querySelector("#key-terms");
+      termsList.replaceChildren();
+      exercise.keyTerms.forEach((term) => {
+        const item = document.createElement("li");
+        item.className = "term-item";
+        const heading = document.createElement("strong");
+        heading.textContent = `${term.source} → ${term.translation}`;
+        const explanation = document.createElement("span");
+        explanation.textContent = term.reason;
+        item.append(heading, explanation);
+        termsList.append(item);
+      });
+      document.querySelector("#answer-breakdown").hidden = false;
+    }
+
     function setMode(mode) {
       const translating = mode === "translate";
       document.querySelector("#translate-panel").hidden = !translating;
@@ -571,7 +806,7 @@
         feedback.textContent = "Trình duyệt này chưa hỗ trợ đọc văn bản.";
         return;
       }
-      const exercise = exercises[Number(exerciseSelect.value)];
+      const exercise = currentExercises()[Number(exerciseSelect.value)];
       const utterance = new SpeechSynthesisUtterance(sourceText.value);
       utterance.lang = exercise.sourceLanguage === "VI" ? "vi-VN" : "en-US";
       window.speechSynthesis.cancel();
@@ -619,14 +854,139 @@
       }
     }
 
+    function getElapsedTime() {
+      return timerStartedAt === null ? timerElapsedMs : Date.now() - timerStartedAt;
+    }
+
+    function formatDuration(milliseconds) {
+      const totalSeconds = Math.floor(milliseconds / 1000);
+      const minutes = Math.floor(totalSeconds / 60);
+      const seconds = totalSeconds % 60;
+      return `${String(minutes).padStart(2, "0")}:${String(seconds).padStart(2, "0")}`;
+    }
+
+    function renderTimer() {
+      document.querySelector("#timer-display").textContent = formatDuration(getElapsedTime());
+    }
+
+    function pauseTimer() {
+      if (timerStartedAt === null) return;
+      timerElapsedMs = Date.now() - timerStartedAt;
+      timerStartedAt = null;
+      window.clearInterval(timerInterval);
+      timerInterval = null;
+      document.querySelector("#toggle-timer").textContent = "Tiếp tục giờ";
+      renderTimer();
+    }
+
+    function toggleTimer() {
+      if (timerStartedAt !== null) {
+        pauseTimer();
+        return;
+      }
+      timerStartedAt = Date.now() - timerElapsedMs;
+      timerInterval = window.setInterval(renderTimer, 250);
+      document.querySelector("#toggle-timer").textContent = "Tạm dừng";
+      renderTimer();
+    }
+
+    function resetTimer() {
+      pauseTimer();
+      timerElapsedMs = 0;
+      document.querySelector("#toggle-timer").textContent = "Bắt đầu giờ";
+      renderTimer();
+    }
+
+    function readPracticeHistory() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(HISTORY_KEY) || "[]");
+        return Array.isArray(saved) ? saved.filter((entry) => entry && typeof entry.date === "string") : [];
+      } catch (error) {
+        document.querySelector("#history-message").textContent = "Không thể đọc lịch sử trên trình duyệt này.";
+        return [];
+      }
+    }
+
+    function renderPracticeHistory() {
+      const entries = readPracticeHistory();
+      const historyList = document.querySelector("#history-list");
+      historyList.replaceChildren();
+      document.querySelector("#history-summary").textContent = `Lịch sử luyện tập (${entries.length})`;
+      if (entries.length === 0) {
+        const empty = document.createElement("li");
+        empty.className = "history-empty";
+        empty.textContent = "Chưa có buổi luyện tập nào được lưu trên thiết bị này.";
+        historyList.append(empty);
+        return;
+      }
+
+      entries.forEach((entry) => {
+        const item = document.createElement("li");
+        item.className = "history-item";
+        const metadata = document.createElement("div");
+        metadata.className = "history-meta";
+        const date = document.createElement("span");
+        date.textContent = new Date(entry.date).toLocaleString("vi-VN");
+        const details = document.createElement("span");
+        details.textContent = `${entry.language || "Không rõ ngôn ngữ"} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`;
+        metadata.append(date, details);
+        const text = document.createElement("p");
+        text.className = "history-transcript";
+        text.textContent = entry.transcript || "Không có transcript được ghi nhận.";
+        item.append(metadata, text);
+        historyList.append(item);
+      });
+    }
+
+    function savePractice() {
+      const savedTranscript = transcript.textContent.trim();
+      const durationSeconds = Math.floor(getElapsedTime() / 1000);
+      const historyMessage = document.querySelector("#history-message");
+      if (!savedTranscript && durationSeconds === 0) {
+        historyMessage.textContent = "Bắt đầu bấm giờ hoặc ghi transcript trước khi lưu.";
+        return;
+      }
+
+      const entry = {
+        date: new Date().toISOString(),
+        language: document.querySelector("#speech-language").selectedOptions[0].textContent,
+        durationSeconds,
+        transcript: savedTranscript
+      };
+      try {
+        const entries = readPracticeHistory();
+        entries.unshift(entry);
+        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY_ITEMS)));
+        historyMessage.textContent = "Đã lưu buổi luyện trên trình duyệt này.";
+        renderPracticeHistory();
+      } catch (error) {
+        historyMessage.textContent = "Không thể lưu. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.";
+      }
+    }
+
+    industrySelect.addEventListener("change", populateExercises);
     exerciseSelect.addEventListener("change", loadExercise);
     answerText.addEventListener("input", updateCounts);
     document.querySelector("#check-answer").addEventListener("click", checkTranslation);
+    document.querySelector("#show-model-answer").addEventListener("click", showModelAnswer);
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
     document.querySelector("#start-listening").addEventListener("click", startListening);
     document.querySelector("#stop-listening").addEventListener("click", () => recognition?.stop());
+    document.querySelector("#toggle-timer").addEventListener("click", toggleTimer);
+    document.querySelector("#reset-timer").addEventListener("click", resetTimer);
+    document.querySelector("#save-practice").addEventListener("click", savePractice);
+    document.querySelector("#clear-history").addEventListener("click", () => {
+      if (!window.confirm("Xóa toàn bộ lịch sử luyện tập trên trình duyệt này?")) return;
+      try {
+        window.localStorage.removeItem(HISTORY_KEY);
+        document.querySelector("#history-message").textContent = "Đã xóa lịch sử luyện tập.";
+        renderPracticeHistory();
+      } catch (error) {
+        document.querySelector("#history-message").textContent = "Không thể xóa lịch sử trên trình duyệt này.";
+      }
+    });
     document.querySelector("#clear-transcript").addEventListener("click", () => {
       finalTranscript = "";
       transcript.textContent = "";
@@ -648,7 +1008,9 @@
       document.querySelector("#speech-status").textContent = "Trình duyệt này chưa hỗ trợ Web Speech API. Hãy thử Chrome hoặc Edge.";
     }
 
-    loadExercise();
+    populateExercises();
+    renderTimer();
+    renderPracticeHistory();
   </script>
 </body>
 </html>
