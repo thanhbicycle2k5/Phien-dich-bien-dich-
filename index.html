@@ -378,13 +378,13 @@
     .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
     .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .history-empty { color: var(--muted); font-size: 12px; }
-    .youtube-practice { margin: 16px 0 14px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .youtube-practice { margin: 0 0 13px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .youtube-heading { margin: 0 0 8px; font: 700 16px var(--serif); }
     .youtube-input-row { display: flex; align-items: end; gap: 8px; }
     .youtube-url-label { flex: 1; min-width: 0; }
     .youtube-input { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
     .youtube-status { min-height: 16px; margin: 6px 0 0; color: var(--muted); font-size: 11px; }
-    .youtube-player { width: min(100%, 640px); margin: 10px auto 0; overflow: hidden; border-radius: 6px; background: #0f172a; aspect-ratio: 16 / 9; }
+    .youtube-player { width: min(100%, 640px); margin: 8px auto 0; overflow: hidden; border-radius: 6px; background: #0f172a; aspect-ratio: 16 / 9; }
     .youtube-player iframe { display: block; width: 100%; height: 100%; border: 0; }
 
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -582,6 +582,20 @@
         </div>
 
         <div class="interpret-body">
+          <section class="youtube-practice" aria-labelledby="youtube-heading">
+            <h3 class="youtube-heading" id="youtube-heading">Luyện phiên dịch với video YouTube</h3>
+            <div class="youtube-input-row">
+              <label class="youtube-url-label" for="youtube-url">
+                <span class="field-label">Link video</span>
+                <input class="youtube-input" id="youtube-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url">
+              </label>
+              <button class="primary-button" id="load-youtube" type="button">Tải video</button>
+            </div>
+            <div class="youtube-player" id="youtube-player" hidden>
+              <iframe id="youtube-frame" title="Video YouTube luyện phiên dịch" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+            </div>
+            <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
+          </section>
           <div class="interpret-toolbar">
             <label class="language-control">
               <span class="field-label">Ngôn ngữ đang nói</span>
@@ -618,6 +632,7 @@
               <details class="transcript-tools">
                 <summary aria-label="Thao tác bổ sung">Thêm</summary>
                 <div class="transcript-tool-list">
+                  <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
                   <button class="quiet-button" id="reset-timer" type="button">Đặt lại đồng hồ</button>
                   <button class="quiet-button" id="copy-transcript" type="button">Sao chép transcript</button>
                   <button class="quiet-button" id="clear-transcript" type="button">Xóa transcript</button>
@@ -626,20 +641,6 @@
               </details>
             </div>
           </div>
-          <section class="youtube-practice" aria-labelledby="youtube-heading">
-            <h3 class="youtube-heading" id="youtube-heading">Luyện phiên dịch với video YouTube</h3>
-            <div class="youtube-input-row">
-              <label class="youtube-url-label" for="youtube-url">
-                <span class="field-label">Link video</span>
-                <input class="youtube-input" id="youtube-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url">
-              </label>
-              <button class="primary-button" id="load-youtube" type="button">Tải video</button>
-            </div>
-            <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
-            <div class="youtube-player" id="youtube-player" hidden>
-              <iframe id="youtube-frame" title="Video YouTube luyện phiên dịch" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-            </div>
-          </section>
           <details class="history" id="history-panel">
             <summary id="history-summary">Lịch sử luyện tập</summary>
             <div class="history-tools">
@@ -833,6 +834,10 @@
     let speechRecordingId = "";
     const speechRecordingUrls = new Set();
     const speechRecordingsById = new Map();
+    const discardedSpeechRecordings = new Set();
+    const restartingSpeechSessions = new Set();
+    let youtubePlayer = null;
+    let youtubeApiLoading = false;
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -1397,6 +1402,7 @@
       if (!SpeechRecognition && !canRecordAudio) return;
       document.querySelector("#start-listening").disabled = true;
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const recordingId = speechRecordingId;
       if (canRecordAudio) {
         document.querySelector("#speech-recording-preview").hidden = false;
         recordingStatus.textContent = "Đang xin quyền micro để tạo bản ghi nghe lại...";
@@ -1430,23 +1436,28 @@
         updateCounts();
       };
       recognition.onerror = (event) => {
+        if (restartingSpeechSessions.has(recordingId)) return;
         const messages = {
           "not-allowed": "Bạn chưa cấp quyền micro cho trang này.",
           "no-speech": "Chưa phát hiện giọng nói. Hãy thử lại.",
           "network": "Dịch vụ nhận dạng không kết nối được. API trình duyệt có thể cần Internet."
         };
         setListening(false, messages[event.error] || `Lỗi nhận dạng: ${event.error}.`);
-        stopSpeechAudioCapture();
+        if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       };
       recognition.onend = () => {
+        if (restartingSpeechSessions.has(recordingId)) {
+          restartingSpeechSessions.delete(recordingId);
+          return;
+        }
         setListening(false, "Đã dừng nhận dạng. Transcript vẫn còn trên trang này.");
-        stopSpeechAudioCapture();
+        if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       };
       try {
         recognition.start();
       } catch (error) {
         setListening(false, "Không thể bắt đầu. Hãy đợi một chút rồi thử lại.");
-        stopSpeechAudioCapture();
+        if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       }
     }
 
@@ -1466,6 +1477,10 @@
         recorder.addEventListener("stop", () => {
           stream.getTracks().forEach((track) => track.stop());
           if (speechAudioStream === stream) speechAudioStream = null;
+          if (discardedSpeechRecordings.has(recordingId)) {
+            discardedSpeechRecordings.delete(recordingId);
+            return;
+          }
           if (chunks.length > 0) {
             const mimeType = recorder.mimeType || "audio/webm";
             const recording = new Blob(chunks, { type: mimeType });
@@ -1523,6 +1538,56 @@
       }
     }
 
+    function startPracticeWhenVideoPlays() {
+      const startButton = document.querySelector("#start-listening");
+      if (!startButton.disabled) startListening();
+      if (timerStartedAt === null) toggleTimer();
+    }
+
+    function initializeYouTubePlayer() {
+      if (!window.YT?.Player || youtubePlayer) return;
+      const frame = document.querySelector("#youtube-frame");
+      if (!frame.dataset.videoId) return;
+      youtubePlayer = new window.YT.Player(frame, {
+        events: {
+          onReady: (event) => {
+            document.querySelector("#youtube-status").textContent = "Phát video để tự bắt đầu thu âm và bấm giờ.";
+            if (event.target.getPlayerState?.() === window.YT.PlayerState.PLAYING) startPracticeWhenVideoPlays();
+          },
+          onStateChange: (event) => {
+            if (event.data === window.YT.PlayerState.PLAYING) startPracticeWhenVideoPlays();
+          },
+          onError: () => {
+            document.querySelector("#youtube-status").textContent = "Không thể phát video này. Hãy kiểm tra link hoặc quyền nhúng của video.";
+          }
+        }
+      });
+    }
+
+    function ensureYouTubeIframeApi() {
+      if (window.YT?.Player) {
+        initializeYouTubePlayer();
+        return;
+      }
+      if (youtubeApiLoading) return;
+      youtubeApiLoading = true;
+      const previousCallback = window.onYouTubeIframeAPIReady;
+      window.onYouTubeIframeAPIReady = () => {
+        if (typeof previousCallback === "function") previousCallback();
+        youtubeApiLoading = false;
+        if (window.YT?.Player) initializeYouTubePlayer();
+        else document.querySelector("#youtube-status").textContent = "YouTube Player API chưa sẵn sàng.";
+      };
+      const apiScript = document.createElement("script");
+      apiScript.src = "https://www.youtube.com/iframe_api";
+      apiScript.async = true;
+      apiScript.onerror = () => {
+        youtubeApiLoading = false;
+        document.querySelector("#youtube-status").textContent = "Không tải được YouTube Player API. Kiểm tra kết nối Internet.";
+      };
+      document.head.appendChild(apiScript);
+    }
+
     function loadYouTubeVideo() {
       const videoId = getYouTubeVideoId(youtubeUrlInput.value);
       const status = document.querySelector("#youtube-status");
@@ -1537,11 +1602,19 @@
       }
 
       if (frame.dataset.videoId !== videoId) {
-        frame.src = `https://www.youtube-nocookie.com/embed/${videoId}?rel=0`;
         frame.dataset.videoId = videoId;
+        if (youtubePlayer?.cueVideoById) {
+          youtubePlayer.cueVideoById(videoId);
+        } else {
+          const params = new URLSearchParams({ enablejsapi: "1", rel: "0" });
+          const origin = window.location?.origin;
+          if (origin && origin !== "null") params.set("origin", origin);
+          frame.src = `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
+        }
       }
       player.hidden = false;
-      status.textContent = "Video đã nhúng. Hãy phát video rồi bắt đầu luyện phiên dịch bên dưới.";
+      status.textContent = "Video đã nhúng. Phát video để tự bắt đầu thu âm và bấm giờ.";
+      ensureYouTubeIframeApi();
     }
 
     function releaseMediaResources() {
@@ -1593,6 +1666,51 @@
       timerElapsedMs = 0;
       document.querySelector("#toggle-timer").textContent = "Bắt đầu giờ";
       renderTimer();
+    }
+
+    function restartPractice() {
+      const currentRecordingId = speechRecordingId;
+      if (currentRecordingId) {
+        restartingSpeechSessions.add(currentRecordingId);
+        if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(currentRecordingId);
+      }
+      if (recognition) {
+        try {
+          if (typeof recognition.abort === "function") recognition.abort();
+          else recognition.stop();
+        } catch (error) {
+          stopSpeechAudioCapture();
+        }
+        recognition = null;
+      }
+      stopSpeechAudioCapture();
+      speechRecordingId = "";
+
+      const isSavedRecording = currentRecordingId && readPracticeHistory().some((entry) => entry.recordingId === currentRecordingId);
+      const currentRecording = currentRecordingId && speechRecordingsById.get(currentRecordingId);
+      if (currentRecording && !isSavedRecording) {
+        URL.revokeObjectURL(currentRecording.url);
+        speechRecordingUrls.delete(currentRecording.url);
+        speechRecordingsById.delete(currentRecordingId);
+      }
+
+      const audio = document.querySelector("#speech-recorded-audio");
+      audio.pause();
+      audio.removeAttribute("src");
+      audio.load();
+      document.querySelector("#speech-recording-preview").hidden = true;
+      document.querySelector("#speech-recording-status").textContent = "Chưa có bản ghi.";
+      const downloadLink = document.querySelector("#download-speech-recording");
+      downloadLink.hidden = true;
+      downloadLink.removeAttribute("href");
+      downloadLink.removeAttribute("download");
+
+      finalTranscript = "";
+      transcript.textContent = "";
+      updateCounts();
+      resetTimer();
+      youtubePlayer?.pauseVideo?.();
+      setListening(false, "Sẵn sàng. Phát video hoặc bấm bắt đầu nói.");
     }
 
     function readPracticeHistory() {
@@ -1730,6 +1848,7 @@
       if (!recognition) setListening(false, "Đã dừng ghi âm. Bản ghi có thể nghe lại bên dưới.");
     });
     document.querySelector("#toggle-timer").addEventListener("click", toggleTimer);
+    document.querySelector("#restart-practice").addEventListener("click", restartPractice);
     document.querySelector("#reset-timer").addEventListener("click", resetTimer);
     document.querySelector("#save-practice").addEventListener("click", savePractice);
     document.querySelector("#clear-history").addEventListener("click", () => {
