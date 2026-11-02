@@ -337,6 +337,11 @@
       font-size: 11px;
     }
 
+    .speech-recording-preview { display: grid; gap: 8px; margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft-blue); }
+    .speech-recording-controls { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .speech-recording-controls audio { flex: 1 1 260px; width: min(100%, 520px); }
+    .speech-recording-status { margin: 0; color: var(--muted); font-size: 11px; }
+
     .interpret-actions {
       display: flex;
       align-items: center;
@@ -572,6 +577,14 @@
 
           <div class="transcript" id="transcript" role="textbox" aria-label="Bản chép lời" aria-readonly="true" aria-live="polite"></div>
           <div class="transcript-foot"><span id="speech-status">Chọn ngôn ngữ rồi nhấn bắt đầu</span><span id="transcript-count">0 từ</span></div>
+          <div class="speech-recording-preview" id="speech-recording-preview" hidden>
+            <span class="field-label">Nghe lại phần dịch của bạn</span>
+            <div class="speech-recording-controls">
+              <audio id="speech-recorded-audio" controls preload="metadata"></audio>
+              <a class="quiet-button" id="download-speech-recording" download hidden>Tải bản ghi</a>
+            </div>
+            <p class="speech-recording-status" id="speech-recording-status" role="status" aria-live="polite"></p>
+          </div>
 
           <div class="interpret-actions">
             <div class="action-group">
@@ -850,6 +863,12 @@
     let mediaRecorder = null;
     let mediaRecorderStream = null;
     let recordedChunks = [];
+    let speechAudioRecorder = null;
+    let speechAudioStream = null;
+    let speechAudioChunks = [];
+    let speechRecordingId = "";
+    const speechRecordingUrls = new Set();
+    const speechRecordingsById = new Map();
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -1273,13 +1292,35 @@
     function setListening(listening, message) {
       document.querySelector("#mic-state").classList.toggle("is-listening", listening);
       document.querySelector("#mic-label").textContent = listening ? "Đang nghe" : "Sẵn sàng";
-      document.querySelector("#start-listening").disabled = listening || !SpeechRecognition;
+      const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
+      document.querySelector("#start-listening").disabled = listening || (!SpeechRecognition && !canRecordAudio);
       document.querySelector("#stop-listening").disabled = !listening;
       document.querySelector("#speech-status").textContent = message;
     }
 
-    function startListening() {
-      if (!SpeechRecognition) return;
+    async function startListening() {
+      const recordingStatus = document.querySelector("#speech-recording-status");
+      const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
+      if (!SpeechRecognition && !canRecordAudio) return;
+      document.querySelector("#start-listening").disabled = true;
+      speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      if (canRecordAudio) {
+        document.querySelector("#speech-recording-preview").hidden = false;
+        recordingStatus.textContent = "Đang xin quyền micro để tạo bản ghi nghe lại...";
+        await startSpeechAudioCapture();
+      } else {
+        recordingStatus.textContent = "Trình duyệt này không hỗ trợ thu âm. Transcript vẫn có thể hoạt động nếu Web Speech API được hỗ trợ.";
+      }
+
+      if (!SpeechRecognition) {
+        if (canRecordAudio && speechAudioRecorder?.state === "recording") {
+          setListening(true, "Đang ghi âm. Web Speech API không được hỗ trợ nên transcript sẽ không tự tạo.");
+        } else {
+          setListening(false, "Không thể bắt đầu nhận dạng hoặc ghi âm trong trình duyệt này.");
+        }
+        return;
+      }
+
       recognition = new SpeechRecognition();
       recognition.lang = document.querySelector("#speech-language").value;
       recognition.continuous = true;
@@ -1302,13 +1343,71 @@
           "network": "Dịch vụ nhận dạng không kết nối được. API trình duyệt có thể cần Internet."
         };
         setListening(false, messages[event.error] || `Lỗi nhận dạng: ${event.error}.`);
+        stopSpeechAudioCapture();
       };
-      recognition.onend = () => setListening(false, "Đã dừng nhận dạng. Transcript vẫn còn trên trang này." );
+      recognition.onend = () => {
+        setListening(false, "Đã dừng nhận dạng. Transcript vẫn còn trên trang này.");
+        stopSpeechAudioCapture();
+      };
       try {
         recognition.start();
       } catch (error) {
         setListening(false, "Không thể bắt đầu. Hãy đợi một chút rồi thử lại.");
+        stopSpeechAudioCapture();
       }
+    }
+
+    async function startSpeechAudioCapture() {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
+      const recordingId = speechRecordingId;
+      try {
+        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const chunks = [];
+        speechAudioStream = stream;
+        speechAudioChunks = chunks;
+        const recorder = new MediaRecorder(stream);
+        speechAudioRecorder = recorder;
+        recorder.addEventListener("dataavailable", (event) => {
+          if (event.data.size > 0) chunks.push(event.data);
+        });
+        recorder.addEventListener("stop", () => {
+          stream.getTracks().forEach((track) => track.stop());
+          if (speechAudioStream === stream) speechAudioStream = null;
+          if (chunks.length > 0) {
+            const mimeType = recorder.mimeType || "audio/webm";
+            const recording = new Blob(chunks, { type: mimeType });
+            const recordingUrl = URL.createObjectURL(recording);
+            speechRecordingUrls.add(recordingUrl);
+            speechRecordingsById.set(recordingId, { url: recordingUrl, mimeType });
+            document.querySelector("#speech-recorded-audio").src = recordingUrl;
+            const downloadLink = document.querySelector("#download-speech-recording");
+            const extension = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
+            downloadLink.href = recordingUrl;
+            downloadLink.download = `interslation-translation-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
+            downloadLink.textContent = `Tải file .${extension}`;
+            downloadLink.hidden = false;
+            document.querySelector("#speech-recording-preview").hidden = false;
+            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng nghe lại hoặc tải xuống. Bản ghi được giữ tạm trong phiên trang này.";
+            renderPracticeHistory();
+          } else {
+            document.querySelector("#speech-recording-status").textContent = "Không thu được âm thanh. Hãy kiểm tra micro và thử lại.";
+          }
+        });
+        recorder.addEventListener("error", () => {
+          document.querySelector("#speech-recording-status").textContent = "Không thể tạo bản ghi. Hãy kiểm tra quyền truy cập micro.";
+        });
+        recorder.start();
+        return true;
+      } catch (error) {
+        speechAudioStream?.getTracks().forEach((track) => track.stop());
+        speechAudioStream = null;
+        document.querySelector("#speech-recording-status").textContent = "Không thể mở micro để ghi âm. Hãy cấp quyền micro và thử lại.";
+        return false;
+      }
+    }
+
+    function stopSpeechAudioCapture() {
+      if (speechAudioRecorder?.state === "recording") speechAudioRecorder.stop();
     }
 
     function releaseMediaUrl(url) {
@@ -1490,9 +1589,14 @@
 
     function releaseMediaResources() {
       if (mediaRecorder?.state === "recording") mediaRecorder.stop();
+      if (speechAudioRecorder?.state === "recording") speechAudioRecorder.stop();
       mediaRecorderStream?.getTracks().forEach((track) => track.stop());
+      speechAudioStream?.getTracks().forEach((track) => track.stop());
       releaseMediaUrl(mediaSourceUrl);
       releaseMediaUrl(recordedAudioUrl);
+      speechRecordingUrls.forEach((url) => releaseMediaUrl(url));
+      speechRecordingUrls.clear();
+      speechRecordingsById.clear();
     }
 
     function getElapsedTime() {
@@ -1585,6 +1689,20 @@
             ].filter(Boolean).join("\n") || "Chưa lưu transcript hoặc bản dịch."
           : entry.transcript || "Không có transcript được ghi nhận.";
         item.append(metadata, text);
+        const recording = entry.recordingId && speechRecordingsById.get(entry.recordingId);
+        if (recording) {
+          const audioPlayer = document.createElement("audio");
+          audioPlayer.controls = true;
+          audioPlayer.preload = "metadata";
+          audioPlayer.src = recording.url;
+          const downloadLink = document.createElement("a");
+          const extension = recording.mimeType.includes("mp4") ? "mp4" : recording.mimeType.includes("ogg") ? "ogg" : "webm";
+          downloadLink.className = "quiet-button";
+          downloadLink.href = recording.url;
+          downloadLink.download = `interslation-practice-${entry.date.replace(/[:.]/g, "-")}.${extension}`;
+          downloadLink.textContent = "Tải bản ghi";
+          item.append(audioPlayer, downloadLink);
+        }
         historyList.append(item);
       });
     }
@@ -1593,12 +1711,13 @@
       const savedTranscript = transcript.textContent.trim();
       const durationSeconds = Math.floor(getElapsedTime() / 1000);
       const historyMessage = document.querySelector("#history-message");
-      if (!savedTranscript && durationSeconds === 0) {
+      if (!savedTranscript && durationSeconds === 0 && !speechRecordingsById.has(speechRecordingId)) {
         historyMessage.textContent = "Bắt đầu bấm giờ hoặc ghi transcript trước khi lưu.";
         return;
       }
 
       const entry = {
+        recordingId: speechRecordingId,
         date: new Date().toISOString(),
         language: document.querySelector("#speech-language").selectedOptions[0].textContent,
         durationSeconds,
@@ -1660,7 +1779,11 @@
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
     document.querySelector("#start-listening").addEventListener("click", startListening);
-    document.querySelector("#stop-listening").addEventListener("click", () => recognition?.stop());
+    document.querySelector("#stop-listening").addEventListener("click", () => {
+      if (recognition) recognition.stop();
+      stopSpeechAudioCapture();
+      if (!recognition) setListening(false, "Đã dừng ghi âm. Bản ghi có thể nghe lại bên dưới.");
+    });
     document.querySelector("#toggle-timer").addEventListener("click", toggleTimer);
     document.querySelector("#reset-timer").addEventListener("click", resetTimer);
     document.querySelector("#save-practice").addEventListener("click", savePractice);
@@ -1691,8 +1814,11 @@
     });
 
     if (!SpeechRecognition) {
-      document.querySelector("#start-listening").disabled = true;
-      document.querySelector("#speech-status").textContent = "Trình duyệt này chưa hỗ trợ Web Speech API. Hãy thử Chrome hoặc Edge.";
+      const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
+      document.querySelector("#start-listening").disabled = !canRecordAudio;
+      document.querySelector("#speech-status").textContent = canRecordAudio
+        ? "Web Speech API không được hỗ trợ; bạn vẫn có thể ghi âm và nghe lại phần dịch."
+        : "Trình duyệt này chưa hỗ trợ Web Speech API hoặc ghi âm. Hãy thử Chrome hoặc Edge.";
     }
 
     window.addEventListener("pagehide", releaseMediaResources);
