@@ -178,6 +178,17 @@
     .selector-row label { min-width: 150px; }
     .selector-row .field-label { margin-bottom: 5px; }
     .selector-row select { max-width: 220px; }
+    .sample-exercise-controls { display: flex; flex-wrap: wrap; gap: 10px; }
+    .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: #fbfaf6; }
+    .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+    .file-control input { max-width: min(100%, 290px); font-size: 12px; }
+    .personal-controls select { max-width: 240px; }
+    .personal-status { flex: 1 1 100%; min-height: 16px; margin: 0; color: var(--muted); font-size: 11px; }
+    .reference-editor { margin: 0 22px 18px; border: 1px solid var(--line); border-radius: 6px; }
+    .reference-editor summary { padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 700; }
+    .reference-fields { display: grid; gap: 12px; padding: 0 13px 13px; }
+    .reference-fields .text-area { min-height: 100px; font-family: var(--sans); font-size: 13px; }
+    .keyword-input { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
 
     .translation-grid {
       display: grid;
@@ -369,9 +380,15 @@
       .selector-row { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
+      .sample-exercise-controls { width: 100%; }
+      .sample-exercise-controls label { flex: 1 1 135px; }
+      .sample-exercise-controls select { width: 100%; max-width: none; }
+      .personal-controls { align-items: stretch; flex-direction: column; padding: 14px 18px; }
+      .personal-controls select, .file-control input { width: 100%; max-width: none; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
       .feedback { margin-right: 18px; margin-left: 18px; }
       .answer-breakdown { margin-right: 18px; margin-left: 18px; }
+      .reference-editor { margin-right: 18px; margin-left: 18px; }
       .term-list { grid-template-columns: 1fr; }
       .interpret-body { padding: 18px; }
       .interpret-toolbar { align-items: start; flex-direction: column; }
@@ -410,19 +427,41 @@
       <section class="workspace" id="translate-panel" role="tabpanel" aria-labelledby="tab-translate">
         <div class="workspace-head">
           <div>
-            <h2 class="workspace-title">Bài dịch ngắn</h2>
-            <p class="workspace-caption">Chọn một câu mẫu để bắt đầu</p>
+            <h2 class="workspace-title" id="translation-title">Bài dịch theo chuyên ngành</h2>
+            <p class="workspace-caption" id="translation-caption">Chọn một câu mẫu hoặc tự đưa tài liệu vào luyện tập</p>
           </div>
           <div class="selector-row">
             <label>
-              <span class="field-label">Chuyên ngành</span>
-              <select class="exercise-select" id="industry-select" aria-label="Chọn chuyên ngành"></select>
+              <span class="field-label">Nguồn bài tập</span>
+              <select class="exercise-select" id="translation-mode" aria-label="Chọn nguồn bài tập">
+                <option value="sample">Bài mẫu</option>
+                <option value="personal">Tài liệu cá nhân</option>
+              </select>
             </label>
-            <label>
-              <span class="field-label">Bài tập</span>
-              <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
-            </label>
+            <div class="sample-exercise-controls" id="sample-exercise-controls">
+              <label>
+                <span class="field-label">Chuyên ngành</span>
+                <select class="exercise-select" id="industry-select" aria-label="Chọn chuyên ngành"></select>
+              </label>
+              <label>
+                <span class="field-label">Bài tập</span>
+                <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
+              </label>
+            </div>
           </div>
+        </div>
+
+        <div class="personal-controls" id="personal-controls" hidden>
+          <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
+            <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+          </label>
+          <label class="file-control" for="saved-materials">Mở tài liệu đã lưu
+            <select class="exercise-select" id="saved-materials">
+              <option value="">Chọn tài liệu...</option>
+            </select>
+          </label>
+          <button class="quiet-button" id="save-material" type="button">Lưu tài liệu cá nhân</button>
+          <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
         <div class="translation-grid">
@@ -432,7 +471,7 @@
               <button class="tool-button" id="speak-source" type="button" title="Đọc văn bản gốc" aria-label="Đọc văn bản gốc">▶</button>
             </div>
             <textarea class="text-area" id="source-text" readonly spellcheck="false"></textarea>
-            <div class="pane-foot"><span>Đọc kỹ sắc thái và ngữ cảnh</span><span id="source-count">0 từ</span></div>
+            <div class="pane-foot"><span id="source-help">Đọc kỹ sắc thái và ngữ cảnh</span><span id="source-count">0 từ</span></div>
           </section>
 
           <section class="translation-pane" aria-labelledby="answer-label">
@@ -444,18 +483,25 @@
           </section>
         </div>
 
-        <div class="workspace-actions">
-          <span class="score-note">So sánh cục bộ bằng khoảng cách chỉnh sửa từ</span>
-          <div class="action-group">
-            <button class="quiet-button" id="show-model-answer" type="button">Xem đáp án mẫu</button>
-            <button class="primary-button" id="check-answer" type="button">Kiểm tra bản dịch <span aria-hidden="true">→</span></button>
+        <details class="reference-editor" id="reference-editor" hidden>
+          <summary>Nhập đáp án gợi ý / Bản dịch chuẩn (tùy chọn)</summary>
+          <div class="reference-fields">
+            <textarea class="text-area" id="reference-answer" placeholder="Dán bản dịch chuẩn hoặc gợi ý của bạn..."></textarea>
+            <label class="file-control" for="personal-keywords">Từ khóa cần lưu ý, phân cách bằng dấu phẩy
+              <input class="keyword-input" id="personal-keywords" type="text" placeholder="Ví dụ: interest rate, lạm phát, phục hồi kinh tế">
+            </label>
           </div>
+        </details>
+
+        <div class="workspace-actions">
+          <span class="score-note" id="translation-score-note">So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa</span>
+          <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem gợi ý <span aria-hidden="true">→</span></button>
         </div>
         <div class="feedback" id="translation-feedback" role="status" aria-live="polite"></div>
         <section class="answer-breakdown" id="answer-breakdown" aria-live="polite" hidden>
-          <h3 class="breakdown-heading">Đáp án mẫu</h3>
+          <h3 class="breakdown-heading" id="breakdown-title">Đáp án mẫu</h3>
           <p class="model-answer" id="model-answer"></p>
-          <h4 class="breakdown-subheading">Thuật ngữ cốt lõi</h4>
+          <h4 class="breakdown-subheading" id="breakdown-terms-title">Thuật ngữ cốt lõi</h4>
           <ul class="term-list" id="key-terms"></ul>
           <p class="context-note" id="translation-context"></p>
         </section>
@@ -675,13 +721,21 @@
 
     const HISTORY_KEY = "lingua-lab-practice-history-v1";
     const MAX_HISTORY_ITEMS = 30;
+    const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
+    const MAX_PERSONAL_MATERIALS = 10;
+    const MAX_PERSONAL_TEXT_LENGTH = 50000;
+    const translationMode = document.querySelector("#translation-mode");
     const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
     const sourceText = document.querySelector("#source-text");
     const answerText = document.querySelector("#answer-text");
+    const referenceAnswer = document.querySelector("#reference-answer");
+    const personalKeywords = document.querySelector("#personal-keywords");
     const feedback = document.querySelector("#translation-feedback");
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+    let activeTranslationMode = "sample";
+    let personalDraft = { source: "", answer: "", reference: "", keywords: "" };
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -721,6 +775,7 @@
     }
 
     function loadExercise() {
+      if (activeTranslationMode !== "sample") return;
       const exercise = currentExercises()[Number(exerciseSelect.value)];
       if (!exercise) return;
       sourceText.value = exercise.source;
@@ -730,6 +785,49 @@
       feedback.className = "feedback";
       feedback.textContent = "";
       document.querySelector("#answer-breakdown").hidden = true;
+      updateCounts();
+    }
+
+    function capturePersonalDraft() {
+      personalDraft = {
+        source: sourceText.value,
+        answer: answerText.value,
+        reference: referenceAnswer.value,
+        keywords: personalKeywords.value
+      };
+    }
+
+    function setTranslationMode() {
+      if (activeTranslationMode === "personal") capturePersonalDraft();
+      activeTranslationMode = translationMode.value;
+      const personal = activeTranslationMode === "personal";
+      document.querySelector("#sample-exercise-controls").hidden = personal;
+      document.querySelector("#personal-controls").hidden = !personal;
+      document.querySelector("#reference-editor").hidden = !personal;
+      sourceText.readOnly = !personal;
+      document.querySelector("#translation-title").textContent = personal ? "Tài liệu tự luyện" : "Bài dịch theo chuyên ngành";
+      document.querySelector("#translation-caption").textContent = personal
+        ? "Dán văn bản, tải tệp hoặc mở lại tài liệu đã lưu"
+        : "Chọn một câu mẫu hoặc tự đưa tài liệu vào luyện tập";
+      document.querySelector("#translation-score-note").textContent = personal
+        ? "Đối chiếu token cục bộ; không đánh giá độ đúng ngữ nghĩa"
+        : "So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa";
+      feedback.className = "feedback";
+      feedback.textContent = "";
+      document.querySelector("#answer-breakdown").hidden = true;
+
+      if (personal) {
+        sourceText.value = personalDraft.source;
+        answerText.value = personalDraft.answer;
+        referenceAnswer.value = personalDraft.reference;
+        personalKeywords.value = personalDraft.keywords;
+        document.querySelector("#source-language").textContent = "TÀI LIỆU";
+        document.querySelector("#target-language").textContent = "BẢN DỊCH";
+        document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
+      } else {
+        loadExercise();
+        document.querySelector("#source-help").textContent = "Đọc kỹ sắc thái và ngữ cảnh";
+      }
       updateCounts();
     }
 
@@ -756,6 +854,10 @@
 
     function checkTranslation() {
       const answer = tokenize(answerText.value);
+      if (activeTranslationMode === "personal") {
+        checkPersonalTranslation(answer);
+        return;
+      }
       const exercise = currentExercises()[Number(exerciseSelect.value)];
       if (answer.length === 0) {
         feedback.className = "feedback is-visible is-low";
@@ -771,25 +873,263 @@
         : "Còn khác đáp án mẫu. Thử đối chiếu lại cách dùng từ và cấu trúc câu.";
       feedback.className = `feedback is-visible${similarity < 50 ? " is-low" : ""}`;
       feedback.innerHTML = `<strong>Độ tương đồng từ vựng: ${similarity}%</strong>${message} Đây không phải điểm đánh giá chất lượng bản dịch.`;
+      renderSampleBreakdown(exercise);
     }
 
-    function showModelAnswer() {
-      const exercise = currentExercises()[Number(exerciseSelect.value)];
-      document.querySelector("#model-answer").textContent = exercise.answers[0];
-      document.querySelector("#translation-context").textContent = `Ngữ cảnh và cấu trúc: ${exercise.context}`;
+    function renderKeyTerms(terms) {
       const termsList = document.querySelector("#key-terms");
       termsList.replaceChildren();
-      exercise.keyTerms.forEach((term) => {
+      terms.forEach((term) => {
         const item = document.createElement("li");
         item.className = "term-item";
         const heading = document.createElement("strong");
-        heading.textContent = `${term.source} → ${term.translation}`;
+        heading.textContent = term.translation ? `${term.source} → ${term.translation}` : term.source;
         const explanation = document.createElement("span");
         explanation.textContent = term.reason;
         item.append(heading, explanation);
         termsList.append(item);
       });
+    }
+
+    function renderSampleBreakdown(exercise) {
+      document.querySelector("#breakdown-title").textContent = "Đáp án mẫu";
+      document.querySelector("#breakdown-terms-title").textContent = "Thuật ngữ cốt lõi";
+      document.querySelector("#model-answer").textContent = exercise.answers[0];
+      document.querySelector("#translation-context").textContent = `Ngữ cảnh và cấu trúc: ${exercise.context}`;
+      renderKeyTerms(exercise.keyTerms);
       document.querySelector("#answer-breakdown").hidden = false;
+    }
+
+    function extractKeywordCandidates(text) {
+      const stopWords = new Set("the a an and or to of in on for from with is are was were be been being this that it we you they he she as at by can should may do does did have has had their its your into before after not no per each more than over under".split(" "));
+      const counts = new Map();
+      tokenize(text).forEach((word) => {
+        if (word.length < 4 || stopWords.has(word)) return;
+        counts.set(word, (counts.get(word) || 0) + 1);
+      });
+      return [...counts.keys()].sort((left, right) => right.length - left.length || (counts.get(right) - counts.get(left))).slice(0, 6);
+    }
+
+    function checkPersonalTranslation(answerTokens) {
+      const source = sourceText.value.trim();
+      const reference = referenceAnswer.value.trim();
+      if (!source) {
+        feedback.className = "feedback is-visible is-low";
+        feedback.textContent = "Hãy dán văn bản nguồn hoặc tải tài liệu trước khi kiểm tra.";
+        return;
+      }
+      if (answerTokens.length === 0) {
+        feedback.className = "feedback is-visible is-low";
+        feedback.textContent = "Hãy nhập bản dịch của bạn trước khi xem gợi ý.";
+        return;
+      }
+
+      const referenceTokens = tokenize(reference);
+      const counts = `Văn bản gốc: ${wordCount(source)} từ · Bản dịch của bạn: ${answerTokens.length} từ`;
+      if (referenceTokens.length > 0) {
+        const similarity = Math.max(0, Math.round((1 - editDistance(answerTokens, referenceTokens) / Math.max(answerTokens.length, referenceTokens.length, 1)) * 100));
+        feedback.className = "feedback is-visible";
+        feedback.innerHTML = `<strong>${counts} · Gợi ý: ${referenceTokens.length} từ</strong>Độ tương đồng token: ${similarity}%. Chỉ số này không đánh giá độ đúng nghĩa hay chất lượng bản dịch.`;
+      } else {
+        feedback.className = "feedback is-visible";
+        feedback.innerHTML = `<strong>${counts}</strong>Chưa có đáp án gợi ý để so sánh. Bạn có thể thêm đáp án trong mục tùy chọn phía trên.`;
+      }
+      renderPersonalBreakdown(reference);
+      capturePersonalDraft();
+    }
+
+    function renderPersonalBreakdown(reference) {
+      const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
+      const keywords = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(reference);
+      document.querySelector("#breakdown-title").textContent = "Đáp án gợi ý của bạn";
+      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Từ nổi bật trong đáp án gợi ý";
+      document.querySelector("#model-answer").textContent = reference || "Bạn chưa nhập đáp án gợi ý cho tài liệu này.";
+      document.querySelector("#translation-context").textContent = enteredKeywords.length
+        ? "Từ khóa do bạn cung cấp; hãy đối chiếu cách dùng theo ngữ cảnh của văn bản."
+        : "Các từ nổi bật được chọn theo độ dài token, không phải phân tích ngữ nghĩa. Bạn có thể tự nhập từ khóa trong mục đáp án gợi ý.";
+      renderKeyTerms(keywords.map((word) => ({
+        source: word,
+        translation: "",
+        reason: enteredKeywords.length ? "Từ khóa do bạn ghi chú để tự rà soát." : "Token xuất hiện trong đáp án gợi ý; hãy tự xác định vai trò trong ngữ cảnh."
+      })));
+      document.querySelector("#answer-breakdown").hidden = false;
+    }
+
+    function readPersonalMaterials() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(PERSONAL_MATERIALS_KEY) || "[]");
+        return Array.isArray(saved) ? saved.filter((item) => item && typeof item.id === "string" && typeof item.source === "string") : [];
+      } catch (error) {
+        document.querySelector("#personal-status").textContent = "Không thể đọc tài liệu đã lưu trong trình duyệt này.";
+        return [];
+      }
+    }
+
+    function populateSavedMaterials() {
+      const savedMaterials = document.querySelector("#saved-materials");
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "Chọn tài liệu...";
+      savedMaterials.replaceChildren(placeholder);
+      readPersonalMaterials().forEach((item) => {
+        const option = document.createElement("option");
+        option.value = item.id;
+        option.textContent = item.title || item.source.slice(0, 60) || "Tài liệu không tên";
+        savedMaterials.append(option);
+      });
+    }
+
+    function savePersonalMaterial() {
+      capturePersonalDraft();
+      if (!personalDraft.source.trim()) {
+        document.querySelector("#personal-status").textContent = "Hãy nhập văn bản nguồn trước khi lưu.";
+        return;
+      }
+      if (Object.values(personalDraft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
+        document.querySelector("#personal-status").textContent = "Mỗi ô chỉ hỗ trợ tối đa 50.000 ký tự để lưu cục bộ.";
+        return;
+      }
+
+      const entry = {
+        id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+        title: personalDraft.source.replace(/\s+/g, " ").trim().slice(0, 60),
+        savedAt: new Date().toISOString(),
+        ...personalDraft
+      };
+      try {
+        const materials = readPersonalMaterials();
+        materials.unshift(entry);
+        window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
+        populateSavedMaterials();
+        document.querySelector("#saved-materials").value = entry.id;
+        document.querySelector("#personal-status").textContent = "Đã lưu nguồn, đáp án và bản dịch nháp trên thiết bị này.";
+      } catch (error) {
+        document.querySelector("#personal-status").textContent = "Không thể lưu. Tài liệu có thể quá lớn hoặc bộ nhớ trình duyệt đã đầy.";
+      }
+    }
+
+    function loadPersonalMaterial() {
+      const selectedId = document.querySelector("#saved-materials").value;
+      if (!selectedId) return;
+      const entry = readPersonalMaterials().find((item) => item.id === selectedId);
+      if (!entry) return;
+      personalDraft = {
+        source: entry.source || "",
+        answer: entry.answer || "",
+        reference: entry.reference || "",
+        keywords: entry.keywords || ""
+      };
+      sourceText.value = personalDraft.source;
+      answerText.value = personalDraft.answer;
+      referenceAnswer.value = personalDraft.reference;
+      personalKeywords.value = personalDraft.keywords;
+      feedback.className = "feedback";
+      feedback.textContent = "";
+      document.querySelector("#answer-breakdown").hidden = true;
+      document.querySelector("#personal-status").textContent = `Đã mở tài liệu đã lưu (${new Date(entry.savedAt || Date.now()).toLocaleDateString("vi-VN")}).`;
+      updateCounts();
+    }
+
+    async function extractDocxText(file) {
+      if (typeof DecompressionStream === "undefined") {
+        throw new Error("Trình duyệt chưa hỗ trợ giải nén DOCX cục bộ. Hãy lưu tài liệu thành .txt hoặc thử Chrome/Edge mới.");
+      }
+      const buffer = await file.arrayBuffer();
+      const view = new DataView(buffer);
+      const minimumOffset = Math.max(0, buffer.byteLength - 65557);
+      let endRecord = -1;
+      for (let offset = buffer.byteLength - 22; offset >= minimumOffset; offset -= 1) {
+        if (view.getUint32(offset, true) === 0x06054b50) {
+          endRecord = offset;
+          break;
+        }
+      }
+      if (endRecord < 0) throw new Error("Không tìm thấy cấu trúc ZIP của tệp DOCX.");
+
+      const entryCount = view.getUint16(endRecord + 10, true);
+      let directoryOffset = view.getUint32(endRecord + 16, true);
+      const decoder = new TextDecoder();
+      let documentEntry = null;
+      for (let index = 0; index < entryCount; index += 1) {
+        if (directoryOffset + 46 > buffer.byteLength || view.getUint32(directoryOffset, true) !== 0x02014b50) {
+          throw new Error("Danh mục tệp DOCX không hợp lệ.");
+        }
+        const flags = view.getUint16(directoryOffset + 8, true);
+        const method = view.getUint16(directoryOffset + 10, true);
+        const compressedSize = view.getUint32(directoryOffset + 20, true);
+        const nameLength = view.getUint16(directoryOffset + 28, true);
+        const extraLength = view.getUint16(directoryOffset + 30, true);
+        const commentLength = view.getUint16(directoryOffset + 32, true);
+        const localOffset = view.getUint32(directoryOffset + 42, true);
+        const nameStart = directoryOffset + 46;
+        const name = decoder.decode(new Uint8Array(buffer, nameStart, nameLength));
+        if (name === "word/document.xml") {
+          documentEntry = { flags, method, compressedSize, localOffset };
+          break;
+        }
+        directoryOffset = nameStart + nameLength + extraLength + commentLength;
+      }
+      if (!documentEntry) throw new Error("Tệp DOCX không có nội dung word/document.xml.");
+      if (documentEntry.flags & 1) throw new Error("Không hỗ trợ tệp DOCX được mã hóa bằng mật khẩu.");
+
+      const localOffset = documentEntry.localOffset;
+      if (localOffset + 30 > buffer.byteLength || view.getUint32(localOffset, true) !== 0x04034b50) {
+        throw new Error("Phần nội dung DOCX không hợp lệ.");
+      }
+      const dataOffset = localOffset + 30 + view.getUint16(localOffset + 26, true) + view.getUint16(localOffset + 28, true);
+      const compressedData = new Uint8Array(buffer, dataOffset, documentEntry.compressedSize);
+      let xmlText;
+      if (documentEntry.method === 0) {
+        xmlText = decoder.decode(compressedData);
+      } else if (documentEntry.method === 8) {
+        const stream = new Blob([compressedData]).stream().pipeThrough(new DecompressionStream("deflate-raw"));
+        xmlText = await new Response(stream).text();
+      } else {
+        throw new Error("Định dạng nén bên trong DOCX chưa được hỗ trợ.");
+      }
+
+      const xml = new DOMParser().parseFromString(xmlText, "application/xml");
+      if (xml.querySelector("parsererror")) throw new Error("Không đọc được XML trong DOCX.");
+      return [...xml.getElementsByTagNameNS("*", "p")]
+        .map((paragraph) => [...paragraph.getElementsByTagNameNS("*", "t")].map((node) => node.textContent).join(""))
+        .filter((paragraph) => paragraph.trim())
+        .join("\n");
+    }
+
+    async function importSourceFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const status = document.querySelector("#personal-status");
+      try {
+        if (file.size > 10 * 1024 * 1024) throw new Error("Tệp vượt quá giới hạn 10 MB.");
+        const fileName = file.name.toLocaleLowerCase();
+        let content;
+        if (fileName.endsWith(".txt")) content = await file.text();
+        else if (fileName.endsWith(".docx")) content = await extractDocxText(file);
+        else throw new Error("Chỉ hỗ trợ tệp .txt hoặc .docx.");
+        if (!content.trim()) throw new Error("Không tìm thấy văn bản trong tệp.");
+        if (content.length > MAX_PERSONAL_TEXT_LENGTH) throw new Error("Văn bản vượt quá giới hạn 50.000 ký tự.");
+        sourceText.value = content;
+        capturePersonalDraft();
+        invalidateTranslationCheck();
+        status.textContent = `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}.`;
+      } catch (error) {
+        status.textContent = error.message || "Không thể đọc tệp trên thiết bị này.";
+      } finally {
+        event.target.value = "";
+      }
+    }
+
+    function invalidateTranslationCheck() {
+      feedback.className = "feedback";
+      feedback.textContent = "";
+      document.querySelector("#answer-breakdown").hidden = true;
+    }
+
+    function handlePersonalInput() {
+      updateCounts();
+      if (activeTranslationMode === "personal") capturePersonalDraft();
+      invalidateTranslationCheck();
     }
 
     function setMode(mode) {
@@ -964,11 +1304,17 @@
       }
     }
 
+    translationMode.addEventListener("change", setTranslationMode);
     industrySelect.addEventListener("change", populateExercises);
     exerciseSelect.addEventListener("change", loadExercise);
-    answerText.addEventListener("input", updateCounts);
+    sourceText.addEventListener("input", handlePersonalInput);
+    answerText.addEventListener("input", handlePersonalInput);
+    referenceAnswer.addEventListener("input", handlePersonalInput);
+    personalKeywords.addEventListener("input", handlePersonalInput);
+    document.querySelector("#source-file").addEventListener("change", importSourceFile);
+    document.querySelector("#save-material").addEventListener("click", savePersonalMaterial);
+    document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
     document.querySelector("#check-answer").addEventListener("click", checkTranslation);
-    document.querySelector("#show-model-answer").addEventListener("click", showModelAnswer);
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
@@ -1009,6 +1355,7 @@
     }
 
     populateExercises();
+    populateSavedMaterials();
     renderTimer();
     renderPracticeHistory();
   </script>
