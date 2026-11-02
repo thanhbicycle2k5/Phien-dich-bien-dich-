@@ -3,21 +3,22 @@
 <head>
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
-  <meta name="theme-color" content="#f4f2eb">
-  <title>Lingua Lab | Luyện phiên dịch</title>
+  <meta name="theme-color" content="#f4f8ff">
+  <meta name="description" content="Interslation - Phiên dịch, Biên dịch không hề khó">
+  <title>Interslation</title>
   <style>
     :root {
       color-scheme: light;
-      --paper: #f4f2eb;
-      --ink: #1c2927;
-      --muted: #687571;
-      --line: #d7dcd4;
-      --green: #176f5b;
-      --green-dark: #105341;
-      --coral: #c65e45;
-      --white: #fffefa;
-      --soft-green: #e4eee8;
-      --soft-coral: #f5e8e1;
+      --paper: #f4f8ff;
+      --ink: #172b4d;
+      --muted: #60748a;
+      --line: #d6e2f0;
+      --blue: #2563eb;
+      --blue-dark: #1d4ed8;
+      --accent: #3b82f6;
+      --white: #ffffff;
+      --soft-blue: #eff6ff;
+      --soft-accent: #dbeafe;
       --serif: Georgia, "Times New Roman", serif;
       --sans: "Segoe UI", "Noto Sans", sans-serif;
     }
@@ -28,7 +29,7 @@
       margin: 0;
       min-width: 320px;
       background-color: var(--paper);
-      background-image: radial-gradient(#c9d4ca 0.65px, transparent 0.65px);
+      background-image: radial-gradient(#dbeafe 0.65px, transparent 0.65px);
       background-size: 15px 15px;
       color: var(--ink);
       font-family: var(--sans);
@@ -54,15 +55,16 @@
     .brand { display: flex; align-items: center; gap: 12px; }
 
     .brand-mark {
-      width: 34px;
-      height: 34px;
+      width: 40px;
+      height: 40px;
       display: grid;
       place-items: center;
-      border-radius: 50%;
-      background: var(--green);
+      border-radius: 9px;
+      background: var(--blue);
       color: var(--white);
-      font: 700 17px var(--serif);
     }
+
+    .brand-mark svg { width: 25px; height: 25px; }
 
     .brand-name { font: 700 19px var(--serif); letter-spacing: 0; }
     .brand-note { margin-left: 5px; color: var(--muted); font-size: 12px; }
@@ -75,7 +77,7 @@
       font-size: 12px;
     }
 
-    .local-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--green); }
+    .local-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
 
     main { padding: 45px 0 64px; }
 
@@ -89,7 +91,7 @@
 
     .eyebrow {
       margin: 0 0 8px;
-      color: var(--coral);
+      color: var(--accent);
       font-size: 11px;
       font-weight: 750;
       letter-spacing: 1.4px;
@@ -102,6 +104,8 @@
       letter-spacing: 0;
     }
 
+    .mode-tagline { margin: 8px 0 0; color: var(--blue-dark); font: 500 20px/1.35 var(--serif); }
+
     .intro-copy { max-width: 330px; margin: 0 0 3px; color: var(--muted); font-size: 14px; }
 
     .mode-tabs {
@@ -112,7 +116,7 @@
       padding: 5px;
       border: 1px solid var(--line);
       border-radius: 9px;
-      background: rgba(255, 254, 250, .68);
+      background: rgba(255, 255, 255, .82);
     }
 
     .mode-tab {
@@ -127,13 +131,13 @@
       font-weight: 650;
     }
 
-    .mode-tab[aria-selected="true"] { background: var(--green); color: white; }
+    .mode-tab[aria-selected="true"] { background: var(--blue); color: white; }
 
     .workspace {
       border: 1px solid var(--line);
       border-radius: 10px;
       background: var(--white);
-      box-shadow: 0 12px 32px rgba(35, 54, 45, .06);
+      box-shadow: 0 12px 32px rgba(29, 78, 216, .07);
       animation: arrive .35s ease-out both;
     }
 
@@ -179,7 +183,7 @@
     .selector-row .field-label { margin-bottom: 5px; }
     .selector-row select { max-width: 220px; }
     .sample-exercise-controls { display: flex; flex-wrap: wrap; gap: 10px; }
-    .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: #fbfaf6; }
+    .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: #f8fbff; }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
@@ -213,13 +217,13 @@
       padding: 15px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      background: #fbfaf6;
+      background: #f8fbff;
       color: var(--ink);
       font: 16px/1.7 var(--serif);
     }
 
-    .text-area:focus, select:focus, button:focus-visible { outline: 3px solid rgba(23, 111, 91, .25); outline-offset: 2px; }
-    .text-area::placeholder { color: #9aa49f; }
+    .text-area:focus, select:focus, button:focus-visible { outline: 3px solid rgba(37, 99, 235, .25); outline-offset: 2px; }
+    .text-area::placeholder { color: #94a3b8; }
 
     .pane-foot {
       display: flex;
@@ -246,8 +250,8 @@
     }
 
     .tool-button { width: 38px; padding: 0; font-size: 16px; }
-    .primary-button { border-color: var(--green); background: var(--green); color: white; }
-    .primary-button:hover { background: var(--green-dark); }
+    .primary-button { border-color: var(--blue); background: var(--blue); color: white; }
+    .primary-button:hover { background: var(--blue-dark); }
     .quiet-button { background: transparent; }
     button:disabled { opacity: .48; cursor: not-allowed; }
 
@@ -267,14 +271,14 @@
       display: none;
       margin: 0 22px 20px;
       padding: 13px 15px;
-      border-left: 3px solid var(--green);
-      background: var(--soft-green);
+      border-left: 3px solid var(--blue);
+      background: var(--soft-blue);
       font-size: 13px;
     }
 
     .feedback.is-visible { display: block; }
     .feedback strong { display: block; margin-bottom: 2px; }
-    .feedback.is-low { border-color: var(--coral); background: var(--soft-coral); }
+    .feedback.is-low { border-color: var(--accent); background: var(--soft-accent); }
 
     .answer-breakdown {
       margin: 0 22px 22px;
@@ -286,8 +290,8 @@
     .model-answer { margin: 0 0 18px; font: 17px/1.65 var(--serif); }
     .breakdown-subheading { margin: 0 0 8px; font-size: 12px; font-weight: 750; }
     .term-list { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 8px; margin: 0; padding: 0; list-style: none; }
-    .term-item { padding: 10px 12px; border-radius: 5px; background: #f3f5ef; font-size: 12px; }
-    .term-item strong { display: block; margin-bottom: 2px; color: var(--green-dark); }
+    .term-item { padding: 10px 12px; border-radius: 5px; background: var(--soft-blue); font-size: 12px; }
+    .term-item strong { display: block; margin-bottom: 2px; color: var(--blue-dark); }
     .context-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
 
     .interpret-body { padding: 22px; }
@@ -304,24 +308,24 @@
     .language-select { width: 100%; }
 
     .mic-state { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 12px; }
-    .mic-indicator { width: 8px; height: 8px; border-radius: 50%; background: #a4ada8; }
-    .mic-state.is-listening .mic-indicator { background: var(--coral); animation: pulse 1.1s infinite; }
+    .mic-indicator { width: 8px; height: 8px; border-radius: 50%; background: #94a3b8; }
+    .mic-state.is-listening .mic-indicator { background: var(--accent); animation: pulse 1.1s infinite; }
 
-    @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(198, 94, 69, .16); } }
+    @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, .2); } }
 
     .transcript {
       min-height: 245px;
       padding: 18px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      background: #fbfaf6;
+      background: #f8fbff;
       color: var(--ink);
       font: 17px/1.75 var(--serif);
       white-space: pre-wrap;
       overflow-wrap: anywhere;
     }
 
-    .transcript:empty::before { content: "Bản chép lời sẽ xuất hiện ở đây..."; color: #9aa49f; }
+    .transcript:empty::before { content: "Bản chép lời sẽ xuất hiện ở đây..."; color: #94a3b8; }
 
     .transcript-foot {
       display: flex;
@@ -341,25 +345,25 @@
     }
 
     .timer-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 8px; }
-    .timer-display { min-width: 78px; color: var(--green-dark); font: 700 20px/1 var(--sans); font-variant-numeric: tabular-nums; }
+    .timer-display { min-width: 78px; color: var(--blue-dark); font: 700 20px/1 var(--sans); font-variant-numeric: tabular-nums; }
     .history { margin-top: 22px; border-top: 1px solid var(--line); }
     .history summary { padding: 15px 0; cursor: pointer; font-size: 13px; font-weight: 700; }
     .history-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .history-message { color: var(--muted); font-size: 11px; }
     .history-list { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
-    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #fbfaf6; }
+    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #f8fbff; }
     .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
     .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .history-empty { color: var(--muted); font-size: 12px; }
     .media-practice { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
     .media-heading { margin: 0; font: 700 20px var(--serif); }
     .media-description { margin: 4px 0 16px; color: var(--muted); font-size: 12px; }
-    .media-dropzone { display: grid; justify-items: center; gap: 7px; padding: 22px; border: 1px dashed #9eafa5; border-radius: 7px; background: #f7f8f3; text-align: center; transition: background .15s, border-color .15s; }
-    .media-dropzone.is-dragging { border-color: var(--green); background: var(--soft-green); }
+    .media-dropzone { display: grid; justify-items: center; gap: 7px; padding: 22px; border: 1px dashed #93c5fd; border-radius: 7px; background: #f8fbff; text-align: center; transition: background .15s, border-color .15s; }
+    .media-dropzone.is-dragging { border-color: var(--blue); background: var(--soft-blue); }
     .media-drop-title { margin: 0; font-size: 13px; font-weight: 700; }
     .media-drop-note, .media-status { margin: 0; color: var(--muted); font-size: 11px; }
     .media-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
-    .media-preview { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #fbfaf6; }
+    .media-preview { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbff; }
     .media-preview audio, .media-preview video, .recorded-preview audio { display: block; width: 100%; max-height: 360px; }
     .media-file-name { margin: 0 0 8px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
     .media-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
@@ -369,11 +373,11 @@
     .media-field .keyword-input { width: 100%; }
     .recording-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
     .recorded-preview { display: grid; gap: 7px; width: min(100%, 520px); margin-top: 12px; }
-    .media-feedback { margin: 16px 0 0; padding: 13px 15px; border-left: 3px solid var(--green); background: var(--soft-green); font-size: 12px; }
-    .media-feedback.is-low { border-color: var(--coral); background: var(--soft-coral); }
+    .media-feedback { margin: 16px 0 0; padding: 13px 15px; border-left: 3px solid var(--blue); background: var(--soft-blue); font-size: 12px; }
+    .media-feedback.is-low { border-color: var(--accent); background: var(--soft-accent); }
     .media-feedback strong { display: block; margin-bottom: 4px; }
     .media-keywords { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
-    .media-keywords li { padding: 4px 8px; border: 1px solid #d5ded6; border-radius: 4px; background: var(--white); }
+    .media-keywords li { padding: 4px 8px; border: 1px solid #bfdbfe; border-radius: 4px; background: var(--white); }
     .media-reference { margin-top: 14px; border: 1px solid var(--line); border-radius: 6px; }
     .media-reference summary { padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 700; }
     .media-reference .media-field { padding: 0 13px 13px; }
@@ -432,9 +436,13 @@
 <body>
   <div class="shell">
     <header class="topbar">
-      <div class="brand" aria-label="Lingua Lab">
-        <span class="brand-mark" aria-hidden="true">L</span>
-        <span><span class="brand-name">Lingua Lab</span><span class="brand-note">PHIÊN DỊCH THỰC HÀNH</span></span>
+      <div class="brand" aria-label="Interslation">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+            <path d="M8 9V23M14 9H26M20 9V23" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
+          </svg>
+        </span>
+        <span><span class="brand-name">Interslation</span><span class="brand-note">Phiên dịch, Biên dịch không hề khó</span></span>
       </div>
       <div class="local-label"><span class="local-dot" aria-hidden="true"></span>Giao diện chạy trên thiết bị</div>
     </header>
@@ -443,9 +451,10 @@
       <section class="intro" aria-labelledby="page-title">
         <div>
           <p class="eyebrow">Phòng thực hành ngôn ngữ</p>
-          <h1 id="page-title">Nghe kỹ. Chuyển ý. Nói tự tin.</h1>
+          <h1>Interslation</h1>
+          <p class="mode-tagline" id="page-title">Đọc kỹ. Cân nhắc. Viết chuẩn xác.</p>
         </div>
-        <p class="intro-copy">Một góc luyện tập yên tĩnh cho bản dịch viết và kỹ năng phiên dịch nối tiếp.</p>
+        <p class="intro-copy">Luyện phiên dịch và biên dịch miễn phí, trực tiếp trên thiết bị của bạn.</p>
       </section>
 
       <nav class="mode-tabs" role="tablist" aria-label="Chọn bài luyện tập">
