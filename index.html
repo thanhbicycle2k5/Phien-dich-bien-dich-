@@ -351,6 +351,32 @@
     .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
     .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .history-empty { color: var(--muted); font-size: 12px; }
+    .media-practice { margin-top: 28px; padding-top: 22px; border-top: 1px solid var(--line); }
+    .media-heading { margin: 0; font: 700 20px var(--serif); }
+    .media-description { margin: 4px 0 16px; color: var(--muted); font-size: 12px; }
+    .media-dropzone { display: grid; justify-items: center; gap: 7px; padding: 22px; border: 1px dashed #9eafa5; border-radius: 7px; background: #f7f8f3; text-align: center; transition: background .15s, border-color .15s; }
+    .media-dropzone.is-dragging { border-color: var(--green); background: var(--soft-green); }
+    .media-drop-title { margin: 0; font-size: 13px; font-weight: 700; }
+    .media-drop-note, .media-status { margin: 0; color: var(--muted); font-size: 11px; }
+    .media-file-input { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; clip-path: inset(50%); }
+    .media-preview { margin-top: 14px; padding: 12px; border: 1px solid var(--line); border-radius: 6px; background: #fbfaf6; }
+    .media-preview audio, .media-preview video, .recorded-preview audio { display: block; width: 100%; max-height: 360px; }
+    .media-file-name { margin: 0 0 8px; color: var(--muted); font-size: 11px; overflow-wrap: anywhere; }
+    .media-fields { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-top: 18px; }
+    .media-field { display: grid; align-content: start; gap: 7px; min-width: 0; }
+    .media-field .text-area { min-height: 145px; font: 14px/1.6 var(--sans); }
+    .media-field-full { grid-column: 1 / -1; }
+    .media-field .keyword-input { width: 100%; }
+    .recording-tools { display: flex; align-items: center; flex-wrap: wrap; gap: 10px; }
+    .recorded-preview { display: grid; gap: 7px; width: min(100%, 520px); margin-top: 12px; }
+    .media-feedback { margin: 16px 0 0; padding: 13px 15px; border-left: 3px solid var(--green); background: var(--soft-green); font-size: 12px; }
+    .media-feedback.is-low { border-color: var(--coral); background: var(--soft-coral); }
+    .media-feedback strong { display: block; margin-bottom: 4px; }
+    .media-keywords { display: flex; flex-wrap: wrap; gap: 6px; margin: 8px 0 0; padding: 0; list-style: none; }
+    .media-keywords li { padding: 4px 8px; border: 1px solid #d5ded6; border-radius: 4px; background: var(--white); }
+    .media-reference { margin-top: 14px; border: 1px solid var(--line); border-radius: 6px; }
+    .media-reference summary { padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 700; }
+    .media-reference .media-field { padding: 0 13px 13px; }
 
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .notice { margin: 15px 0 0; color: var(--muted); font-size: 11px; }
@@ -396,6 +422,9 @@
       .interpret-actions, .page-foot { align-items: start; flex-direction: column; }
       .timer-tools { width: 100%; }
       .history-meta { flex-direction: column; gap: 2px; }
+      .media-fields { grid-template-columns: 1fr; }
+      .media-field-full { grid-column: auto; }
+      .media-dropzone { padding: 18px 12px; }
       .mode-tab { padding: 0 13px; }
     }
   </style>
@@ -552,6 +581,72 @@
             </div>
             <button class="primary-button" id="save-practice" type="button">Lưu lịch sử luyện tập</button>
           </div>
+          <section class="media-practice" aria-labelledby="media-heading">
+            <h3 class="media-heading" id="media-heading">Luyện phiên dịch với file nghe</h3>
+            <p class="media-description">File được phát trực tiếp trên thiết bị, không tải lên máy chủ. Dùng tai nghe để micro không thu lẫn âm thanh gốc; lịch sử chỉ lưu văn bản, không lưu file âm thanh.</p>
+            <div class="media-dropzone" id="media-dropzone" tabindex="0" role="button" aria-label="Chọn hoặc kéo thả file MP3, WAV, MP4">
+              <p class="media-drop-title">Kéo thả file âm thanh/video vào đây</p>
+              <p class="media-drop-note">Hỗ trợ MP3, WAV, MP4 · tối đa 100 MB</p>
+              <button class="quiet-button" id="choose-media" type="button">Chọn file</button>
+              <input class="media-file-input" id="media-file" type="file" accept=".mp3,.wav,.mp4,audio/mpeg,audio/wav,audio/x-wav,video/mp4">
+              <p class="media-status" id="media-file-status" role="status" aria-live="polite">Chưa chọn file</p>
+            </div>
+
+            <div class="media-preview" id="media-preview" hidden>
+              <p class="media-file-name" id="media-file-name"></p>
+              <audio id="media-audio" controls preload="metadata" hidden></audio>
+              <video id="media-video" controls preload="metadata" playsinline hidden></video>
+            </div>
+
+            <div class="recording-tools">
+              <button class="primary-button" id="toggle-media-recording" type="button" disabled>Ghi âm bản dịch</button>
+              <span class="media-status" id="media-recording-status" role="status" aria-live="polite">Chọn file nghe trước; cần cấp quyền micro để ghi âm.</span>
+            </div>
+            <div class="recorded-preview" id="recorded-preview" hidden>
+              <span class="field-label">Bản dịch bạn vừa ghi</span>
+              <audio id="recorded-audio" controls></audio>
+            </div>
+
+            <div class="media-fields">
+              <label class="media-field" for="media-source-transcript">
+                <span class="field-label">Transcript gốc / nội dung bài nghe</span>
+                <textarea class="text-area" id="media-source-transcript" placeholder="Dán transcript gốc hoặc ghi lại nội dung nghe được..."></textarea>
+              </label>
+              <label class="media-field" for="media-notes">
+                <span class="field-label">Ghi chú nhanh</span>
+                <textarea class="text-area" id="media-notes" placeholder="Tên riêng, con số, ý chính cần nhớ..."></textarea>
+              </label>
+              <label class="media-field media-field-full" for="media-translation">
+                <span class="field-label">Bản dịch của bạn</span>
+                <textarea class="text-area" id="media-translation" placeholder="Nhập bản dịch hoặc dùng nút ghi âm để thu phần nói..."></textarea>
+              </label>
+            </div>
+
+            <details class="media-reference">
+              <summary>Đáp án mẫu chuẩn / từ khóa (tùy chọn)</summary>
+              <label class="media-field" for="media-reference-answer">
+                <span class="field-label">Bản dịch gợi ý</span>
+                <textarea class="text-area" id="media-reference-answer" placeholder="Nhập đáp án mẫu để tự đối chiếu..."></textarea>
+              </label>
+              <label class="media-field" for="media-reference-keywords">
+                <span class="field-label">Từ khóa cần lưu ý, phân cách bằng dấu phẩy</span>
+                <input class="keyword-input" id="media-reference-keywords" type="text" placeholder="Ví dụ: climate policy, chính sách khí hậu">
+              </label>
+            </details>
+
+            <div class="interpret-actions">
+              <span class="media-status" id="media-analysis-status">Nhập bản dịch rồi chọn kiểm tra.</span>
+              <div class="action-group">
+                <button class="quiet-button" id="check-media-translation" type="button">Kiểm tra &amp; Xem gợi ý</button>
+                <button class="primary-button" id="save-media-practice" type="button">Lưu bài nghe vào lịch sử</button>
+              </div>
+            </div>
+            <div class="media-feedback" id="media-feedback" role="status" aria-live="polite" hidden>
+              <strong id="media-feedback-title"></strong>
+              <span id="media-feedback-copy"></span>
+              <ul class="media-keywords" id="media-keywords"></ul>
+            </div>
+          </section>
           <details class="history" id="history-panel">
             <summary id="history-summary">Lịch sử luyện tập</summary>
             <div class="history-tools">
@@ -731,11 +826,20 @@
     const answerText = document.querySelector("#answer-text");
     const referenceAnswer = document.querySelector("#reference-answer");
     const personalKeywords = document.querySelector("#personal-keywords");
+    const mediaFileInput = document.querySelector("#media-file");
+    const mediaAudio = document.querySelector("#media-audio");
+    const mediaVideo = document.querySelector("#media-video");
     const feedback = document.querySelector("#translation-feedback");
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let activeTranslationMode = "sample";
     let personalDraft = { source: "", answer: "", reference: "", keywords: "" };
+    let selectedMediaFile = null;
+    let mediaSourceUrl = null;
+    let recordedAudioUrl = null;
+    let mediaRecorder = null;
+    let mediaRecorderStream = null;
+    let recordedChunks = [];
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -1194,6 +1298,190 @@
       }
     }
 
+    function releaseMediaUrl(url) {
+      if (url) URL.revokeObjectURL(url);
+    }
+
+    function loadMediaFile(file) {
+      const status = document.querySelector("#media-file-status");
+      const extension = file.name.split(".").pop().toLocaleLowerCase();
+      if (!["mp3", "wav", "mp4"].includes(extension)) {
+        status.textContent = "Định dạng chưa hỗ trợ. Hãy chọn file MP3, WAV hoặc MP4.";
+        return;
+      }
+      if (file.size === 0 || file.size > 100 * 1024 * 1024) {
+        status.textContent = file.size === 0 ? "File đang trống." : "File vượt quá giới hạn 100 MB.";
+        return;
+      }
+
+      if (mediaRecorder?.state === "recording") mediaRecorder.stop();
+      releaseMediaUrl(mediaSourceUrl);
+      mediaSourceUrl = URL.createObjectURL(file);
+      selectedMediaFile = file;
+      mediaAudio.pause();
+      mediaVideo.pause();
+      mediaAudio.removeAttribute("src");
+      mediaVideo.removeAttribute("src");
+      mediaAudio.hidden = extension === "mp4";
+      mediaVideo.hidden = extension !== "mp4";
+      const player = extension === "mp4" ? mediaVideo : mediaAudio;
+      player.src = mediaSourceUrl;
+      player.load();
+      document.querySelector("#media-preview").hidden = false;
+      document.querySelector("#media-file-name").textContent = file.name;
+      document.querySelector("#toggle-media-recording").disabled = false;
+      status.textContent = `${file.name} · ${(file.size / (1024 * 1024)).toFixed(1)} MB · file chỉ được phát trên thiết bị này.`;
+      clearMediaAnalysis();
+    }
+
+    function clearMediaAnalysis() {
+      document.querySelector("#media-feedback").hidden = true;
+      document.querySelector("#media-analysis-status").textContent = "Nhập bản dịch rồi chọn kiểm tra.";
+    }
+
+    function handleMediaDrop(event) {
+      event.preventDefault();
+      document.querySelector("#media-dropzone").classList.remove("is-dragging");
+      const file = event.dataTransfer?.files?.[0];
+      if (file) loadMediaFile(file);
+    }
+
+    async function toggleMediaRecording() {
+      const button = document.querySelector("#toggle-media-recording");
+      const status = document.querySelector("#media-recording-status");
+      if (mediaRecorder?.state === "recording") {
+        mediaRecorder.stop();
+        button.textContent = "Ghi âm bản dịch";
+        status.textContent = "Đang hoàn tất bản ghi...";
+        return;
+      }
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") {
+        status.textContent = "Trình duyệt này chưa hỗ trợ ghi âm cục bộ. Hãy thử Chrome hoặc Edge trên localhost.";
+        return;
+      }
+
+      try {
+        mediaRecorderStream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        recordedChunks = [];
+        mediaRecorder = new MediaRecorder(mediaRecorderStream);
+        mediaRecorder.addEventListener("dataavailable", (event) => {
+          if (event.data.size > 0) recordedChunks.push(event.data);
+        });
+        mediaRecorder.addEventListener("stop", () => {
+          mediaRecorderStream?.getTracks().forEach((track) => track.stop());
+          mediaRecorderStream = null;
+          if (recordedChunks.length > 0) {
+            releaseMediaUrl(recordedAudioUrl);
+            const recording = new Blob(recordedChunks, { type: mediaRecorder.mimeType || "audio/webm" });
+            recordedAudioUrl = URL.createObjectURL(recording);
+            document.querySelector("#recorded-audio").src = recordedAudioUrl;
+            document.querySelector("#recorded-preview").hidden = false;
+            status.textContent = "Bản ghi giữ trong bộ nhớ của trang hiện tại; lịch sử chỉ lưu phần văn bản.";
+          } else {
+            status.textContent = "Không thu được âm thanh. Hãy thử ghi lại.";
+          }
+          button.textContent = "Ghi âm bản dịch";
+        });
+        mediaRecorder.addEventListener("error", () => {
+          status.textContent = "Không thể ghi âm. Hãy kiểm tra quyền truy cập micro.";
+          button.textContent = "Ghi âm bản dịch";
+        });
+        mediaRecorder.start();
+        button.textContent = "Dừng ghi âm";
+        status.textContent = "Đang ghi âm trực tiếp trên thiết bị...";
+      } catch (error) {
+        mediaRecorderStream?.getTracks().forEach((track) => track.stop());
+        mediaRecorderStream = null;
+        status.textContent = "Không thể mở micro. Hãy cấp quyền micro và thử lại.";
+      }
+    }
+
+    function checkMediaTranslation() {
+      const source = document.querySelector("#media-source-transcript").value.trim();
+      const notes = document.querySelector("#media-notes").value.trim();
+      const translation = document.querySelector("#media-translation").value.trim();
+      const reference = document.querySelector("#media-reference-answer").value.trim();
+      const result = document.querySelector("#media-feedback");
+      const resultTitle = document.querySelector("#media-feedback-title");
+      const resultCopy = document.querySelector("#media-feedback-copy");
+      const keywordList = document.querySelector("#media-keywords");
+      if (!selectedMediaFile) {
+        document.querySelector("#media-analysis-status").textContent = "Hãy chọn file nghe trước khi kiểm tra.";
+        return;
+      }
+      if (!translation) {
+        document.querySelector("#media-analysis-status").textContent = "Hãy nhập hoặc ghi âm bản dịch trước khi kiểm tra.";
+        return;
+      }
+
+      const translationTokens = tokenize(translation);
+      const referenceTokens = tokenize(reference);
+      const sourceTokens = tokenize(source);
+      const noteTokens = tokenize(notes);
+      const lines = [
+        `Transcript gốc: ${sourceTokens.length} từ`,
+        `Ghi chú: ${noteTokens.length} từ`,
+        `Bản dịch của bạn: ${translationTokens.length} từ`
+      ];
+      if (referenceTokens.length > 0) {
+        const similarity = Math.max(0, Math.round((1 - editDistance(translationTokens, referenceTokens) / Math.max(translationTokens.length, referenceTokens.length, 1)) * 100));
+        lines.push(`Đáp án gợi ý: ${referenceTokens.length} từ · Tương đồng token: ${similarity}%`);
+      } else {
+        lines.push("Chưa có đáp án mẫu để so sánh.");
+      }
+      const enteredKeywords = document.querySelector("#media-reference-keywords").value.split(/[,;\n]/).map((word) => word.trim()).filter(Boolean);
+      const keywords = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(reference || source);
+      keywordList.replaceChildren();
+      keywords.forEach((word) => {
+        const item = document.createElement("li");
+        item.textContent = word;
+        keywordList.append(item);
+      });
+      resultTitle.textContent = selectedMediaFile.name;
+      resultCopy.textContent = lines.join(" · ");
+      result.classList.toggle("is-low", !referenceTokens.length);
+      result.hidden = false;
+      document.querySelector("#media-analysis-status").textContent = referenceTokens.length
+        ? "Đối chiếu token hoàn tất; chỉ dùng để tham khảo, không đánh giá độ đúng ngữ nghĩa."
+        : "Đã đếm số từ; thêm đáp án mẫu để có đối chiếu token.";
+    }
+
+    function saveMediaPractice() {
+      const historyMessage = document.querySelector("#history-message");
+      if (!selectedMediaFile) {
+        document.querySelector("#media-analysis-status").textContent = "Chọn file nghe trước khi lưu lịch sử.";
+        return;
+      }
+      const entry = {
+        kind: "media",
+        date: new Date().toISOString(),
+        language: document.querySelector("#speech-language").selectedOptions[0].textContent,
+        durationSeconds: Math.floor(getElapsedTime() / 1000),
+        mediaName: selectedMediaFile.name,
+        sourceTranscript: document.querySelector("#media-source-transcript").value.trim(),
+        notes: document.querySelector("#media-notes").value.trim(),
+        transcript: document.querySelector("#media-translation").value.trim(),
+        reference: document.querySelector("#media-reference-answer").value.trim(),
+        keywords: document.querySelector("#media-reference-keywords").value.trim()
+      };
+      try {
+        const entries = readPracticeHistory();
+        entries.unshift(entry);
+        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY_ITEMS)));
+        historyMessage.textContent = "Đã lưu bài nghe và nội dung văn bản vào lịch sử trên thiết bị này.";
+        renderPracticeHistory();
+      } catch (error) {
+        historyMessage.textContent = "Không thể lưu. Nội dung có thể quá lớn hoặc bộ nhớ trình duyệt đã đầy.";
+      }
+    }
+
+    function releaseMediaResources() {
+      if (mediaRecorder?.state === "recording") mediaRecorder.stop();
+      mediaRecorderStream?.getTracks().forEach((track) => track.stop());
+      releaseMediaUrl(mediaSourceUrl);
+      releaseMediaUrl(recordedAudioUrl);
+    }
+
     function getElapsedTime() {
       return timerStartedAt === null ? timerElapsedMs : Date.now() - timerStartedAt;
     }
@@ -1268,11 +1556,21 @@
         const date = document.createElement("span");
         date.textContent = new Date(entry.date).toLocaleString("vi-VN");
         const details = document.createElement("span");
-        details.textContent = `${entry.language || "Không rõ ngôn ngữ"} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`;
+        details.textContent = entry.kind === "media"
+          ? `${entry.mediaName || "Bài nghe"} · ${entry.language || ""} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`
+          : `${entry.language || "Không rõ ngôn ngữ"} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`;
         metadata.append(date, details);
         const text = document.createElement("p");
         text.className = "history-transcript";
-        text.textContent = entry.transcript || "Không có transcript được ghi nhận.";
+        text.textContent = entry.kind === "media"
+          ? [
+              entry.sourceTranscript && `Transcript gốc: ${entry.sourceTranscript}`,
+              entry.notes && `Ghi chú: ${entry.notes}`,
+              entry.transcript && `Bản dịch: ${entry.transcript}`,
+              entry.reference && `Đáp án mẫu: ${entry.reference}`,
+              entry.keywords && `Từ khóa: ${entry.keywords}`
+            ].filter(Boolean).join("\n") || "Chưa lưu transcript hoặc bản dịch."
+          : entry.transcript || "Không có transcript được ghi nhận.";
         item.append(metadata, text);
         historyList.append(item);
       });
@@ -1314,6 +1612,36 @@
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
     document.querySelector("#save-material").addEventListener("click", savePersonalMaterial);
     document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
+    document.querySelector("#choose-media").addEventListener("click", () => mediaFileInput.click());
+    mediaFileInput.addEventListener("change", (event) => {
+      const file = event.target.files[0];
+      if (file) loadMediaFile(file);
+      event.target.value = "";
+    });
+    const mediaDropzone = document.querySelector("#media-dropzone");
+    mediaDropzone.addEventListener("click", (event) => {
+      if (!event.target.closest("button")) mediaFileInput.click();
+    });
+    mediaDropzone.addEventListener("keydown", (event) => {
+      if (event.key === "Enter" || event.key === " ") {
+        event.preventDefault();
+        mediaFileInput.click();
+      }
+    });
+    mediaDropzone.addEventListener("dragover", (event) => {
+      event.preventDefault();
+      mediaDropzone.classList.add("is-dragging");
+    });
+    mediaDropzone.addEventListener("dragleave", (event) => {
+      if (!mediaDropzone.contains(event.relatedTarget)) mediaDropzone.classList.remove("is-dragging");
+    });
+    mediaDropzone.addEventListener("drop", handleMediaDrop);
+    document.querySelector("#toggle-media-recording").addEventListener("click", toggleMediaRecording);
+    document.querySelector("#check-media-translation").addEventListener("click", checkMediaTranslation);
+    document.querySelector("#save-media-practice").addEventListener("click", saveMediaPractice);
+    ["media-source-transcript", "media-notes", "media-translation", "media-reference-answer", "media-reference-keywords"].forEach((id) => {
+      document.querySelector(`#${id}`).addEventListener("input", clearMediaAnalysis);
+    });
     document.querySelector("#check-answer").addEventListener("click", checkTranslation);
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
@@ -1354,6 +1682,7 @@
       document.querySelector("#speech-status").textContent = "Trình duyệt này chưa hỗ trợ Web Speech API. Hãy thử Chrome hoặc Edge.";
     }
 
+    window.addEventListener("pagehide", releaseMediaResources);
     populateExercises();
     populateSavedMaterials();
     renderTimer();
