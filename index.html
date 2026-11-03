@@ -477,6 +477,13 @@
     .media-seek-control input { width: 100%; margin: 0; accent-color: var(--blue); cursor: pointer; }
     .media-speed-control { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
     .media-speed-control select { min-height: 34px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
+    .practice-mode-control { display: grid; gap: 4px; margin-bottom: 12px; }
+    .practice-mode-control select { min-height: 36px; padding: 6px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
+    .media-mix-panel { display: grid; gap: 10px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .media-mix-panel h3 { margin: 0; font: 700 13px var(--sans); }
+    .media-mix-control { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(100px, 2fr) auto; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+    .media-mix-control input[type="range"] { width: 100%; accent-color: var(--blue); }
+    .consecutive-countdown { margin: 9px 0; color: var(--blue-dark); font-size: 22px; font-weight: 750; text-align: center; font-variant-numeric: tabular-nums; }
 
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .notice { margin: 15px 0 0; color: var(--muted); font-size: 11px; }
@@ -803,6 +810,13 @@
               </label>
             </section>
             <section class="practice-controls-panel" aria-label="Điều khiển buổi luyện tập">
+              <label class="practice-mode-control">
+                <span class="field-label">Chế độ phiên dịch</span>
+                <select id="practice-mode">
+                  <option value="parallel">Dịch song song</option>
+                  <option value="consecutive">Dịch nối tiếp</option>
+                </select>
+              </label>
               <label class="language-control">
                 <span class="field-label">Ngôn ngữ đang nói</span>
                 <select class="language-select" id="speech-language">
@@ -814,6 +828,7 @@
                 </select>
               </label>
               <p class="practice-status" id="speech-status" aria-live="polite">Chọn ngôn ngữ rồi nhấn bắt đầu</p>
+              <p class="consecutive-countdown" id="consecutive-countdown" aria-live="assertive" hidden></p>
               <div class="interpret-actions practice-controls">
                 <div class="action-group">
                   <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
@@ -859,6 +874,22 @@
               </div>
               <p class="speech-recording-status" id="speech-recording-status" role="status" aria-live="polite"></p>
             </div>
+            <section class="media-mix-panel" id="media-mix-panel" aria-labelledby="media-mix-heading" hidden>
+              <h3 id="media-mix-heading">Nghe nguồn và bản dịch song song</h3>
+              <button class="quiet-button" id="toggle-media-mix" type="button">Phát đồng thời</button>
+              <label class="media-mix-control">
+                <span>Âm lượng nguồn</span>
+                <input id="source-volume" type="range" min="0" max="1" step="0.01" value="0.7">
+                <output id="source-volume-value">70%</output>
+              </label>
+              <label class="media-mix-control">
+                <span>Âm lượng bản dịch</span>
+                <input id="voice-volume" type="range" min="0" max="1" step="0.01" value="1">
+                <output id="voice-volume-value">100%</output>
+              </label>
+              <audio id="mix-source-audio" preload="metadata" hidden></audio>
+              <audio id="mix-voice-audio" preload="metadata" hidden></audio>
+            </section>
           </div>
         </div>
       </section>
@@ -1021,6 +1052,9 @@
 
     const HISTORY_KEY = "lingua-lab-practice-history-v1";
     const MAX_HISTORY_ITEMS = 30;
+    const PRACTICE_MEDIA_DB_NAME = "interslation-practice-media-v1";
+    const PRACTICE_MEDIA_STORE = "sessions";
+    const PRACTICE_MEDIA_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
     const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
     const PERSONAL_TOPICS_KEY = "lingua-lab-personal-topics-v1";
     const DEFAULT_PERSONAL_TOPIC = "Chưa phân loại";
@@ -1061,8 +1095,27 @@
     let speechAudioRecorder = null;
     let speechAudioStream = null;
     let speechAudioContext = null;
+    let speechInputGain = null;
     let speechAudioChunks = [];
     let speechRecordingId = "";
+    let speechRecordingStopPromise = Promise.resolve(null);
+    let speechRecordingStopResolve = null;
+    let speechSessionActive = false;
+    let speechRecognitionRestartTimer = null;
+    let sourceAudioRecorder = null;
+    let sourceAudioStream = null;
+    let sourceAudioChunks = [];
+    let sourceAudioBlob = null;
+    let sourceAudioStopPromise = Promise.resolve(null);
+    let sourceAudioStopResolve = null;
+    let localPracticeMediaFile = null;
+    let activePracticeMode = "parallel";
+    let consecutivePhase = "idle";
+    let consecutiveCountdownTimer = null;
+    let storedPracticeMedia = new Map();
+    let practiceMediaObjectUrls = new Set();
+    let practiceMediaDatabasePromise = null;
+    let practiceMediaExpiryTimer = null;
     const speechRecordingUrls = new Set();
     const speechRecordingsById = new Map();
     const discardedSpeechRecordings = new Set();
@@ -1078,6 +1131,127 @@
     let timerElapsedMs = 0;
     let timerStartedAt = null;
     let timerInterval = null;
+
+    function openPracticeMediaDatabase() {
+      if (practiceMediaDatabasePromise) return practiceMediaDatabasePromise;
+      practiceMediaDatabasePromise = new Promise((resolve, reject) => {
+        if (!window.indexedDB) {
+          reject(new Error("Trình duyệt này không hỗ trợ lưu media trên thiết bị."));
+          return;
+        }
+        const request = window.indexedDB.open(PRACTICE_MEDIA_DB_NAME, 1);
+        request.onupgradeneeded = () => {
+          if (!request.result.objectStoreNames.contains(PRACTICE_MEDIA_STORE)) {
+            request.result.createObjectStore(PRACTICE_MEDIA_STORE, { keyPath: "id" });
+          }
+        };
+        request.onsuccess = () => resolve(request.result);
+        request.onerror = () => reject(request.error || new Error("Không thể mở kho media."));
+        request.onblocked = () => reject(new Error("Kho media đang được dùng ở thẻ khác. Hãy đóng thẻ trùng lặp rồi thử lại."));
+      });
+      return practiceMediaDatabasePromise;
+    }
+
+    async function putPracticeMedia(record) {
+      const database = await openPracticeMediaDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
+        transaction.objectStore(PRACTICE_MEDIA_STORE).put(record);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error("Không thể lưu media."));
+        transaction.onabort = () => reject(transaction.error || new Error("Lưu media đã bị hủy."));
+      });
+    }
+
+    async function deletePracticeMedia(id) {
+      if (!id || !window.indexedDB) return;
+      const database = await openPracticeMediaDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
+        transaction.objectStore(PRACTICE_MEDIA_STORE).delete(id);
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error("Không thể xóa media."));
+      });
+    }
+
+    async function clearStoredPracticeMedia() {
+      const database = await openPracticeMediaDatabase();
+      await new Promise((resolve, reject) => {
+        const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
+        transaction.objectStore(PRACTICE_MEDIA_STORE).clear();
+        transaction.oncomplete = () => resolve();
+        transaction.onerror = () => reject(transaction.error || new Error("Không thể xóa các tệp đã lưu."));
+      });
+      practiceMediaObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+      practiceMediaObjectUrls.clear();
+      storedPracticeMedia.clear();
+    }
+
+    function releaseStoredPracticeMediaUrls(record) {
+      [record?.sourceUrl, record?.sourceRecordingUrl, record?.voiceUrl].filter(Boolean).forEach((url) => {
+        URL.revokeObjectURL(url);
+        practiceMediaObjectUrls.delete(url);
+      });
+    }
+
+    async function loadStoredPracticeMedia() {
+      const database = await openPracticeMediaDatabase();
+      return new Promise((resolve, reject) => {
+        const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
+        const store = transaction.objectStore(PRACTICE_MEDIA_STORE);
+        const request = store.getAll();
+        const loadedRecords = [];
+        request.onsuccess = () => {
+          for (const record of request.result) {
+            if (record.expiresAt <= Date.now()) {
+              store.delete(record.id);
+            } else {
+              loadedRecords.push(record);
+            }
+          }
+        };
+        transaction.oncomplete = () => {
+          practiceMediaObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+          practiceMediaObjectUrls.clear();
+          storedPracticeMedia = new Map(loadedRecords.map((record) => [record.id, record]));
+          loadedRecords.forEach((record) => {
+            if (record.sourceBlob) {
+              record.sourceUrl = URL.createObjectURL(record.sourceBlob);
+              practiceMediaObjectUrls.add(record.sourceUrl);
+            }
+            if (record.sourceRecordingBlob) {
+              record.sourceRecordingUrl = URL.createObjectURL(record.sourceRecordingBlob);
+              practiceMediaObjectUrls.add(record.sourceRecordingUrl);
+            }
+            if (record.voiceBlob) {
+              record.voiceUrl = URL.createObjectURL(record.voiceBlob);
+              practiceMediaObjectUrls.add(record.voiceUrl);
+            }
+          });
+          resolve(loadedRecords);
+        };
+        transaction.onerror = () => reject(transaction.error || new Error("Không thể đọc media đã lưu."));
+      });
+    }
+
+    function schedulePracticeMediaExpiry() {
+      window.clearTimeout(practiceMediaExpiryTimer);
+      const nextExpiry = readPracticeHistory()
+        .map((entry) => Number(entry.expiresAt) || Date.parse(entry.date) + PRACTICE_MEDIA_RETENTION_MS)
+        .filter((expiresAt) => Number.isFinite(expiresAt) && expiresAt > Date.now())
+        .sort((first, second) => first - second)[0];
+      if (!nextExpiry) return;
+      practiceMediaExpiryTimer = window.setTimeout(async () => {
+        try {
+          await loadStoredPracticeMedia();
+          document.querySelector("#history-message").textContent = "Các tệp luyện tập đã quá 3 ngày được tự động xóa.";
+          renderPracticeHistory();
+          schedulePracticeMediaExpiry();
+        } catch (error) {
+          document.querySelector("#history-message").textContent = `Không thể tự dọn tệp đã hết hạn: ${error.message}`;
+        }
+      }, Math.min(nextExpiry - Date.now(), 2147483647));
+    }
 
     function currentExercises() {
       return exerciseGroups.find((group) => group.id === industrySelect.value)?.exercises || [];
@@ -2232,15 +2406,24 @@
       stopButton.disabled = !listening;
       stopButton.classList.toggle("is-recording", listening);
       document.querySelector("#speech-status").textContent = message;
+      updatePracticeModeControls();
     }
 
     async function startListening() {
+      if (activePracticeMode === "consecutive") {
+        await startConsecutivePractice();
+        return;
+      }
       const recordingStatus = document.querySelector("#speech-recording-status");
       const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
       if (!SpeechRecognition && !canRecordAudio) return;
       document.querySelector("#start-listening").disabled = true;
+      speechSessionActive = true;
+      updatePracticeModeControls();
       startTimer();
       startPracticeMedia();
+      sourceAudioBlob = null;
+      await startSourceAudioCapture();
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const recordingId = speechRecordingId;
       if (canRecordAudio) {
@@ -2256,6 +2439,7 @@
         if (canRecordAudio && speechAudioRecorder?.state === "recording") {
           setListening(true, "Đang ghi âm. Trình duyệt chưa hỗ trợ tự tạo bản chép lời.");
         } else {
+          speechSessionActive = false;
           pauseTimer();
           pausePracticeMedia();
           setListening(false, "Không thể bắt đầu nhận dạng hoặc ghi âm trong trình duyệt này.");
@@ -2263,46 +2447,8 @@
         return;
       }
 
-      recognition = new SpeechRecognition();
-      recognition.lang = document.querySelector("#speech-language").value;
-      recognition.continuous = true;
-      recognition.interimResults = true;
-      recognition.onstart = () => setListening(true, "Đang nhận dạng giọng nói...");
-      recognition.onresult = (event) => {
-        let interimTranscript = "";
-        for (let index = event.resultIndex; index < event.results.length; index += 1) {
-          const result = event.results[index];
-          if (result.isFinal) finalTranscript += `${result[0].transcript} `;
-          else interimTranscript += result[0].transcript;
-        }
-        transcript.textContent = `${finalTranscript}${interimTranscript}`.trim();
-        updateCounts();
-      };
-      recognition.onerror = (event) => {
-        if (restartingSpeechSessions.has(recordingId)) return;
-        const messages = {
-          "not-allowed": "Bạn chưa cấp quyền micro cho trang này.",
-          "no-speech": "Chưa phát hiện giọng nói. Hãy thử lại.",
-          "network": "Không kết nối được dịch vụ nhận dạng giọng nói. Hãy kiểm tra Internet rồi thử lại."
-        };
-        pauseTimer();
-        pausePracticeMedia();
-        setListening(false, messages[event.error] || `Lỗi nhận dạng: ${event.error}.`);
-        if (speechRecordingId === recordingId) stopSpeechAudioCapture();
-      };
-      recognition.onend = () => {
-        if (restartingSpeechSessions.has(recordingId)) {
-          restartingSpeechSessions.delete(recordingId);
-          return;
-        }
-        pauseTimer();
-        pausePracticeMedia();
-        setListening(false, "Đã dừng nghe. Bản chép lời vẫn được giữ lại.");
-        if (speechRecordingId === recordingId) stopSpeechAudioCapture();
-      };
-      try {
-        recognition.start();
-      } catch (error) {
+      if (!startSpeechRecognition(recordingId)) {
+        speechSessionActive = false;
         pauseTimer();
         pausePracticeMedia();
         setListening(false, "Không thể bắt đầu. Hãy đợi một chút rồi thử lại.");
@@ -2310,11 +2456,328 @@
       }
     }
 
-    async function startSpeechAudioCapture() {
-      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
+    function updatePracticeModeControls() {
+      const startButton = document.querySelector("#start-listening");
+      const stopButton = document.querySelector("#stop-listening");
+      const restartButton = document.querySelector("#restart-practice");
+      const modeSelect = document.querySelector("#practice-mode");
+      const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
+      const sourceLocked = speechSessionActive || consecutivePhase === "starting" || consecutivePhase === "countdown";
+      modeSelect.value = activePracticeMode;
+      modeSelect.disabled = sourceLocked;
+      youtubeUrlInput.disabled = sourceLocked;
+      document.querySelector("#load-youtube").disabled = sourceLocked;
+      localMediaInput.disabled = sourceLocked;
+      const isConsecutive = activePracticeMode === "consecutive";
+      stopButton.hidden = isConsecutive;
+      restartButton.textContent = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
+        ? "Kết thúc"
+        : "Bắt đầu lại";
+      if (!isConsecutive) {
+        startButton.textContent = "● Bắt đầu nói";
+        startButton.disabled = Boolean(speechSessionActive) || (!SpeechRecognition && !canRecordAudio);
+        return;
+      }
+      const labels = {
+        idle: "Bắt đầu nghe",
+        starting: "Đang chuẩn bị...",
+        listening: "Dừng và thực hiện dịch",
+        countdown: "Chuẩn bị dịch...",
+        translating: "Tiếp tục",
+        finished: "Đã kết thúc"
+      };
+      startButton.textContent = labels[consecutivePhase];
+      startButton.disabled = consecutivePhase === "countdown" || consecutivePhase === "finished" || !canRecordAudio;
+    }
+
+    function setPracticeMode(mode) {
+      if (speechSessionActive || (consecutivePhase !== "idle" && consecutivePhase !== "finished")) {
+        document.querySelector("#practice-mode").value = activePracticeMode;
+        return;
+      }
+      activePracticeMode = mode === "consecutive" ? "consecutive" : "parallel";
+      if (consecutivePhase === "finished") consecutivePhase = "idle";
+      updatePracticeModeControls();
+      document.querySelector("#speech-status").textContent = activePracticeMode === "consecutive"
+        ? "Nghe một đoạn rồi bấm “Dừng và thực hiện dịch”."
+        : "Chọn ngôn ngữ rồi nhấn bắt đầu.";
+    }
+
+    async function startConsecutivePractice() {
+      if (consecutivePhase !== "idle" && consecutivePhase !== "finished") return;
+      const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
+      if (!canRecordAudio) {
+        document.querySelector("#speech-status").textContent = "Chế độ dịch nối tiếp cần quyền micro để ghi âm phần dịch.";
+        return;
+      }
+      if (activePracticeSource === "none" || !activePracticeSource) {
+        document.querySelector("#speech-status").textContent = "Hãy tải link YouTube hoặc chọn tệp MP3/MP4 trước.";
+        return;
+      }
+      consecutivePhase = "starting";
+      updatePracticeModeControls();
+      document.querySelector("#speech-status").textContent = "Đang chuẩn bị quyền ghi âm và nguồn...";
+      sourceAudioBlob = null;
+      startPracticeMedia();
+      await startSourceAudioCapture();
+      if (consecutivePhase !== "starting") {
+        await stopSourceAudioCapture();
+        return;
+      }
+      speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      const recordingStatus = document.querySelector("#speech-recording-status");
+      recordingStatus.textContent = "Đang chuẩn bị bản ghi phần dịch...";
+      document.querySelector("#speech-recording-preview").hidden = false;
+      const captureStarted = await startSpeechAudioCapture({ muted: true });
+      if (!captureStarted || consecutivePhase !== "starting") {
+        if (captureStarted) {
+          if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(speechRecordingId);
+          stopSpeechAudioCapture();
+        }
+        await stopSourceAudioCapture();
+        if (consecutivePhase === "starting") {
+          consecutivePhase = "idle";
+          updatePracticeModeControls();
+          document.querySelector("#speech-status").textContent = "Không thể mở micro để ghi phần dịch. Hãy kiểm tra quyền micro.";
+        }
+        return;
+      }
+      speechSessionActive = true;
+      consecutivePhase = "listening";
+      startTimer();
+      updatePracticeModeControls();
+      document.querySelector("#speech-status").textContent = "Đang nghe. Giọng bạn chưa được ghi âm trong lượt này.";
+    }
+
+    async function handleConsecutivePracticeAction() {
+      if (consecutivePhase === "idle" || consecutivePhase === "finished") {
+        await startConsecutivePractice();
+      } else if (consecutivePhase === "listening") {
+        await beginConsecutiveTranslation();
+      } else if (consecutivePhase === "translating") {
+        continueConsecutiveListening();
+      }
+    }
+
+    function beginConsecutiveTranslation() {
+      consecutivePhase = "countdown";
+      updatePracticeModeControls();
+      pausePracticeMedia();
+      const countdown = document.querySelector("#consecutive-countdown");
+      countdown.hidden = false;
+      let seconds = 3;
+      countdown.textContent = String(seconds);
+      document.querySelector("#speech-status").textContent = "Chuẩn bị dịch...";
+      consecutiveCountdownTimer = window.setInterval(() => {
+        seconds -= 1;
+        if (seconds > 0) {
+          countdown.textContent = String(seconds);
+          return;
+        }
+        window.clearInterval(consecutiveCountdownTimer);
+        consecutiveCountdownTimer = null;
+        if (consecutivePhase !== "countdown") return;
+        countdown.hidden = true;
+        consecutivePhase = "translating";
+        if (speechInputGain && speechAudioContext) speechInputGain.gain.setTargetAtTime(1, speechAudioContext.currentTime, 0.02);
+        if (SpeechRecognition) startSpeechRecognition(speechRecordingId);
+        setListening(true, "Đang ghi âm phần dịch. Bấm “Tiếp tục” khi dịch xong đoạn này.");
+        updatePracticeModeControls();
+      }, 1000);
+    }
+
+    function stopCurrentSpeechRecognition() {
+      window.clearTimeout(speechRecognitionRestartTimer);
+      speechRecognitionRestartTimer = null;
+      if (!recognition) return;
+      const currentRecognition = recognition;
       const recordingId = speechRecordingId;
+      restartingSpeechSessions.add(recordingId);
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({
+        currentRecognition.stop();
+      } catch (error) {
+        restartingSpeechSessions.delete(recordingId);
+      }
+      recognition = null;
+    }
+
+    function continueConsecutiveListening() {
+      stopCurrentSpeechRecognition();
+      if (speechInputGain && speechAudioContext) {
+        speechInputGain.gain.setTargetAtTime(0, speechAudioContext.currentTime, 0.02);
+      }
+      setListening(false, "Đang phát tiếp đoạn kế tiếp. Giọng bạn chưa được ghi âm.");
+      consecutivePhase = "listening";
+      updatePracticeModeControls();
+      startPracticeMedia();
+    }
+
+    async function finishConsecutivePractice() {
+      if (consecutivePhase === "idle" || consecutivePhase === "finished") {
+        restartPractice();
+        return;
+      }
+      window.clearInterval(consecutiveCountdownTimer);
+      consecutiveCountdownTimer = null;
+      document.querySelector("#consecutive-countdown").hidden = true;
+      stopCurrentSpeechRecognition();
+      speechSessionActive = false;
+      consecutivePhase = "finished";
+      stopSpeechAudioCapture();
+      await stopSourceAudioCapture();
+      pausePracticeMedia();
+      pauseTimer();
+      setListening(false, "Đã kết thúc. Có thể lưu buổi luyện hoặc nghe hai bản ghi song song.");
+      updatePracticeModeControls();
+    }
+
+    function scheduleSpeechRecognitionRestart(recordingId) {
+      window.clearTimeout(speechRecognitionRestartTimer);
+      speechRecognitionRestartTimer = window.setTimeout(() => {
+        speechRecognitionRestartTimer = null;
+        if (speechSessionActive && speechRecordingId === recordingId) {
+          if (!startSpeechRecognition(recordingId)) scheduleSpeechRecognitionRestart(recordingId);
+        }
+      }, 500);
+    }
+
+    function startSpeechRecognition(recordingId) {
+      if (!SpeechRecognition || !speechSessionActive || speechRecordingId !== recordingId) return false;
+      try {
+        const currentRecognition = new SpeechRecognition();
+        recognition = currentRecognition;
+        currentRecognition.lang = document.querySelector("#speech-language").value;
+        currentRecognition.continuous = true;
+        currentRecognition.interimResults = true;
+        currentRecognition.onstart = () => {
+          if (speechRecordingId === recordingId) setListening(true, "Đang nhận dạng giọng nói...");
+        };
+        currentRecognition.onresult = (event) => {
+          if (speechRecordingId !== recordingId) return;
+          let interimTranscript = "";
+          for (let index = event.resultIndex; index < event.results.length; index += 1) {
+            const result = event.results[index];
+            if (result.isFinal) finalTranscript += `${result[0].transcript} `;
+            else interimTranscript += result[0].transcript;
+          }
+          transcript.textContent = `${finalTranscript}${interimTranscript}`.trim();
+          updateCounts();
+        };
+        currentRecognition.onerror = (event) => {
+          if (restartingSpeechSessions.has(recordingId) || speechRecordingId !== recordingId) return;
+          if (event.error === "not-allowed" || event.error === "service-not-allowed") {
+            speechSessionActive = false;
+            window.clearTimeout(speechRecognitionRestartTimer);
+            speechRecognitionRestartTimer = null;
+            pauseTimer();
+            pausePracticeMedia();
+            setListening(false, "Bạn chưa cấp quyền nhận dạng giọng nói cho trang này. Bản ghi mic đã dừng.");
+            stopSpeechAudioCapture();
+            return;
+          }
+          if (speechSessionActive) {
+            setListening(true, "Nhận dạng giọng nói đang kết nối lại; bản ghi mic vẫn tiếp tục.");
+          }
+        };
+        currentRecognition.onend = () => {
+          if (restartingSpeechSessions.has(recordingId)) {
+            restartingSpeechSessions.delete(recordingId);
+            return;
+          }
+          if (speechRecordingId !== recordingId || !speechSessionActive) return;
+          setListening(true, "Đang kết nối lại nhận dạng; bản ghi mic vẫn tiếp tục.");
+          scheduleSpeechRecognitionRestart(recordingId);
+        };
+        currentRecognition.start();
+        return true;
+      } catch (error) {
+        return false;
+      }
+    }
+
+    async function startSourceAudioCapture() {
+      if (sourceAudioStopResolve) await sourceAudioStopPromise;
+      if (activePracticeSource !== "youtube") {
+        sourceAudioBlob = null;
+        return false;
+      }
+      if (sourceAudioRecorder?.state === "recording") return false;
+      sourceAudioBlob = null;
+      if (!navigator.mediaDevices?.getDisplayMedia || typeof MediaRecorder === "undefined") {
+        document.querySelector("#youtube-status").textContent =
+          "Trình duyệt không hỗ trợ thu âm tab. Buổi luyện vẫn tiếp tục và link YouTube sẽ được lưu.";
+        return false;
+      }
+
+      let displayStream;
+      try {
+        document.querySelector("#youtube-status").textContent =
+          "Trong hộp thoại chia sẻ, chọn tab video và bật “Chia sẻ âm thanh tab” để lưu được tiếng nguồn.";
+        displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
+        const audioTracks = displayStream.getAudioTracks();
+        displayStream.getVideoTracks().forEach((track) => track.stop());
+        if (!audioTracks.length) {
+          displayStream.getTracks().forEach((track) => track.stop());
+          document.querySelector("#youtube-status").textContent =
+            "Chưa bật chia sẻ âm thanh tab. Link YouTube vẫn được lưu; để nghe lại nguồn, hãy bật chia sẻ âm thanh tab.";
+          return false;
+        }
+
+        sourceAudioStream = new MediaStream(audioTracks);
+        sourceAudioChunks = [];
+        sourceAudioBlob = null;
+        const recorder = new MediaRecorder(sourceAudioStream);
+        sourceAudioRecorder = recorder;
+        sourceAudioStopPromise = new Promise((resolve) => {
+          sourceAudioStopResolve = resolve;
+        });
+        recorder.addEventListener("dataavailable", (event) => {
+          if (event.data.size > 0) sourceAudioChunks.push(event.data);
+        });
+        recorder.addEventListener("stop", () => {
+          sourceAudioBlob = sourceAudioChunks.length
+            ? new Blob(sourceAudioChunks, { type: recorder.mimeType || "audio/webm" })
+            : null;
+          sourceAudioStream?.getTracks().forEach((track) => track.stop());
+          sourceAudioStream = null;
+          sourceAudioStopResolve?.(sourceAudioBlob);
+          sourceAudioStopResolve = null;
+        });
+        recorder.addEventListener("error", () => {
+          document.querySelector("#youtube-status").textContent = "Không thể ghi âm âm thanh tab YouTube.";
+        });
+        recorder.start(1000);
+        return true;
+      } catch (error) {
+        displayStream?.getTracks().forEach((track) => track.stop());
+        sourceAudioStream = null;
+        document.querySelector("#youtube-status").textContent =
+          "Không có quyền chia sẻ âm thanh tab. Link YouTube vẫn được lưu; hãy cấp quyền nếu muốn nghe lại nguồn.";
+        return false;
+      }
+    }
+
+    async function stopSourceAudioCapture() {
+      if (sourceAudioRecorder?.state === "recording") {
+        sourceAudioRecorder.stop();
+        return sourceAudioStopPromise;
+      }
+      return sourceAudioBlob;
+    }
+
+    async function startSpeechAudioCapture({ muted = false } = {}) {
+      if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
+      if (speechRecordingStopResolve) await speechRecordingStopPromise;
+      const recordingId = speechRecordingId;
+      let stream = null;
+      let audioContext = null;
+      try {
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error("AudioContext is unavailable");
+        audioContext = new AudioContextClass();
+        speechAudioContext = audioContext;
+        await audioContext.resume();
+        stream = await navigator.mediaDevices.getUserMedia({
           audio: {
             autoGainControl: true,
             echoCancellation: true,
@@ -2323,35 +2786,42 @@
         });
         if (speechRecordingId !== recordingId) {
           stream.getTracks().forEach((track) => track.stop());
+          await audioContext.close();
+          if (speechAudioContext === audioContext) speechAudioContext = null;
           return false;
         }
         const chunks = [];
         speechAudioStream = stream;
         speechAudioChunks = chunks;
-        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-        if (!AudioContextClass) throw new Error("AudioContext is unavailable");
-        const audioContext = new AudioContextClass();
-        speechAudioContext = audioContext;
-        await audioContext.resume();
-        if (speechRecordingId !== recordingId) {
-          stream.getTracks().forEach((track) => track.stop());
-          await audioContext.close();
-          if (speechAudioStream === stream) speechAudioStream = null;
-          if (speechAudioContext === audioContext) speechAudioContext = null;
-          return false;
-        }
         const input = audioContext.createMediaStreamSource(stream);
         const compressor = audioContext.createDynamicsCompressor();
-        compressor.threshold.value = -24;
-        compressor.knee.value = 18;
-        compressor.ratio.value = 4;
+        compressor.threshold.value = -30;
+        compressor.knee.value = 24;
+        compressor.ratio.value = 6;
         compressor.attack.value = 0.003;
-        compressor.release.value = 0.25;
+        compressor.release.value = 0.2;
+        const makeupGain = audioContext.createGain();
+        makeupGain.gain.value = 3.5;
+        const limiter = audioContext.createDynamicsCompressor();
+        limiter.threshold.value = -3;
+        limiter.knee.value = 0;
+        limiter.ratio.value = 20;
+        limiter.attack.value = 0.003;
+        limiter.release.value = 0.15;
         const normalizedStream = audioContext.createMediaStreamDestination();
+        const outputGain = audioContext.createGain();
+        outputGain.gain.value = muted ? 0 : 1;
         input.connect(compressor);
-        compressor.connect(normalizedStream);
+        compressor.connect(makeupGain);
+        makeupGain.connect(limiter);
+        limiter.connect(outputGain);
+        outputGain.connect(normalizedStream);
+        speechInputGain = outputGain;
         const recorder = new MediaRecorder(normalizedStream.stream);
         speechAudioRecorder = recorder;
+        speechRecordingStopPromise = new Promise((resolve) => {
+          speechRecordingStopResolve = resolve;
+        });
         recorder.addEventListener("dataavailable", (event) => {
           if (event.data.size > 0) chunks.push(event.data);
         });
@@ -2359,10 +2829,13 @@
           stream.getTracks().forEach((track) => track.stop());
           normalizedStream.stream.getTracks().forEach((track) => track.stop());
           if (speechAudioContext === audioContext) speechAudioContext = null;
+          speechInputGain = null;
           audioContext.close();
           if (speechAudioStream === stream) speechAudioStream = null;
           if (discardedSpeechRecordings.has(recordingId)) {
             discardedSpeechRecordings.delete(recordingId);
+            speechRecordingStopResolve?.(null);
+            speechRecordingStopResolve = null;
             return;
           }
           if (chunks.length > 0) {
@@ -2370,7 +2843,7 @@
             const recording = new Blob(chunks, { type: mimeType });
             const recordingUrl = URL.createObjectURL(recording);
             speechRecordingUrls.add(recordingUrl);
-            speechRecordingsById.set(recordingId, { url: recordingUrl, mimeType });
+            speechRecordingsById.set(recordingId, { url: recordingUrl, mimeType, blob: recording });
             updateSaveButtonStates();
             document.querySelector("#speech-recorded-audio").src = recordingUrl;
             const downloadLink = document.querySelector("#download-speech-recording");
@@ -2380,11 +2853,14 @@
             downloadLink.textContent = `Tải file .${extension}`;
             downloadLink.hidden = false;
             document.querySelector("#speech-recording-preview").hidden = false;
-            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng nghe lại hoặc tải xuống. Âm lượng đã được cân bằng tự động; bản ghi được giữ tạm trong phiên trang này.";
+            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng nghe lại hoặc tải xuống. Âm lượng đã được khuếch đại và giới hạn đỉnh; bản ghi được giữ tạm trong phiên trang này.";
             renderPracticeHistory();
+            speechRecordingStopResolve?.(recording);
           } else {
             document.querySelector("#speech-recording-status").textContent = "Không thu được âm thanh. Hãy kiểm tra micro và thử lại.";
+            speechRecordingStopResolve?.(null);
           }
+          speechRecordingStopResolve = null;
         });
         recorder.addEventListener("error", () => {
           document.querySelector("#speech-recording-status").textContent = "Không thể tạo bản ghi. Hãy kiểm tra quyền truy cập micro.";
@@ -2392,13 +2868,11 @@
         recorder.start();
         return true;
       } catch (error) {
-        speechAudioStream?.getTracks().forEach((track) => track.stop());
-        speechAudioStream = null;
-        if (speechAudioContext) {
-          const audioContext = speechAudioContext;
-          speechAudioContext = null;
-          await audioContext.close();
-        }
+        stream?.getTracks().forEach((track) => track.stop());
+        if (speechAudioStream === stream) speechAudioStream = null;
+        if (audioContext && audioContext.state !== "closed") await audioContext.close();
+        if (speechAudioContext === audioContext) speechAudioContext = null;
+        speechInputGain = null;
         document.querySelector("#speech-recording-status").textContent = "Không thể xử lý âm thanh micro để tạo bản ghi. Hãy kiểm tra quyền micro và thử lại.";
         return false;
       }
@@ -2581,6 +3055,7 @@
     function clearLocalPracticeMedia() {
       const audioPlayer = document.querySelector("#local-audio-player");
       const videoPlayer = document.querySelector("#local-video-player");
+      localPracticeMediaFile = null;
       [audioPlayer, videoPlayer].forEach((player) => {
         player.pause();
         player.removeAttribute("src");
@@ -2616,6 +3091,7 @@
       player.src = localPracticeMediaUrl;
       player.hidden = false;
       player.load();
+      localPracticeMediaFile = file;
       activePracticeSource = "local";
       document.querySelector("#media-seek-control").hidden = false;
       renderMediaPlaybackRates(mediaPlaybackRates, Number(document.querySelector("#media-playback-rate").value));
@@ -2660,9 +3136,16 @@
     function releaseMediaResources() {
       if (speechAudioRecorder?.state === "recording") speechAudioRecorder.stop();
       speechAudioStream?.getTracks().forEach((track) => track.stop());
+      if (sourceAudioRecorder?.state === "recording") sourceAudioRecorder.stop();
+      sourceAudioStream?.getTracks().forEach((track) => track.stop());
+      if (speechAudioContext && speechAudioContext.state !== "closed") speechAudioContext.close();
       speechRecordingUrls.forEach((url) => URL.revokeObjectURL(url));
       speechRecordingUrls.clear();
+      practiceMediaObjectUrls.forEach((url) => URL.revokeObjectURL(url));
+      practiceMediaObjectUrls.clear();
       speechRecordingsById.clear();
+      document.querySelector("#mix-source-audio").pause();
+      document.querySelector("#mix-voice-audio").pause();
       clearLocalPracticeMedia();
     }
 
@@ -2705,6 +3188,13 @@
 
     function restartPractice() {
       const currentRecordingId = speechRecordingId;
+      speechSessionActive = false;
+      window.clearTimeout(speechRecognitionRestartTimer);
+      speechRecognitionRestartTimer = null;
+      window.clearInterval(consecutiveCountdownTimer);
+      consecutiveCountdownTimer = null;
+      consecutivePhase = "idle";
+      document.querySelector("#consecutive-countdown").hidden = true;
       if (currentRecordingId) {
         restartingSpeechSessions.add(currentRecordingId);
         if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(currentRecordingId);
@@ -2719,6 +3209,7 @@
         recognition = null;
       }
       stopSpeechAudioCapture();
+      stopSourceAudioCapture();
       speechRecordingId = "";
 
       const isSavedRecording = currentRecordingId && readPracticeHistory().some((entry) => entry.recordingId === currentRecordingId);
@@ -2750,17 +3241,85 @@
         if (player.src) player.currentTime = 0;
       });
       resetYouTubeVideo();
-      setListening(false, "Đã bắt đầu lại. Bấm “Bắt đầu nói” để phát nguồn và bắt đầu tính thời gian.");
+      setListening(false, activePracticeMode === "consecutive"
+        ? "Đã đặt lại buổi luyện. Bấm “Bắt đầu nghe” để bắt đầu lượt nghe."
+        : "Đã bắt đầu lại. Bấm “Bắt đầu nói” để phát nguồn và bắt đầu tính thời gian.");
+      updatePracticeModeControls();
     }
 
     function readPracticeHistory() {
       try {
         const saved = JSON.parse(window.localStorage.getItem(HISTORY_KEY) || "[]");
-        return Array.isArray(saved) ? saved.filter((entry) => entry && typeof entry.date === "string") : [];
+        if (!Array.isArray(saved)) return [];
+        const validEntries = saved.filter((entry) => {
+          if (!entry || typeof entry.date !== "string") return false;
+          const expiresAt = Number(entry.expiresAt) || Date.parse(entry.date) + PRACTICE_MEDIA_RETENTION_MS;
+          return Number.isFinite(expiresAt) && expiresAt > Date.now();
+        });
+        if (validEntries.length !== saved.length) window.localStorage.setItem(HISTORY_KEY, JSON.stringify(validEntries));
+        return validEntries;
       } catch (error) {
         document.querySelector("#history-message").textContent = "Không thể đọc lịch sử trên trình duyệt này.";
         return [];
       }
+    }
+
+    function playSavedPracticeMedia(storageId) {
+      const media = storedPracticeMedia.get(storageId);
+      if (!media) {
+        document.querySelector("#history-message").textContent = "Không tìm thấy tệp đính kèm hoặc tệp đã hết hạn.";
+        return;
+      }
+      if (!media.sourceUrl && !media.sourceRecordingUrl) {
+        document.querySelector("#history-message").textContent =
+          "Chưa có âm thanh nguồn để phát cùng bản dịch. Với YouTube, hãy chia sẻ âm thanh tab khi bắt đầu buổi luyện.";
+        return;
+      }
+      if (!media.voiceUrl) {
+        document.querySelector("#history-message").textContent = "Buổi luyện này chưa có bản ghi giọng người dùng.";
+        return;
+      }
+      const sourceAudio = document.querySelector("#mix-source-audio");
+      const voiceAudio = document.querySelector("#mix-voice-audio");
+      sourceAudio.pause();
+      voiceAudio.pause();
+      sourceAudio.src = media.sourceUrl || media.sourceRecordingUrl;
+      voiceAudio.src = media.voiceUrl;
+      sourceAudio.currentTime = 0;
+      voiceAudio.currentTime = 0;
+      sourceAudio.volume = Number(document.querySelector("#source-volume").value);
+      voiceAudio.volume = Number(document.querySelector("#voice-volume").value);
+      document.querySelector("#media-mix-panel").hidden = false;
+      toggleSavedMediaMix();
+    }
+
+    function setPracticeMediaVolume(kind, value) {
+      const volume = Number(value);
+      const audio = document.querySelector(kind === "source" ? "#mix-source-audio" : "#mix-voice-audio");
+      audio.volume = volume;
+      document.querySelector(kind === "source" ? "#source-volume-value" : "#voice-volume-value").textContent =
+        `${Math.round(volume * 100)}%`;
+    }
+
+    function toggleSavedMediaMix() {
+      const sourceAudio = document.querySelector("#mix-source-audio");
+      const voiceAudio = document.querySelector("#mix-voice-audio");
+      if (!sourceAudio.paused || !voiceAudio.paused) {
+        sourceAudio.pause();
+        voiceAudio.pause();
+        document.querySelector("#toggle-media-mix").textContent = "Phát đồng thời";
+        return;
+      }
+      sourceAudio.volume = Number(document.querySelector("#source-volume").value);
+      voiceAudio.volume = Number(document.querySelector("#voice-volume").value);
+      Promise.all([sourceAudio.play(), voiceAudio.play()]).then(() => {
+        document.querySelector("#toggle-media-mix").textContent = "Dừng phát đồng thời";
+      }).catch(() => {
+        sourceAudio.pause();
+        voiceAudio.pause();
+        document.querySelector("#history-message").textContent =
+          "Không thể phát đồng thời hai tệp. Hãy thử bấm phát lại hoặc tải từng tệp xuống.";
+      });
     }
 
     function renderPracticeHistory() {
@@ -2784,7 +3343,9 @@
         const date = document.createElement("span");
         date.textContent = new Date(entry.date).toLocaleString("vi-VN");
         const details = document.createElement("span");
-        details.textContent = entry.kind === "media"
+        details.textContent = entry.sourceName
+          ? `${entry.sourceName} · ${entry.mode === "consecutive" ? "Dịch nối tiếp" : "Dịch song song"} · ${entry.language || ""} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`
+          : entry.kind === "media"
           ? `${entry.mediaName || "Bài nghe"} · ${entry.language || ""} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`
           : `${entry.language || "Không rõ ngôn ngữ"} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`;
         const deleteButton = document.createElement("button");
@@ -2806,8 +3367,9 @@
             ].filter(Boolean).join("\n") || "Chưa lưu transcript hoặc bản dịch."
           : entry.transcript || "Không có transcript được ghi nhận.";
         item.append(metadata, text);
+        const storedMedia = entry.storageId && storedPracticeMedia.get(entry.storageId);
         const recording = entry.recordingId && speechRecordingsById.get(entry.recordingId);
-        if (recording) {
+        if (recording && !storedMedia) {
           const audioPlayer = document.createElement("audio");
           audioPlayer.controls = true;
           audioPlayer.preload = "metadata";
@@ -2820,53 +3382,204 @@
           downloadLink.textContent = "Tải bản ghi";
           item.append(audioPlayer, downloadLink);
         }
+        if (storedMedia) {
+          const expiration = document.createElement("p");
+          expiration.className = "history-message";
+          expiration.textContent = `Bản lưu sẽ tự xóa sau ${new Date(storedMedia.expiresAt).toLocaleString("vi-VN")}. Hãy tải về trước thời điểm này.`;
+          item.append(expiration);
+
+          if (storedMedia.sourceUrl || storedMedia.sourceRecordingUrl) {
+            const sourceAudio = document.createElement("audio");
+            sourceAudio.controls = true;
+            sourceAudio.preload = "metadata";
+            sourceAudio.src = storedMedia.sourceUrl || storedMedia.sourceRecordingUrl;
+            const sourceDownload = document.createElement("a");
+            sourceDownload.className = "quiet-button";
+            sourceDownload.href = sourceAudio.src;
+            const sourceMimeType = storedMedia.sourceRecordingBlob?.type || storedMedia.sourceBlob?.type || "";
+            const sourceExtension = sourceMimeType.includes("mp4") ? "mp4" : sourceMimeType.includes("mpeg") ? "mp3" : "webm";
+            sourceDownload.download = storedMedia.sourceName && storedMedia.sourceUrl
+              ? storedMedia.sourceName
+              : `interslation-source-${entry.date.replace(/[:.]/g, "-")}.${sourceExtension}`;
+            sourceDownload.textContent = "Tải nguồn";
+            item.append(sourceAudio, sourceDownload);
+          }
+          if (storedMedia.sourceUrlText) {
+            const sourceLink = document.createElement("a");
+            sourceLink.href = storedMedia.sourceUrlText;
+            sourceLink.target = "_blank";
+            sourceLink.rel = "noopener noreferrer";
+            sourceLink.textContent = `Mở nguồn YouTube${storedMedia.sourceName ? `: ${storedMedia.sourceName}` : ""}`;
+            item.append(sourceLink);
+          }
+
+          if (storedMedia.voiceUrl) {
+            const voiceAudio = document.createElement("audio");
+            voiceAudio.controls = true;
+            voiceAudio.preload = "metadata";
+            voiceAudio.src = storedMedia.voiceUrl;
+            const voiceDownload = document.createElement("a");
+            voiceDownload.className = "quiet-button";
+            voiceDownload.href = storedMedia.voiceUrl;
+            const voiceExtension = storedMedia.voiceMimeType?.includes("mp4") ? "mp4" : storedMedia.voiceMimeType?.includes("ogg") ? "ogg" : "webm";
+            voiceDownload.download = `interslation-translation-${entry.date.replace(/[:.]/g, "-")}.${voiceExtension}`;
+            voiceDownload.textContent = "Tải bản dịch";
+            item.append(voiceAudio, voiceDownload);
+          }
+
+          if ((storedMedia.sourceUrl || storedMedia.sourceRecordingUrl) && storedMedia.voiceUrl) {
+            const mixButton = document.createElement("button");
+            mixButton.className = "quiet-button";
+            mixButton.type = "button";
+            mixButton.textContent = "Phát đồng thời";
+            mixButton.addEventListener("click", () => playSavedPracticeMedia(entry.storageId));
+            item.append(mixButton);
+          }
+        } else if (entry.storageId) {
+          const missing = document.createElement("p");
+          missing.className = "history-message";
+          missing.textContent = "Tệp đính kèm đã hết hạn hoặc không còn trong bộ nhớ trình duyệt.";
+          item.append(missing);
+        }
         historyList.append(item);
       });
     }
 
-    function deletePracticeHistoryEntry(index) {
+    async function deletePracticeHistoryEntry(index) {
       if (!window.confirm("Xóa buổi luyện này khỏi lịch sử?")) return;
       const historyMessage = document.querySelector("#history-message");
       try {
         const entries = readPracticeHistory();
         if (index < 0 || index >= entries.length) return;
-        entries.splice(index, 1);
+        const [removedEntry] = entries.splice(index, 1);
         window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+        if (removedEntry.storageId) {
+          await deletePracticeMedia(removedEntry.storageId);
+          const media = storedPracticeMedia.get(removedEntry.storageId);
+          releaseStoredPracticeMediaUrls(media);
+          storedPracticeMedia.delete(removedEntry.storageId);
+        }
         historyMessage.textContent = "Đã xóa buổi luyện khỏi lịch sử.";
         renderPracticeHistory();
       } catch (error) {
-        historyMessage.textContent = "Không thể xóa buổi luyện. Hãy thử lại.";
+        historyMessage.textContent = `Không thể xóa buổi luyện: ${error.message}`;
       }
     }
 
-    function savePractice() {
+    async function savePractice() {
       const savedTranscript = transcript.textContent.trim();
       const durationSeconds = Math.floor(getElapsedTime() / 1000);
       const historyMessage = document.querySelector("#history-message");
       const speechStatus = document.querySelector("#speech-status");
-      if (!savedTranscript && !speechRecordingsById.has(speechRecordingId)) {
-        historyMessage.textContent = "Hãy có bản chép lời hoặc bản ghi âm trước khi lưu.";
-        speechStatus.textContent = historyMessage.textContent;
-        return;
-      }
-
-      const entry = {
-        recordingId: speechRecordingId,
-        date: new Date().toISOString(),
-        language: document.querySelector("#speech-language").selectedOptions[0].textContent,
-        durationSeconds,
-        transcript: savedTranscript
-      };
+      let savedStorageId = "";
+      let savedMediaRecord = null;
+      let historyCommitted = false;
       try {
+        speechSessionActive = false;
+        if (activePracticeMode === "consecutive") {
+          consecutivePhase = "finished";
+          window.clearInterval(consecutiveCountdownTimer);
+          consecutiveCountdownTimer = null;
+          document.querySelector("#consecutive-countdown").hidden = true;
+        }
+        window.clearTimeout(speechRecognitionRestartTimer);
+        speechRecognitionRestartTimer = null;
+        if (recognition) recognition.stop();
+        pausePracticeMedia();
+        pauseTimer();
+        const recordingFinalized = speechRecordingStopPromise;
+        if (speechAudioRecorder?.state === "recording") speechAudioRecorder.stop();
+        let voiceBlob = await recordingFinalized;
+        voiceBlob ||= speechRecordingsById.get(speechRecordingId)?.blob || null;
+        const sourceRecordingBlob = await stopSourceAudioCapture();
+        setListening(false, "Đã dừng ghi âm. Đang lưu buổi luyện...");
+        updatePracticeModeControls();
+        const sourceBlob = localPracticeMediaFile || null;
+        if (!savedTranscript && !voiceBlob) {
+          historyMessage.textContent = "Hãy có bản chép lời hoặc bản ghi giọng người dùng trước khi lưu.";
+          speechStatus.textContent = historyMessage.textContent;
+          return;
+        }
+
+        const date = new Date();
+        const storageId = `${date.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
+        const expiresAt = date.getTime() + PRACTICE_MEDIA_RETENTION_MS;
+        const storedRecord = {
+          id: storageId,
+          expiresAt,
+          sourceType: activePracticeSource,
+          sourceName: localPracticeMediaFile?.name || (activePracticeSource === "youtube" ? "Nguồn YouTube" : ""),
+          sourceUrlText: activePracticeSource === "youtube" ? youtubeUrlInput.value.trim() : "",
+          sourceBlob,
+          sourceRecordingBlob,
+          voiceBlob,
+          voiceMimeType: voiceBlob?.type || "audio/webm"
+        };
+        savedMediaRecord = storedRecord;
+        await putPracticeMedia(storedRecord);
+        savedStorageId = storageId;
+        if (sourceBlob) {
+          storedRecord.sourceUrl = URL.createObjectURL(sourceBlob);
+          practiceMediaObjectUrls.add(storedRecord.sourceUrl);
+        }
+        if (sourceRecordingBlob) {
+          storedRecord.sourceRecordingUrl = URL.createObjectURL(sourceRecordingBlob);
+          practiceMediaObjectUrls.add(storedRecord.sourceRecordingUrl);
+        }
+        if (voiceBlob) {
+          storedRecord.voiceUrl = URL.createObjectURL(voiceBlob);
+          practiceMediaObjectUrls.add(storedRecord.voiceUrl);
+        }
+
+        const entry = {
+          recordingId: speechRecordingId,
+          storageId,
+          sourceType: activePracticeSource,
+          sourceName: storedRecord.sourceName,
+          sourceUrlText: storedRecord.sourceUrlText,
+          mode: activePracticeMode,
+          expiresAt,
+          date: date.toISOString(),
+          language: document.querySelector("#speech-language").selectedOptions[0].textContent,
+          durationSeconds,
+          transcript: savedTranscript
+        };
         const entries = readPracticeHistory();
         entries.unshift(entry);
-        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY_ITEMS)));
-        historyMessage.textContent = "Đã lưu buổi phiên dịch.";
-        speechStatus.textContent = historyMessage.textContent;
+        const retainedEntries = entries.slice(0, MAX_HISTORY_ITEMS);
+        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(retainedEntries));
+        historyCommitted = true;
+        storedPracticeMedia.set(storageId, storedRecord);
+        const retainedIds = new Set(retainedEntries.map((savedEntry) => savedEntry.storageId).filter(Boolean));
+        for (const oldEntry of entries.slice(MAX_HISTORY_ITEMS)) {
+          if (oldEntry.storageId && !retainedIds.has(oldEntry.storageId)) {
+            await deletePracticeMedia(oldEntry.storageId);
+            releaseStoredPracticeMediaUrls(storedPracticeMedia.get(oldEntry.storageId));
+            storedPracticeMedia.delete(oldEntry.storageId);
+          }
+        }
         renderPracticeHistory();
-      } catch (error) {
-        historyMessage.textContent = "Không thể lưu buổi luyện. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
+        schedulePracticeMediaExpiry();
+        historyMessage.textContent = "Đã lưu nguồn và bản ghi giọng nói trên thiết bị. Hai bản sẽ tự xóa sau 3 ngày; tải về trước hạn nếu cần giữ lâu hơn.";
         speechStatus.textContent = historyMessage.textContent;
+      } catch (error) {
+        if (savedStorageId && !historyCommitted) {
+          try {
+            await deletePracticeMedia(savedStorageId);
+          } catch (cleanupError) {
+            historyMessage.textContent = `Không thể hoàn tất lưu hoặc dọn bản lưu lỗi: ${cleanupError.message}`;
+          }
+          releaseStoredPracticeMediaUrls(savedMediaRecord);
+          storedPracticeMedia.delete(savedStorageId);
+        }
+        historyMessage.textContent = historyCommitted
+          ? `Đã lưu buổi luyện, nhưng không thể dọn một số tệp cũ: ${error.message}.`
+          : `Không thể lưu buổi luyện: ${error.message}. Hãy tải bản ghi xuống hoặc kiểm tra dung lượng thiết bị.`;
+        speechStatus.textContent = historyMessage.textContent;
+        if (historyCommitted) {
+          renderPracticeHistory();
+          schedulePracticeMediaExpiry();
+        }
       }
     }
 
@@ -2959,6 +3672,24 @@
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
+    document.querySelector("#toggle-media-mix").addEventListener("click", toggleSavedMediaMix);
+    document.querySelector("#source-volume").addEventListener("input", (event) => {
+      setPracticeMediaVolume("source", event.currentTarget.value);
+    });
+    document.querySelector("#voice-volume").addEventListener("input", (event) => {
+      setPracticeMediaVolume("voice", event.currentTarget.value);
+    });
+    document.querySelector("#mix-source-audio").addEventListener("ended", () => {
+      document.querySelector("#mix-voice-audio").pause();
+      document.querySelector("#toggle-media-mix").textContent = "Phát đồng thời";
+    });
+    document.querySelector("#mix-voice-audio").addEventListener("ended", () => {
+      document.querySelector("#mix-source-audio").pause();
+      document.querySelector("#toggle-media-mix").textContent = "Phát đồng thời";
+    });
+    document.querySelector("#practice-mode").addEventListener("change", (event) => {
+      setPracticeMode(event.currentTarget.value);
+    });
     document.querySelector("#media-playback-rate").addEventListener("change", applyMediaPlaybackRate);
     localMediaInput.addEventListener("change", loadLocalPracticeMedia);
     ["#local-audio-player", "#local-video-player"].forEach((selector) => {
@@ -2985,6 +3716,7 @@
         document.querySelector("#youtube-player").hidden = true;
         document.querySelector("#youtube-frame").removeAttribute("src");
         document.querySelector("#youtube-frame").dataset.videoId = "";
+        if (activePracticeSource === "youtube") activePracticeSource = "";
         document.querySelector("#youtube-status").textContent = youtubeUrlInput.value.trim()
           ? "Đang chờ link YouTube hợp lệ..."
           : "Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.";
@@ -3000,24 +3732,39 @@
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
-    document.querySelector("#start-listening").addEventListener("click", startListening);
+    document.querySelector("#start-listening").addEventListener("click", () => {
+      if (activePracticeMode === "consecutive") handleConsecutivePracticeAction();
+      else startListening();
+    });
     document.querySelector("#stop-listening").addEventListener("click", () => {
+      speechSessionActive = false;
+      window.clearTimeout(speechRecognitionRestartTimer);
+      speechRecognitionRestartTimer = null;
       if (recognition) recognition.stop();
       stopSpeechAudioCapture();
+      stopSourceAudioCapture();
       pauseTimer();
       pausePracticeMedia();
-      if (!recognition) setListening(false, "Đã dừng ghi âm. Bản ghi có thể nghe lại bên dưới.");
+      setListening(false, "Đã dừng ghi âm. Bản ghi có thể nghe lại bên dưới.");
     });
-    document.querySelector("#restart-practice").addEventListener("click", restartPractice);
+    document.querySelector("#restart-practice").addEventListener("click", () => {
+      if (activePracticeMode === "consecutive" && consecutivePhase !== "idle" && consecutivePhase !== "finished") {
+        finishConsecutivePractice();
+      } else {
+        restartPractice();
+      }
+    });
     document.querySelector("#save-practice").addEventListener("click", savePractice);
-    document.querySelector("#clear-history").addEventListener("click", () => {
+    document.querySelector("#clear-history").addEventListener("click", async () => {
       if (!window.confirm("Xóa toàn bộ lịch sử luyện tập trên trình duyệt này?")) return;
       try {
         window.localStorage.removeItem(HISTORY_KEY);
+        await clearStoredPracticeMedia();
         document.querySelector("#history-message").textContent = "Đã xóa lịch sử luyện tập.";
+        document.querySelector("#media-mix-panel").hidden = true;
         renderPracticeHistory();
       } catch (error) {
-        document.querySelector("#history-message").textContent = "Không thể xóa lịch sử trên trình duyệt này.";
+        document.querySelector("#history-message").textContent = `Không thể xóa lịch sử: ${error.message}`;
       }
     });
     document.querySelector("#clear-transcript").addEventListener("click", () => {
@@ -3049,7 +3796,15 @@
     populateTopics(exerciseGroups[0].id);
     populateExercises();
     renderTimer();
-    renderPracticeHistory();
+    updatePracticeModeControls();
+    loadStoredPracticeMedia().then(() => {
+      readPracticeHistory();
+      renderPracticeHistory();
+      schedulePracticeMediaExpiry();
+    }).catch((error) => {
+      document.querySelector("#history-message").textContent = `Không thể mở kho media đã lưu: ${error.message}`;
+      renderPracticeHistory();
+    });
   </script>
 </body>
 </html>
