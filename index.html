@@ -622,9 +622,9 @@
         </div>
 
         <details class="reference-editor" id="reference-editor" hidden>
-          <summary>Nhập đáp án gợi ý / Bản dịch chuẩn (tùy chọn)</summary>
+          <summary>Từ khóa cần lưu ý (tùy chọn)</summary>
           <div class="reference-fields">
-            <textarea class="text-area" id="reference-answer" placeholder="Dán bản dịch chuẩn hoặc gợi ý của bạn..."></textarea>
+            <textarea class="text-area" id="reference-answer" placeholder="Gợi ý từ DeepL" hidden aria-hidden="true"></textarea>
             <label class="file-control" for="personal-keywords">Từ khóa cần lưu ý, phân cách bằng dấu phẩy
               <input class="keyword-input" id="personal-keywords" type="text" placeholder="Ví dụ: interest rate, lạm phát, phục hồi kinh tế">
             </label>
@@ -635,8 +635,7 @@
           <span class="score-note" id="translation-score-note">So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa</span>
           <div class="translation-button-group">
             <button class="quiet-button" id="open-deepl-settings" type="button">⚙ Cài đặt DeepL API</button>
-            <button class="quiet-button" id="suggest-deepl" type="button">Gợi ý bằng DeepL</button>
-            <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem gợi ý <span aria-hidden="true">→</span></button>
+            <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem nhận xét <span aria-hidden="true">→</span></button>
           </div>
         </div>
         <div class="feedback" id="translation-feedback" role="status" aria-live="polite"></div>
@@ -994,6 +993,7 @@
       document.querySelector("#translation-score-note").textContent = personal
         ? "Đối chiếu token cục bộ; không đánh giá độ đúng ngữ nghĩa"
         : "So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa";
+      updateCheckButtonLabel();
       feedback.className = "feedback";
       feedback.textContent = "";
       document.querySelector("#answer-breakdown").hidden = true;
@@ -1011,6 +1011,12 @@
         document.querySelector("#source-help").textContent = "Đọc kỹ sắc thái và ngữ cảnh";
       }
       updateCounts();
+    }
+
+    function updateCheckButtonLabel() {
+      document.querySelector("#check-answer").innerHTML = activeTranslationMode === "personal"
+        ? 'Kiểm tra &amp; Nhận xét bằng DeepL <span aria-hidden="true">→</span>'
+        : 'Kiểm tra &amp; Xem nhận xét <span aria-hidden="true">→</span>';
     }
 
     function tokenize(text) {
@@ -1034,27 +1040,79 @@
       return previous[right.length];
     }
 
-    function checkTranslation() {
+    function showTranslationFeedback(title, message, isLow = false) {
+      feedback.className = `feedback is-visible${isLow ? " is-low" : ""}`;
+      const heading = document.createElement("strong");
+      heading.textContent = title;
+      feedback.replaceChildren(heading, document.createTextNode(message));
+    }
+
+    function includesTokenSequence(tokens, phrase) {
+      const phraseTokens = tokenize(phrase);
+      if (!phraseTokens.length || phraseTokens.length > tokens.length) return false;
+      return tokens.some((_, index) =>
+        phraseTokens.every((token, offset) => tokens[index + offset] === token)
+      );
+    }
+
+    function checkSampleTranslation(answerTokens, exercise) {
+      const bestDistance = Math.min(...exercise.answers.map((sample) => editDistance(answerTokens, tokenize(sample))));
+      const referenceLength = Math.max(...exercise.answers.map((sample) => tokenize(sample).length));
+      const similarity = Math.max(0, Math.round((1 - bestDistance / Math.max(answerTokens.length, referenceLength, 1)) * 100));
+      const matchedTerms = exercise.keyTerms.filter((term) =>
+        (term.translation || "").split(/[,;/]/).some((variant) => includesTokenSequence(answerTokens, variant))
+      );
+      const missingTerms = exercise.keyTerms.filter((term) => !matchedTerms.includes(term));
+      const assessment = similarity >= 85
+        ? "Bản dịch khá sát đáp án mẫu."
+        : similarity >= 60
+          ? "Bản dịch giữ được một phần nội dung; hãy rà lại cách dùng từ và cấu trúc."
+          : "Bản dịch còn khác đáp án mẫu đáng kể; hãy kiểm tra lại ý chính và thuật ngữ.";
+      const termNote = matchedTerms.length
+        ? ` Đã nhận diện ${matchedTerms.length}/${exercise.keyTerms.length} thuật ngữ chính (${matchedTerms.map((term) => term.translation).join(", ")}).`
+        : " Chưa nhận diện được thuật ngữ chính nào theo đáp án mẫu.";
+      const missingNote = missingTerms.length
+        ? ` Có thể rà lại: ${missingTerms.map((term) => term.translation).join(", ")}.`
+        : "";
+      showTranslationFeedback(
+        `Nhận xét bản dịch · Độ tương đồng từ vựng ${similarity}%`,
+        `${assessment}${termNote}${missingNote} Đây là đối chiếu từ và thuật ngữ, không thay thế đánh giá ngữ nghĩa.`,
+        similarity < 50
+      );
+    }
+
+    function checkPersonalTranslationAgainstReference(answerTokens, translatedText, source) {
+      const referenceTokens = tokenize(translatedText);
+      const similarity = Math.max(0, Math.round((1 - editDistance(answerTokens, referenceTokens) / Math.max(answerTokens.length, referenceTokens.length, 1)) * 100));
+      const keyPhrases = extractKeywordCandidates(translatedText);
+      const matchedPhrases = keyPhrases.filter((phrase) => includesTokenSequence(answerTokens, phrase));
+      const assessment = similarity >= 85
+        ? "Bản dịch của bạn khá sát gợi ý DeepL về mặt từ vựng."
+        : similarity >= 60
+          ? "Bản dịch có một số điểm tương đồng; hãy rà lại các cụm từ và ý chính."
+          : "Bản dịch khác gợi ý DeepL đáng kể; hãy đối chiếu lại nội dung và thuật ngữ.";
+      const phraseNote = keyPhrases.length
+        ? ` Giữ được ${matchedPhrases.length}/${keyPhrases.length} cụm từ được chọn từ gợi ý${matchedPhrases.length ? ` (${matchedPhrases.join(", ")})` : ""}.`
+        : "";
+      showTranslationFeedback(
+        `Nhận xét bản dịch · ${wordCount(source)} từ nguồn · Độ tương đồng từ vựng ${similarity}%`,
+        `${assessment}${phraseNote} Đây là đối chiếu token/cụm từ, không đánh giá chính xác ngữ nghĩa; hãy tự rà soát trước khi dùng.`,
+        similarity < 50
+      );
+    }
+
+    async function checkTranslation() {
       const answer = tokenize(answerText.value);
+      if (answer.length === 0) {
+        showTranslationFeedback("Chưa có bản dịch", "Hãy nhập bản dịch của bạn trước khi kiểm tra.", true);
+        return;
+      }
       if (activeTranslationMode === "personal") {
-        checkPersonalTranslation(answer);
+        await checkPersonalTranslation(answer);
         return;
       }
       const exercise = currentExercises()[Number(exerciseSelect.value)];
-      if (answer.length === 0) {
-        feedback.className = "feedback is-visible is-low";
-        feedback.innerHTML = "<strong>Chưa có bản dịch</strong>Hãy nhập câu trả lời trước khi kiểm tra.";
-        return;
-      }
-
-      const bestDistance = Math.min(...exercise.answers.map((sample) => editDistance(answer, tokenize(sample))));
-      const referenceLength = Math.max(...exercise.answers.map((sample) => tokenize(sample).length));
-      const similarity = Math.max(0, Math.round((1 - bestDistance / Math.max(answer.length, referenceLength, 1)) * 100));
-      const message = similarity >= 75
-        ? "Khá sát đáp án mẫu. Hãy tự kiểm tra thêm sắc thái và ngữ cảnh."
-        : "Còn khác đáp án mẫu. Thử đối chiếu lại cách dùng từ và cấu trúc câu.";
-      feedback.className = `feedback is-visible${similarity < 50 ? " is-low" : ""}`;
-      feedback.innerHTML = `<strong>Độ tương đồng từ vựng: ${similarity}%</strong>${message} Đây không phải điểm đánh giá chất lượng bản dịch.`;
+      checkSampleTranslation(answer, exercise);
       renderSampleBreakdown(exercise);
     }
 
@@ -1107,49 +1165,54 @@
       return [...new Set(candidates)].slice(0, 6);
     }
 
-    function checkPersonalTranslation(answerTokens) {
+    async function checkPersonalTranslation(answerTokens) {
       const source = sourceText.value.trim();
-      const reference = referenceAnswer.value.trim();
       if (!source) {
-        feedback.className = "feedback is-visible is-low";
-        feedback.textContent = "Hãy dán văn bản nguồn hoặc tải tài liệu trước khi kiểm tra.";
-        return;
-      }
-      if (answerTokens.length === 0) {
-        feedback.className = "feedback is-visible is-low";
-        feedback.textContent = "Hãy nhập bản dịch của bạn trước khi xem gợi ý.";
+        showTranslationFeedback("Chưa có văn bản nguồn", "Hãy dán văn bản hoặc tải tài liệu trước khi kiểm tra.", true);
         return;
       }
 
-      const referenceTokens = tokenize(reference);
-      const counts = `Văn bản gốc: ${wordCount(source)} từ · Bản dịch của bạn: ${answerTokens.length} từ`;
-      if (referenceTokens.length > 0) {
-        const similarity = Math.max(0, Math.round((1 - editDistance(answerTokens, referenceTokens) / Math.max(answerTokens.length, referenceTokens.length, 1)) * 100));
-        feedback.className = "feedback is-visible";
-        feedback.innerHTML = `<strong>${counts} · Gợi ý: ${referenceTokens.length} từ</strong>Độ tương đồng token: ${similarity}%. Chỉ số này không đánh giá độ đúng nghĩa hay chất lượng bản dịch.`;
-      } else {
-        feedback.className = "feedback is-visible";
-        feedback.innerHTML = `<strong>${counts}</strong>Chưa có đáp án gợi ý để so sánh. Bạn có thể thêm đáp án trong mục tùy chọn phía trên.`;
+      let apiKey = "";
+      try {
+        apiKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
+      } catch (error) {
+        showTranslationFeedback("Không đọc được DeepL API Key", "Kiểm tra quyền lưu trữ của trình duyệt rồi thử lại.", true);
+        return;
       }
-      renderPersonalBreakdown(reference);
-      capturePersonalDraft();
-    }
 
-    function renderPersonalBreakdown(reference) {
-      const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
-      const keywords = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(reference);
-      document.querySelector("#breakdown-title").textContent = "Đáp án gợi ý của bạn";
-      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Cụm từ đáng chú ý trong đáp án gợi ý";
-      document.querySelector("#model-answer").textContent = reference || "Bạn chưa nhập đáp án gợi ý cho tài liệu này.";
-      document.querySelector("#translation-context").textContent = enteredKeywords.length
-        ? "Từ khóa do bạn cung cấp; hãy đối chiếu cách dùng theo ngữ cảnh của văn bản."
-        : "Các cụm từ được ghép từ những từ đứng liền nhau, không phải phân tích ngữ nghĩa. Bạn có thể tự nhập từ khóa trong mục đáp án gợi ý.";
-      renderKeyTerms(keywords.map((word) => ({
-        source: word,
-        translation: "",
-        reason: enteredKeywords.length ? "Từ khóa do bạn ghi chú để tự rà soát." : "Token xuất hiện trong đáp án gợi ý; hãy tự xác định vai trò trong ngữ cảnh."
-      })));
-      document.querySelector("#answer-breakdown").hidden = false;
+      if (!apiKey) {
+        showTranslationFeedback("Cần có DeepL API Key", "Vui lòng dán key DeepL vào phần Cài đặt DeepL API rồi bấm Lưu key để kiểm tra tài liệu cá nhân.", true);
+        setDeepLStatus("Vui lòng dán DeepL API Key và bấm Lưu key để tiếp tục.", true);
+        openDeepLSettings();
+        deeplApiKeyInput.focus();
+        return;
+      }
+      if (new TextEncoder().encode(source).length > 120000) {
+        showTranslationFeedback("Văn bản vượt giới hạn", "Hãy chia nhỏ văn bản cá nhân dưới 120 KB rồi thử lại.", true);
+        return;
+      }
+
+      const button = document.querySelector("#check-answer");
+      button.disabled = true;
+      button.textContent = "Đang kiểm tra...";
+      showTranslationFeedback("Đang kiểm tra bản dịch", "Đang lấy gợi ý DeepL để đối chiếu với bản dịch của bạn...");
+      try {
+        const result = await requestDeepLTranslation(apiKey, source);
+        const translatedText = result.translations?.[0]?.text?.trim();
+        if (!translatedText) throw new Error("DeepL không trả về nội dung bản dịch.");
+        referenceAnswer.value = translatedText;
+        capturePersonalDraft();
+        renderDeepLBreakdown(translatedText);
+        checkPersonalTranslationAgainstReference(answerTokens, translatedText, source);
+        setDeepLStatus("Đã nhận gợi ý DeepL và hoàn tất nhận xét bản dịch.");
+      } catch (error) {
+        const message = error.message || "Không thể hoàn tất yêu cầu DeepL.";
+        showTranslationFeedback("Không thể kiểm tra bằng DeepL", message, true);
+        setDeepLStatus(message, true);
+      } finally {
+        button.disabled = false;
+        updateCheckButtonLabel();
+      }
     }
 
     function renderDeepLBreakdown(translatedText) {
@@ -1272,57 +1335,6 @@
           throw new Error("Không tìm thấy endpoint DeepL cùng domain. Hãy triển khai api/deepl/translate.js trên Vercel; nếu chạy local, dùng python3 server.py.");
         }
         return await readDeepLResponse(response);
-      }
-    }
-
-    async function suggestWithDeepL() {
-      const button = document.querySelector("#suggest-deepl");
-      let apiKey = "";
-      try {
-        apiKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
-      } catch (error) {
-        setDeepLStatus("Không thể đọc key trong localStorage.", true);
-        openDeepLSettings();
-        return;
-      }
-
-      if (!apiKey) {
-        openDeepLSettings();
-        deeplApiKeyInput.focus();
-        setDeepLStatus(deeplApiKeyInput.value.trim()
-          ? "Key chưa được lưu. Bấm Lưu key hoặc đăng ký gói DeepL API Free rồi thử lại."
-          : "Chưa có API Key. Đăng ký DeepL API Free, nhập Authentication Key ở trên hoặc tiếp tục luyện tập không cần DeepL.", true);
-        return;
-      }
-
-      const source = sourceText.value.trim();
-      if (!source) {
-        setDeepLStatus("Văn bản nguồn đang trống.", true);
-        return;
-      }
-      if (new TextEncoder().encode(source).length > 120000) {
-        setDeepLStatus("Đoạn văn vượt giới hạn gửi an toàn 120 KB. Hãy chia nhỏ văn bản.", true);
-        return;
-      }
-      button.disabled = true;
-      button.textContent = "Đang dịch...";
-      setDeepLStatus("Đang gửi văn bản tới DeepL API Free...");
-      try {
-        const result = await requestDeepLTranslation(apiKey, source);
-        const translatedText = result.translations?.[0]?.text?.trim();
-        if (!translatedText) throw new Error("DeepL không trả về nội dung bản dịch.");
-        referenceAnswer.value = translatedText;
-        if (activeTranslationMode === "personal") capturePersonalDraft();
-        renderDeepLBreakdown(translatedText);
-        feedback.className = "feedback is-visible";
-        feedback.textContent = "Đã nhận gợi ý DeepL. Hãy rà soát bản dịch trước khi dùng.";
-        setDeepLStatus("Đã điền gợi ý vào breakdown và ô đáp án gợi ý.");
-      } catch (error) {
-        const message = error.message || "Không thể hoàn tất yêu cầu DeepL.";
-        setDeepLStatus(message, true);
-      } finally {
-        button.disabled = false;
-        button.textContent = "Gợi ý bằng DeepL";
       }
     }
 
@@ -1989,7 +2001,6 @@
     document.querySelector("#deepl-settings").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
-    document.querySelector("#suggest-deepl").addEventListener("click", suggestWithDeepL);
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
     youtubeUrlInput.addEventListener("input", () => {
       if (getYouTubeVideoId(youtubeUrlInput.value)) {
