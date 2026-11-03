@@ -328,6 +328,8 @@
     .primary-button { border-color: var(--blue); background: var(--blue); color: white; }
     .primary-button:hover { background: var(--blue-dark); }
     .quiet-button { background: transparent; }
+    .quiet-button.is-recording { border-color: #dc2626; background: #dc2626; color: white; }
+    .quiet-button.is-recording:hover { border-color: #b91c1c; background: #b91c1c; }
     .icon-button { width: 38px; min-width: 38px; padding: 0; }
     .icon-button svg { width: 18px; height: 18px; }
     button:disabled { opacity: .48; cursor: not-allowed; }
@@ -768,9 +770,9 @@
                 <span class="field-label">Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)</span>
                 <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
               </label>
-              <audio class="local-media-player" id="local-audio-player" controls preload="metadata" hidden></audio>
-              <video class="local-media-player" id="local-video-player" controls preload="metadata" playsinline hidden></video>
-              <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Khi bấm phát, mic và đồng hồ sẽ tự bắt đầu.</p>
+              <audio class="local-media-player" id="local-audio-player" preload="metadata" hidden></audio>
+              <video class="local-media-player" id="local-video-player" preload="metadata" playsinline hidden></video>
+              <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian.</p>
             </div>
           </section>
           <div class="interpret-session">
@@ -810,11 +812,9 @@
             </div>
             <div class="timer-tools" aria-label="Đồng hồ luyện tập">
               <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
-              <button class="quiet-button" id="toggle-timer" type="button">Bắt đầu giờ</button>
               <details class="transcript-tools">
                 <summary aria-label="Thao tác bổ sung">Thêm</summary>
                 <div class="transcript-tool-list">
-                  <button class="quiet-button" id="reset-timer" type="button">Đặt lại đồng hồ</button>
                   <button class="quiet-button" id="copy-transcript" type="button">Sao chép bản chép lời</button>
                   <button class="quiet-button" id="clear-transcript" type="button">Xóa bản chép lời</button>
                 </div>
@@ -1040,6 +1040,8 @@
     let youtubePlayer = null;
     let youtubeApiLoading = false;
     let localPracticeMediaUrl = "";
+    let activePracticeSource = "";
+    let pendingYouTubePlayback = false;
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -1058,6 +1060,12 @@
         setSaveStatus(document.querySelector("#personal-status"), "Không thể đọc danh sách chủ đề đã lưu.");
         return [];
       }
+    }
+
+    function pausePracticeMedia() {
+      document.querySelector("#local-audio-player").pause();
+      document.querySelector("#local-video-player").pause();
+      if (activePracticeSource === "youtube") youtubePlayer?.pauseVideo?.();
     }
 
     function getMaterialTopic(material) {
@@ -2161,7 +2169,7 @@
         : "Dán link YouTube hoặc bắt đầu nói trực tiếp.";
       document.querySelector("#quick-guide-step-two").textContent = translating
         ? "Viết bản dịch rồi chọn “Kiểm tra & Xem gợi ý”."
-        : "Dùng “Bắt đầu lại” để xóa transcript và đặt lại buổi luyện.";
+        : "Bấm “Bắt đầu nói” để phát nguồn và tự động tính thời gian; “Bắt đầu lại” để đưa nguồn về đầu.";
       document.querySelector("#page-title").textContent = translating
         ? "Đọc kỹ. Cân nhắc. Viết chuẩn xác."
         : "Nghe kỹ. Chuyển ý. Nói tự tin.";
@@ -2189,7 +2197,9 @@
       document.querySelector("#mic-label").textContent = listening ? "Đang nghe" : "Sẵn sàng";
       const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
       document.querySelector("#start-listening").disabled = listening || (!SpeechRecognition && !canRecordAudio);
-      document.querySelector("#stop-listening").disabled = !listening;
+      const stopButton = document.querySelector("#stop-listening");
+      stopButton.disabled = !listening;
+      stopButton.classList.toggle("is-recording", listening);
       document.querySelector("#speech-status").textContent = message;
     }
 
@@ -2198,6 +2208,8 @@
       const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
       if (!SpeechRecognition && !canRecordAudio) return;
       document.querySelector("#start-listening").disabled = true;
+      startTimer();
+      startPracticeMedia();
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const recordingId = speechRecordingId;
       if (canRecordAudio) {
@@ -2213,6 +2225,8 @@
         if (canRecordAudio && speechAudioRecorder?.state === "recording") {
           setListening(true, "Đang ghi âm. Trình duyệt chưa hỗ trợ tự tạo bản chép lời.");
         } else {
+          pauseTimer();
+          pausePracticeMedia();
           setListening(false, "Không thể bắt đầu nhận dạng hoặc ghi âm trong trình duyệt này.");
         }
         return;
@@ -2240,6 +2254,8 @@
           "no-speech": "Chưa phát hiện giọng nói. Hãy thử lại.",
           "network": "Không kết nối được dịch vụ nhận dạng giọng nói. Hãy kiểm tra Internet rồi thử lại."
         };
+        pauseTimer();
+        pausePracticeMedia();
         setListening(false, messages[event.error] || `Lỗi nhận dạng: ${event.error}.`);
         if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       };
@@ -2248,12 +2264,16 @@
           restartingSpeechSessions.delete(recordingId);
           return;
         }
+        pauseTimer();
+        pausePracticeMedia();
         setListening(false, "Đã dừng nghe. Bản chép lời vẫn được giữ lại.");
         if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       };
       try {
         recognition.start();
       } catch (error) {
+        pauseTimer();
+        pausePracticeMedia();
         setListening(false, "Không thể bắt đầu. Hãy đợi một chút rồi thử lại.");
         if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       }
@@ -2341,10 +2361,28 @@
       }
     }
 
-    function startPracticeWhenVideoPlays() {
-      const startButton = document.querySelector("#start-listening");
-      if (!startButton.disabled) startListening();
-      if (timerStartedAt === null) toggleTimer();
+    function startPracticeMedia() {
+      if (activePracticeSource === "local") {
+        const player = document.querySelector("#local-audio-player").hidden
+          ? document.querySelector("#local-video-player")
+          : document.querySelector("#local-audio-player");
+        if (!player.hidden) {
+          player.play().catch(() => {
+            document.querySelector("#local-media-status").textContent =
+              "Không thể phát tệp này. Hãy kiểm tra định dạng hoặc thử mở tệp bằng trình duyệt Chrome/Edge.";
+            pauseTimer();
+          });
+        }
+        return;
+      }
+
+      if (activePracticeSource !== "youtube") return;
+      if (youtubePlayer?.playVideo) {
+        youtubePlayer.playVideo();
+      } else {
+        pendingYouTubePlayback = true;
+        ensureYouTubeIframeApi();
+      }
     }
 
     function initializeYouTubePlayer() {
@@ -2354,13 +2392,20 @@
       youtubePlayer = new window.YT.Player(frame, {
         events: {
           onReady: (event) => {
-            document.querySelector("#youtube-status").textContent = "Phát video để tự bắt đầu thu âm và bấm giờ. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
-            if (event.target.getPlayerState?.() === window.YT.PlayerState.PLAYING) startPracticeWhenVideoPlays();
+            document.querySelector("#youtube-status").textContent = "Video đã tải. Bấm “Bắt đầu nói” để phát video và tự động tính thời gian. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
+            if (pendingYouTubePlayback) {
+              pendingYouTubePlayback = false;
+              event.target.playVideo();
+            }
           },
           onStateChange: (event) => {
-            if (event.data === window.YT.PlayerState.PLAYING) startPracticeWhenVideoPlays();
+            if (event.data === window.YT.PlayerState.PLAYING) {
+              document.querySelector("#youtube-status").textContent = "Video đang phát. Đồng hồ được tính tự động từ lúc bắt đầu nói.";
+            }
           },
           onError: () => {
+            pendingYouTubePlayback = false;
+            pauseTimer();
             document.querySelector("#youtube-status").textContent = "Không thể phát video này. Hãy kiểm tra link hoặc quyền nhúng của video.";
           }
         }
@@ -2400,23 +2445,26 @@
         player.hidden = true;
         frame.removeAttribute("src");
         frame.dataset.videoId = "";
+        pendingYouTubePlayback = false;
+        if (activePracticeSource === "youtube") activePracticeSource = "";
         status.textContent = "Link chưa hợp lệ. Hãy dùng link youtube.com hoặc youtu.be.";
         return;
       }
 
+      activePracticeSource = "youtube";
       if (frame.dataset.videoId !== videoId) {
         frame.dataset.videoId = videoId;
         if (youtubePlayer?.cueVideoById) {
           youtubePlayer.cueVideoById(videoId);
         } else {
-          const params = new URLSearchParams({ enablejsapi: "1", rel: "0" });
+          const params = new URLSearchParams({ enablejsapi: "1", rel: "0", controls: "0" });
           const origin = window.location?.origin;
           if (origin && origin !== "null") params.set("origin", origin);
           frame.src = `https://www.youtube-nocookie.com/embed/${videoId}?${params.toString()}`;
         }
       }
       player.hidden = false;
-      status.textContent = "Video đã nhúng. Phát video để tự bắt đầu thu âm và bấm giờ. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
+      status.textContent = "Video đã tải. Bấm “Bắt đầu nói” để phát video và tự động tính thời gian. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
       ensureYouTubeIframeApi();
     }
 
@@ -2433,6 +2481,7 @@
         URL.revokeObjectURL(localPracticeMediaUrl);
         localPracticeMediaUrl = "";
       }
+      if (activePracticeSource === "local") activePracticeSource = "";
     }
 
     function loadLocalPracticeMedia(event) {
@@ -2453,13 +2502,15 @@
       player.src = localPracticeMediaUrl;
       player.hidden = false;
       player.load();
-      status.textContent = `Đã chọn “${file.name}”. Bấm phát để bắt đầu luyện phiên dịch; tệp không được tải lên máy chủ.`;
+      activePracticeSource = "local";
+      status.textContent = `Đã chọn “${file.name}”. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian; tệp không được tải lên máy chủ.`;
       event.currentTarget.value = "";
     }
 
     function resetYouTubeVideo() {
       const frame = document.querySelector("#youtube-frame");
       if (!frame.dataset.videoId) return;
+      pendingYouTubePlayback = false;
       if (youtubePlayer?.seekTo) {
         youtubePlayer.pauseVideo?.();
         youtubePlayer.seekTo(0, true);
@@ -2498,25 +2549,19 @@
       timerStartedAt = null;
       window.clearInterval(timerInterval);
       timerInterval = null;
-      document.querySelector("#toggle-timer").textContent = "Tiếp tục giờ";
       renderTimer();
     }
 
-    function toggleTimer() {
-      if (timerStartedAt !== null) {
-        pauseTimer();
-        return;
-      }
+    function startTimer() {
+      if (timerStartedAt !== null) return;
       timerStartedAt = Date.now() - timerElapsedMs;
       timerInterval = window.setInterval(renderTimer, 250);
-      document.querySelector("#toggle-timer").textContent = "Tạm dừng";
       renderTimer();
     }
 
     function resetTimer() {
       pauseTimer();
       timerElapsedMs = 0;
-      document.querySelector("#toggle-timer").textContent = "Bắt đầu giờ";
       renderTimer();
     }
 
@@ -2561,8 +2606,13 @@
       transcript.textContent = "";
       updateCounts();
       resetTimer();
+      pausePracticeMedia();
+      ["#local-audio-player", "#local-video-player"].forEach((selector) => {
+        const player = document.querySelector(selector);
+        if (player.src) player.currentTime = 0;
+      });
       resetYouTubeVideo();
-      setListening(false, "Đã bắt đầu lại. Phát video hoặc bấm bắt đầu nói.");
+      setListening(false, "Đã bắt đầu lại. Bấm “Bắt đầu nói” để phát nguồn và bắt đầu tính thời gian.");
     }
 
     function readPracticeHistory() {
@@ -2774,7 +2824,6 @@
     localMediaInput.addEventListener("change", loadLocalPracticeMedia);
     ["#local-audio-player", "#local-video-player"].forEach((selector) => {
       const player = document.querySelector(selector);
-      player.addEventListener("play", startPracticeWhenVideoPlays);
       player.addEventListener("error", () => {
         document.querySelector("#local-media-status").textContent =
           "Không phát được tệp này. Hãy kiểm tra định dạng hoặc thử mở tệp bằng trình duyệt Chrome/Edge.";
@@ -2806,11 +2855,11 @@
     document.querySelector("#stop-listening").addEventListener("click", () => {
       if (recognition) recognition.stop();
       stopSpeechAudioCapture();
+      pauseTimer();
+      pausePracticeMedia();
       if (!recognition) setListening(false, "Đã dừng ghi âm. Bản ghi có thể nghe lại bên dưới.");
     });
-    document.querySelector("#toggle-timer").addEventListener("click", toggleTimer);
     document.querySelector("#restart-practice").addEventListener("click", restartPractice);
-    document.querySelector("#reset-timer").addEventListener("click", resetTimer);
     document.querySelector("#save-practice").addEventListener("click", savePractice);
     document.querySelector("#clear-history").addEventListener("click", () => {
       if (!window.confirm("Xóa toàn bộ lịch sử luyện tập trên trình duyệt này?")) return;
