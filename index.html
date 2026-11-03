@@ -303,6 +303,8 @@
     .primary-button { border-color: var(--blue); background: var(--blue); color: white; }
     .primary-button:hover { background: var(--blue-dark); }
     .quiet-button { background: transparent; }
+    .icon-button { width: 38px; min-width: 38px; padding: 0; }
+    .icon-button svg { width: 18px; height: 18px; }
     button:disabled { opacity: .48; cursor: not-allowed; }
 
     .workspace-actions {
@@ -316,6 +318,7 @@
     }
 
     .score-note { color: var(--muted); font-size: 12px; }
+    .save-status { margin: -7px 22px 14px; color: var(--muted); font-size: 12px; }
 
     .feedback {
       display: none;
@@ -504,7 +507,7 @@
         </span>
         <span><span class="brand-name">Interslation</span><span class="brand-note">Phiên dịch, Biên dịch không hề khó</span></span>
       </div>
-      <div class="local-label"><span class="local-dot" aria-hidden="true"></span>Giao diện chạy trên thiết bị</div>
+      <div class="local-label"><span class="local-dot" aria-hidden="true"></span>Không gian luyện tập của bạn</div>
     </header>
 
     <main class="app-layout">
@@ -570,7 +573,6 @@
               <option value="">Chọn tài liệu...</option>
             </select>
           </label>
-          <button class="quiet-button" id="save-material" type="button">Lưu tài liệu cá nhân</button>
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
@@ -598,7 +600,7 @@
                 <li>Dán key vào ô phía trên và bấm <strong>Lưu key</strong>.</li>
               </ol>
             </section>
-            <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.</p>
+            <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Bạn có thể dùng DeepL để nhận gợi ý cho tài liệu cá nhân.</p>
           </div>
         </dialog>
 
@@ -632,12 +634,16 @@
         </details>
 
         <div class="workspace-actions">
-          <span class="score-note" id="translation-score-note">So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa</span>
+          <span class="score-note" id="translation-score-note">Nhận xét dựa trên nội dung và thuật ngữ chính</span>
           <div class="translation-button-group">
+            <button class="quiet-button icon-button" id="save-translation" type="button" aria-label="Lưu bài biên dịch" title="Lưu bài biên dịch">
+              <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+            </button>
             <button class="quiet-button" id="open-deepl-settings" type="button">⚙ Cài đặt DeepL API</button>
             <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem nhận xét <span aria-hidden="true">→</span></button>
           </div>
         </div>
+        <p class="save-status" id="translation-save-status" role="status" aria-live="polite" hidden></p>
         <div class="feedback" id="translation-feedback" role="status" aria-live="polite"></div>
         <section class="answer-breakdown" id="answer-breakdown" aria-live="polite" hidden>
           <h3 class="breakdown-heading" id="breakdown-title">Đáp án mẫu</h3>
@@ -684,7 +690,7 @@
                 <option value="ja-JP">日本語</option>
               </select>
             </label>
-            <span class="score-note">Transcript của buổi luyện hiện tại</span>
+            <span class="score-note">Nội dung bạn vừa nói</span>
           </div>
 
           <div class="transcript" id="transcript" role="textbox" aria-label="Bản chép lời" aria-readonly="true" aria-live="polite"></div>
@@ -703,6 +709,9 @@
               <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
               <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
               <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
+              <button class="quiet-button icon-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              </button>
             </div>
             <div class="timer-tools" aria-label="Đồng hồ luyện tập">
               <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
@@ -711,9 +720,8 @@
                 <summary aria-label="Thao tác bổ sung">Thêm</summary>
                 <div class="transcript-tool-list">
                   <button class="quiet-button" id="reset-timer" type="button">Đặt lại đồng hồ</button>
-                  <button class="quiet-button" id="copy-transcript" type="button">Sao chép transcript</button>
-                  <button class="quiet-button" id="clear-transcript" type="button">Xóa transcript</button>
-                  <button class="quiet-button" id="save-practice" type="button">Lưu lịch sử luyện tập</button>
+                  <button class="quiet-button" id="copy-transcript" type="button">Sao chép bản chép lời</button>
+                  <button class="quiet-button" id="clear-transcript" type="button">Xóa bản chép lời</button>
                 </div>
               </details>
             </div>
@@ -726,14 +734,14 @@
             </div>
             <ul class="history-list" id="history-list"></ul>
           </details>
-          <p class="notice" id="speech-notice">Nhận dạng giọng nói cần được trình duyệt hỗ trợ và có thể cần kết nối Internet. Xem README để biết giới hạn quyền riêng tư và lựa chọn Whisper offline.</p>
+          <p class="notice" id="speech-notice">Cho phép truy cập micro để bắt đầu luyện nói.</p>
           </div>
         </div>
       </section>
 
       <footer class="page-foot">
-        <span>Bản mẫu học tập · Không gửi bản dịch tới API chấm điểm</span>
-        <span>Không lưu transcript sau khi đóng trang</span>
+        <span>Luyện tập theo nhịp độ của bạn</span>
+        <span>Nhấn biểu tượng lưu để giữ lại bài làm</span>
       </footer>
       </div>
     </main>
@@ -957,6 +965,7 @@
 
     function loadExercise() {
       if (activeTranslationMode !== "sample") return;
+      document.querySelector("#translation-save-status").hidden = true;
       const exercise = currentExercises()[Number(exerciseSelect.value)];
       if (!exercise) return;
       sourceText.value = exercise.source;
@@ -991,8 +1000,8 @@
         ? "Dán văn bản, tải tệp hoặc mở lại tài liệu đã lưu"
         : "Chọn một câu mẫu hoặc tự đưa tài liệu vào luyện tập";
       document.querySelector("#translation-score-note").textContent = personal
-        ? "Đối chiếu token cục bộ; không đánh giá độ đúng ngữ nghĩa"
-        : "So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa";
+        ? "Nhận xét dựa trên nội dung và gợi ý DeepL"
+        : "Nhận xét dựa trên nội dung và thuật ngữ chính";
       updateCheckButtonLabel();
       feedback.className = "feedback";
       feedback.textContent = "";
@@ -1076,7 +1085,7 @@
         : "";
       showTranslationFeedback(
         `Nhận xét bản dịch · Độ tương đồng từ vựng ${similarity}%`,
-        `${assessment}${termNote}${missingNote} Đây là đối chiếu từ và thuật ngữ, không thay thế đánh giá ngữ nghĩa.`,
+        `${assessment}${termNote}${missingNote} Nhận xét mang tính tham khảo; hãy kiểm tra ý nghĩa theo ngữ cảnh.`,
         similarity < 50
       );
     }
@@ -1096,7 +1105,7 @@
         : "";
       showTranslationFeedback(
         `Nhận xét bản dịch · ${wordCount(source)} từ nguồn · Độ tương đồng từ vựng ${similarity}%`,
-        `${assessment}${phraseNote} Đây là đối chiếu token/cụm từ, không đánh giá chính xác ngữ nghĩa; hãy tự rà soát trước khi dùng.`,
+        `${assessment}${phraseNote} Nhận xét mang tính tham khảo; hãy kiểm tra ý nghĩa theo ngữ cảnh.`,
         similarity < 50
       );
     }
@@ -1176,19 +1185,19 @@
       try {
         apiKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
       } catch (error) {
-        showTranslationFeedback("Không đọc được DeepL API Key", "Kiểm tra quyền lưu trữ của trình duyệt rồi thử lại.", true);
+        showTranslationFeedback("Không đọc được khóa DeepL", "Hãy thử mở lại phần cài đặt DeepL.", true);
         return;
       }
 
       if (!apiKey) {
-        showTranslationFeedback("Cần có DeepL API Key", "Vui lòng dán key DeepL vào phần Cài đặt DeepL API rồi bấm Lưu key để kiểm tra tài liệu cá nhân.", true);
-        setDeepLStatus("Vui lòng dán DeepL API Key và bấm Lưu key để tiếp tục.", true);
+        showTranslationFeedback("Cần có khóa DeepL", "Vui lòng dán khóa vào phần Cài đặt DeepL rồi bấm Lưu khóa để kiểm tra tài liệu.", true);
+        setDeepLStatus("Vui lòng dán khóa DeepL và bấm Lưu khóa để tiếp tục.", true);
         openDeepLSettings();
         deeplApiKeyInput.focus();
         return;
       }
       if (new TextEncoder().encode(source).length > 120000) {
-        showTranslationFeedback("Văn bản vượt giới hạn", "Hãy chia nhỏ văn bản cá nhân dưới 120 KB rồi thử lại.", true);
+        showTranslationFeedback("Văn bản quá dài", "Hãy chia nhỏ văn bản rồi thử lại.", true);
         return;
       }
 
@@ -1245,9 +1254,9 @@
       try {
         const savedKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
         deeplApiKeyInput.value = savedKey;
-        setDeepLStatus(savedKey ? "Đã có key lưu trên trình duyệt này." : "Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.");
+        setDeepLStatus(savedKey ? "Đã lưu khóa DeepL trên thiết bị này." : "Bạn có thể dùng DeepL để nhận gợi ý cho tài liệu cá nhân.");
       } catch (error) {
-        setDeepLStatus("Không thể truy cập localStorage trên trình duyệt này.", true);
+        setDeepLStatus("Không thể đọc cài đặt DeepL trên thiết bị này.", true);
       }
     }
 
@@ -1259,9 +1268,9 @@
       }
       try {
         window.localStorage.setItem(DEEPL_KEY_STORAGE_KEY, key);
-        setDeepLStatus("Đã lưu key trong localStorage. Key không được mã hóa; chỉ dùng trên thiết bị cá nhân.");
+        setDeepLStatus("Đã lưu khóa DeepL trên thiết bị này.");
       } catch (error) {
-        setDeepLStatus("Không thể lưu key. Hãy kiểm tra quyền hoặc dung lượng localStorage.", true);
+        setDeepLStatus("Không thể lưu khóa DeepL. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.", true);
       }
     }
 
@@ -1269,9 +1278,9 @@
       try {
         window.localStorage.removeItem(DEEPL_KEY_STORAGE_KEY);
         deeplApiKeyInput.value = "";
-        setDeepLStatus("Đã xóa key khỏi localStorage.");
+        setDeepLStatus("Đã xóa khóa DeepL khỏi thiết bị này.");
       } catch (error) {
-        setDeepLStatus("Không thể xóa key khỏi localStorage.", true);
+        setDeepLStatus("Không thể xóa khóa DeepL. Hãy thử lại.", true);
       }
     }
 
@@ -1286,13 +1295,13 @@
 
       if (!response.ok) {
         const statusMessages = {
-          401: "DeepL không chấp nhận API key (401). Hãy kiểm tra key.",
-          403: "DeepL từ chối API key hoặc quyền truy cập (403). Hãy kiểm tra loại tài khoản và key.",
-          429: "DeepL đang giới hạn số yêu cầu (429). Hãy chờ rồi thử lại.",
-          456: "Đã hết quota DeepL API (456). Kiểm tra hạn mức hoặc chu kỳ thanh toán."
+          401: "DeepL không nhận ra khóa này. Hãy kiểm tra lại khóa.",
+          403: "Khóa DeepL chưa được cấp quyền sử dụng. Hãy kiểm tra lại tài khoản và khóa.",
+          429: "DeepL đang nhận quá nhiều yêu cầu. Hãy chờ một chút rồi thử lại.",
+          456: "Tài khoản DeepL đã dùng hết lượt miễn phí. Hãy kiểm tra hạn mức tài khoản."
         };
         const details = typeof payload.message === "string" ? payload.message.trim() : "";
-        const summary = statusMessages[response.status] || `DeepL trả lỗi HTTP ${response.status}.`;
+        const summary = statusMessages[response.status] || "DeepL chưa thể xử lý yêu cầu này.";
         throw new Error(details ? `${summary} Chi tiết: ${details}` : summary);
       }
       return payload;
@@ -1314,7 +1323,7 @@
       } catch (error) {
         if (!(error instanceof TypeError)) throw error;
 
-        setDeepLStatus("Trình duyệt không kết nối trực tiếp được với DeepL (có thể do CORS). Đang thử endpoint cùng domain...");
+        setDeepLStatus("Đang thử kết nối DeepL theo cách khác...");
         let response;
         try {
           response = await fetch("/api/deepl/translate", {
@@ -1326,13 +1335,13 @@
           });
         } catch (fallbackError) {
           if (window.location.protocol === "file:") {
-            throw new Error("Hãy mở ứng dụng qua localhost để gọi DeepL; trên Vercel, triển khai cả thư mục api/deepl cùng index.html.");
+            throw new Error("Không thể kết nối DeepL khi mở tệp trực tiếp. Hãy mở ứng dụng từ trang web hoặc máy chủ cục bộ.");
           }
-          throw new Error("Không kết nối được DeepL trực tiếp hoặc endpoint cùng domain. Kiểm tra mạng và bảo đảm đã triển khai api/deepl/translate.js trên Vercel.");
+          throw new Error("Không thể kết nối DeepL. Hãy kiểm tra Internet rồi thử lại.");
         }
 
         if (response.status === 404) {
-          throw new Error("Không tìm thấy endpoint DeepL cùng domain. Hãy triển khai api/deepl/translate.js trên Vercel; nếu chạy local, dùng python3 server.py.");
+          throw new Error("Chưa thể sử dụng DeepL trên trang này. Hãy thử lại sau hoặc liên hệ người quản lý ứng dụng.");
         }
         return await readDeepLResponse(response);
       }
@@ -1362,22 +1371,22 @@
       });
     }
 
-    function savePersonalMaterial() {
-      capturePersonalDraft();
-      if (!personalDraft.source.trim()) {
-        document.querySelector("#personal-status").textContent = "Hãy nhập văn bản nguồn trước khi lưu.";
+    function saveMaterialDraft(draft, status, title) {
+      status.hidden = false;
+      if (!draft.source.trim()) {
+        status.textContent = "Hãy thêm văn bản nguồn trước khi lưu.";
         return;
       }
-      if (Object.values(personalDraft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
-        document.querySelector("#personal-status").textContent = "Mỗi ô chỉ hỗ trợ tối đa 50.000 ký tự để lưu cục bộ.";
+      if (Object.values(draft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
+        status.textContent = "Một ô có quá nhiều nội dung để lưu. Hãy rút ngắn văn bản rồi thử lại.";
         return;
       }
 
       const entry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
-        title: personalDraft.source.replace(/\s+/g, " ").trim().slice(0, 60),
+        title: title || draft.source.replace(/\s+/g, " ").trim().slice(0, 60),
         savedAt: new Date().toISOString(),
-        ...personalDraft
+        ...draft
       };
       try {
         const materials = readPersonalMaterials();
@@ -1385,10 +1394,31 @@
         window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
         populateSavedMaterials();
         document.querySelector("#saved-materials").value = entry.id;
-        document.querySelector("#personal-status").textContent = "Đã lưu nguồn, đáp án và bản dịch nháp trên thiết bị này.";
+        status.textContent = "Đã lưu bài biên dịch. Bạn có thể mở lại trong Tài liệu cá nhân.";
       } catch (error) {
-        document.querySelector("#personal-status").textContent = "Không thể lưu. Tài liệu có thể quá lớn hoặc bộ nhớ trình duyệt đã đầy.";
+        status.textContent = "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
       }
+    }
+
+    function saveCurrentTranslation() {
+      const status = document.querySelector("#translation-save-status");
+      status.hidden = false;
+      status.textContent = "";
+      if (activeTranslationMode === "personal") {
+        capturePersonalDraft();
+        saveMaterialDraft(personalDraft, status);
+        return;
+      }
+
+      const exercise = currentExercises()[Number(exerciseSelect.value)];
+      const draft = {
+        source: sourceText.value,
+        answer: answerText.value,
+        reference: exercise.answers[0] || "",
+        keywords: exercise.keyTerms.map((term) => term.translation).join(", ")
+      };
+      const title = `${industrySelect.selectedOptions[0].textContent} · ${exerciseSelect.selectedOptions[0].textContent}`;
+      saveMaterialDraft(draft, status, title);
     }
 
     function loadPersonalMaterial() {
@@ -1512,6 +1542,7 @@
     function handlePersonalInput() {
       updateCounts();
       if (activeTranslationMode === "personal") capturePersonalDraft();
+      document.querySelector("#translation-save-status").hidden = true;
       invalidateTranslationCheck();
     }
 
@@ -1569,13 +1600,13 @@
         recordingStatus.textContent = "Đang xin quyền micro để tạo bản ghi nghe lại...";
         await startSpeechAudioCapture();
       } else {
-        recordingStatus.textContent = "Trình duyệt này không hỗ trợ thu âm. Transcript vẫn có thể hoạt động nếu Web Speech API được hỗ trợ.";
+        recordingStatus.textContent = "Trình duyệt này chưa hỗ trợ ghi âm. Bạn vẫn có thể dùng tính năng chép lời nếu được hỗ trợ.";
       }
       if (speechRecordingId !== recordingId) return;
 
       if (!SpeechRecognition) {
         if (canRecordAudio && speechAudioRecorder?.state === "recording") {
-          setListening(true, "Đang ghi âm. Web Speech API không được hỗ trợ nên transcript sẽ không tự tạo.");
+          setListening(true, "Đang ghi âm. Trình duyệt chưa hỗ trợ tự tạo bản chép lời.");
         } else {
           setListening(false, "Không thể bắt đầu nhận dạng hoặc ghi âm trong trình duyệt này.");
         }
@@ -1602,7 +1633,7 @@
         const messages = {
           "not-allowed": "Bạn chưa cấp quyền micro cho trang này.",
           "no-speech": "Chưa phát hiện giọng nói. Hãy thử lại.",
-          "network": "Dịch vụ nhận dạng không kết nối được. API trình duyệt có thể cần Internet."
+          "network": "Không kết nối được dịch vụ nhận dạng giọng nói. Hãy kiểm tra Internet rồi thử lại."
         };
         setListening(false, messages[event.error] || `Lỗi nhận dạng: ${event.error}.`);
         if (speechRecordingId === recordingId) stopSpeechAudioCapture();
@@ -1612,7 +1643,7 @@
           restartingSpeechSessions.delete(recordingId);
           return;
         }
-        setListening(false, "Đã dừng nhận dạng. Transcript vẫn còn trên trang này.");
+        setListening(false, "Đã dừng nghe. Bản chép lời vẫn được giữ lại.");
         if (speechRecordingId === recordingId) stopSpeechAudioCapture();
       };
       try {
@@ -1742,14 +1773,14 @@
         if (typeof previousCallback === "function") previousCallback();
         youtubeApiLoading = false;
         if (window.YT?.Player) initializeYouTubePlayer();
-        else document.querySelector("#youtube-status").textContent = "YouTube Player API chưa sẵn sàng.";
+        else document.querySelector("#youtube-status").textContent = "Chưa thể mở video. Hãy thử tải lại trang.";
       };
       const apiScript = document.createElement("script");
       apiScript.src = "https://www.youtube.com/iframe_api";
       apiScript.async = true;
       apiScript.onerror = () => {
         youtubeApiLoading = false;
-        document.querySelector("#youtube-status").textContent = "Không tải được YouTube Player API. Kiểm tra kết nối Internet.";
+        document.querySelector("#youtube-status").textContent = "Không tải được video. Hãy kiểm tra kết nối Internet.";
       };
       document.head.appendChild(apiScript);
     }
@@ -1959,8 +1990,10 @@
       const savedTranscript = transcript.textContent.trim();
       const durationSeconds = Math.floor(getElapsedTime() / 1000);
       const historyMessage = document.querySelector("#history-message");
+      const speechStatus = document.querySelector("#speech-status");
       if (!savedTranscript && durationSeconds === 0 && !speechRecordingsById.has(speechRecordingId)) {
-        historyMessage.textContent = "Bắt đầu bấm giờ hoặc ghi transcript trước khi lưu.";
+        historyMessage.textContent = "Hãy bắt đầu buổi luyện trước khi lưu.";
+        speechStatus.textContent = historyMessage.textContent;
         return;
       }
 
@@ -1975,10 +2008,12 @@
         const entries = readPracticeHistory();
         entries.unshift(entry);
         window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_HISTORY_ITEMS)));
-        historyMessage.textContent = "Đã lưu buổi luyện trên trình duyệt này.";
+        historyMessage.textContent = "Đã lưu buổi phiên dịch.";
+        speechStatus.textContent = historyMessage.textContent;
         renderPracticeHistory();
       } catch (error) {
-        historyMessage.textContent = "Không thể lưu. Bộ nhớ trình duyệt có thể đã đầy hoặc bị chặn.";
+        historyMessage.textContent = "Không thể lưu buổi luyện. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
+        speechStatus.textContent = historyMessage.textContent;
       }
     }
 
@@ -1990,7 +2025,7 @@
     referenceAnswer.addEventListener("input", handlePersonalInput);
     personalKeywords.addEventListener("input", handlePersonalInput);
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
-    document.querySelector("#save-material").addEventListener("click", savePersonalMaterial);
+    document.querySelector("#save-translation").addEventListener("click", saveCurrentTranslation);
     document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
     document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
@@ -2048,13 +2083,13 @@
       finalTranscript = "";
       transcript.textContent = "";
       updateCounts();
-      document.querySelector("#speech-status").textContent = "Transcript đã được xóa.";
+      document.querySelector("#speech-status").textContent = "Đã xóa bản chép lời.";
     });
     document.querySelector("#copy-transcript").addEventListener("click", async () => {
       if (!transcript.textContent) return;
       try {
         await navigator.clipboard.writeText(transcript.textContent);
-        document.querySelector("#speech-status").textContent = "Đã sao chép transcript.";
+        document.querySelector("#speech-status").textContent = "Đã sao chép bản chép lời.";
       } catch (error) {
         document.querySelector("#speech-status").textContent = "Không thể sao chép. Hãy chọn và sao chép văn bản thủ công.";
       }
@@ -2064,8 +2099,8 @@
       const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
       document.querySelector("#start-listening").disabled = !canRecordAudio;
       document.querySelector("#speech-status").textContent = canRecordAudio
-        ? "Web Speech API không được hỗ trợ; bạn vẫn có thể ghi âm và nghe lại phần dịch."
-        : "Trình duyệt này chưa hỗ trợ Web Speech API hoặc ghi âm. Hãy thử Chrome hoặc Edge.";
+        ? "Bạn vẫn có thể ghi âm và nghe lại, nhưng trình duyệt chưa hỗ trợ tự tạo bản chép lời."
+        : "Trình duyệt này chưa hỗ trợ ghi âm. Hãy thử dùng Chrome hoặc Edge.";
     }
 
     window.addEventListener("pagehide", releaseMediaResources);
