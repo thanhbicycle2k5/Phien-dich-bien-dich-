@@ -1438,6 +1438,14 @@
       return text.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
     }
 
+    function chooseFeedbackVariant(variants, seed) {
+      let hash = 0;
+      for (const character of seed) {
+        hash = (hash * 31 + character.codePointAt(0)) >>> 0;
+      }
+      return variants[hash % variants.length];
+    }
+
     function showTranslationFeedback(title, message, isLow = false) {
       feedback.className = `feedback is-visible${isLow ? " is-low" : ""}`;
       feedback.dataset.title = title;
@@ -1515,13 +1523,25 @@
       const termGuidance = buildTermGuidance(answerTokens, terms);
       const needsPolish = polishSuggestions.length > 0 || termGuidance.hasUnmatched;
       const title = needsPolish ? "Gợi ý hoàn thiện" : "Diễn đạt tốt";
-      const introduction = needsPolish
-        ? "Bạn đã có cách diễn đạt riêng. Hãy tham khảo vài gợi ý để câu tự nhiên và truyền tải ý trọn vẹn hơn:"
-        : "Tuyệt vời! Bản dịch có thể dùng cách diễn đạt linh hoạt, không cần trùng nguyên văn với đáp án.";
+      const introduction = chooseFeedbackVariant(needsPolish
+        ? [
+            "Bản dịch đã có hướng diễn đạt riêng; bạn có thể xem thêm vài điểm cần chỉnh:",
+            "Một vài chỗ có thể được trau chuốt thêm để câu dịch rõ và tự nhiên hơn:",
+            "Hãy thử rà lại các gợi ý dưới đây để hoàn thiện bản dịch:"
+          ]
+        : [
+            "Bản dịch thể hiện tốt ý chính và cách diễn đạt.",
+            "Cách chuyển ngữ nhìn chung rõ ràng, dễ theo dõi.",
+            "Bạn đã truyền tải được nội dung chính bằng câu chữ tự nhiên."
+          ], `${answer}\n${referenceText}`);
       const guidance = [
         ...polishSuggestions,
         termGuidance.text,
-        "Đọc lại câu thành tiếng và đối chiếu ngữ cảnh để kiểm tra nhịp điệu, sắc thái và ý nghĩa."
+        chooseFeedbackVariant([
+          "Khi rà soát lần cuối, hãy chú ý sắc thái và ngữ cảnh của câu.",
+          "Đọc lại cùng câu trước đó để kiểm tra mạch văn và ý nghĩa.",
+          "Bạn có thể đọc thành tiếng để nhận ra chỗ câu văn chưa thuận."
+        ], `${referenceText}\n${answer}\nclosing`)
       ].filter(Boolean).join(" ");
       showTranslationFeedback(`${title}${sourceLabel ? ` · ${sourceLabel}` : ""}`, `${introduction} ${guidance}`);
     }
@@ -1552,16 +1572,28 @@
         : needsPolish
           ? "Gợi ý hoàn thiện"
           : "Diễn đạt tốt";
-      const introduction = needsReview
-        ? "Bản dịch có thể chưa truyền đạt cùng nội dung với gợi ý tham khảo:"
+      const feedbackSeed = `${sourceText.value}\n${answerTextValue}\n${referenceAnswer.value}`;
+      const introduction = chooseFeedbackVariant(needsReview
+        ? [
+            "Một số ý trong bản dịch có thể chưa khớp với nội dung nguồn; hãy rà lại các điểm sau:",
+            "Có dấu hiệu nội dung chưa tương ứng hoàn toàn với câu gốc. Bạn nên kiểm tra lại:",
+            "Trước khi chốt bản dịch, hãy đối chiếu kỹ các ý chính sau:"
+          ]
         : needsPolish
-        ? "Bản dịch đã có nền tảng tốt. Bạn có thể tinh chỉnh một vài điểm để câu văn tự nhiên hơn:"
-        : "Tuyệt vời! Hãy tiếp tục ưu tiên cách diễn đạt tự nhiên và chính xác về nghĩa; bản dịch không cần trùng từng chữ với gợi ý DeepL.";
+          ? [
+              "Ý chính đã có, nhưng một vài chỗ có thể diễn đạt tự nhiên hơn:",
+              "Bạn có thể chỉnh nhẹ một số điểm để câu dịch trôi chảy và rõ nghĩa hơn:",
+              "Bản dịch sẽ mạch lạc hơn nếu rà lại những điểm sau:"
+            ]
+          : [
+              "Bản dịch truyền đạt nội dung khá rõ; hãy tiếp tục chú ý đến sắc thái và độ tự nhiên.",
+              "Cách dịch nhìn chung ổn. Bạn có thể rà lại lần cuối để bảo đảm câu chữ thật chính xác.",
+              "Ý chính đã được thể hiện rõ. Hãy đọc lại để kiểm tra nhịp câu và cách dùng từ."
+            ], feedbackSeed);
       const guidance = [
         referenceMatchWarning,
         ...polishSuggestions,
-        termGuidance,
-        "Gợi ý DeepL chỉ mang tính tham khảo; hãy chọn cách diễn đạt phù hợp với ngữ cảnh."
+        termGuidance
       ].filter(Boolean).join(" ");
       const feedbackTitle = `${title} · Tài liệu cá nhân`;
       const feedbackMessage = `${introduction} ${guidance}`;
@@ -1600,7 +1632,11 @@
       const sharedCount = answerTokens.filter((token) => referenceTokenSet.has(token)).length;
       const overlap = (2 * sharedCount) / (answerTokens.length + referenceTokens.length);
       if (overlap >= 0.12) return "";
-      return "Bản dịch và gợi ý DeepL có rất ít từ khóa nội dung trùng nhau. Đây chỉ là đối chiếu từ vựng, nên cách diễn đạt khác vẫn có thể đúng; hãy kiểm tra lại xem ý chính có bị lệch hoặc thiếu không.";
+      return chooseFeedbackVariant([
+        "Bản dịch và gợi ý tham khảo có ít từ khóa nội dung tương đồng; hãy kiểm tra lại xem ý chính có bị lệch hoặc thiếu không.",
+        "Một số ý chính có thể chưa được chuyển tải tương ứng. Hãy đối chiếu lại với văn bản nguồn để chắc chắn.",
+        "Từ khóa trong hai bản khá khác nhau. Điều này chưa khẳng định bản dịch sai, nhưng bạn nên rà lại nội dung và các ý quan trọng."
+      ], `${answer}\n${reference}\n${targetLanguage}`);
     }
 
     async function checkTranslation() {
