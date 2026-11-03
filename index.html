@@ -463,6 +463,10 @@
     .youtube-status { min-height: 16px; margin: 6px 0 0; color: var(--muted); font-size: 11px; }
     .youtube-player { width: 100%; margin: 8px auto 0; overflow: hidden; border-radius: 6px; background: #0f172a; aspect-ratio: 16 / 9; }
     .youtube-player iframe { display: block; width: 100%; height: 100%; border: 0; }
+    .local-media-source { display: grid; gap: 7px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
+    .local-media-input { max-width: 100%; font-size: 12px; }
+    .local-media-player { width: 100%; max-height: 360px; margin-top: 4px; border-radius: 6px; background: #0f172a; }
+    .local-media-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
 
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .notice { margin: 15px 0 0; color: var(--muted); font-size: 11px; }
@@ -747,10 +751,10 @@
 
         <div class="interpret-body">
           <section class="youtube-practice" aria-labelledby="youtube-heading">
-            <h3 class="youtube-heading" id="youtube-heading">Luyện phiên dịch với video YouTube</h3>
+            <h3 class="youtube-heading" id="youtube-heading">Chọn nguồn luyện phiên dịch</h3>
             <div class="youtube-input-row">
               <label class="youtube-url-label" for="youtube-url">
-                <span class="field-label">Link video</span>
+                <span class="field-label">Video YouTube</span>
                 <input class="youtube-input" id="youtube-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url">
               </label>
               <button class="primary-button" id="load-youtube" type="button">Tải video</button>
@@ -759,6 +763,15 @@
               <iframe id="youtube-frame" title="Video YouTube luyện phiên dịch" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
             </div>
             <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
+            <div class="local-media-source">
+              <label class="file-control" for="local-media-file">
+                <span class="field-label">Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)</span>
+                <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
+              </label>
+              <audio class="local-media-player" id="local-audio-player" controls preload="metadata" hidden></audio>
+              <video class="local-media-player" id="local-video-player" controls preload="metadata" playsinline hidden></video>
+              <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Khi bấm phát, mic và đồng hồ sẽ tự bắt đầu.</p>
+            </div>
           </section>
           <div class="interpret-session">
           <div class="interpret-toolbar">
@@ -997,6 +1010,7 @@
     const personalKeywords = document.querySelector("#personal-keywords");
     const deeplApiKeyInput = document.querySelector("#deepl-api-key");
     const youtubeUrlInput = document.querySelector("#youtube-url");
+    const localMediaInput = document.querySelector("#local-media-file");
     const feedback = document.querySelector("#translation-feedback");
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1025,6 +1039,7 @@
     const restartingSpeechSessions = new Set();
     let youtubePlayer = null;
     let youtubeApiLoading = false;
+    let localPracticeMediaUrl = "";
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -2405,6 +2420,43 @@
       ensureYouTubeIframeApi();
     }
 
+    function clearLocalPracticeMedia() {
+      const audioPlayer = document.querySelector("#local-audio-player");
+      const videoPlayer = document.querySelector("#local-video-player");
+      [audioPlayer, videoPlayer].forEach((player) => {
+        player.pause();
+        player.removeAttribute("src");
+        player.load();
+        player.hidden = true;
+      });
+      if (localPracticeMediaUrl) {
+        URL.revokeObjectURL(localPracticeMediaUrl);
+        localPracticeMediaUrl = "";
+      }
+    }
+
+    function loadLocalPracticeMedia(event) {
+      const file = event.currentTarget.files?.[0];
+      const status = document.querySelector("#local-media-status");
+      if (!file) return;
+
+      clearLocalPracticeMedia();
+      const extension = file.name.toLocaleLowerCase().split(".").pop();
+      if (extension !== "mp3" && extension !== "mp4") {
+        status.textContent = "Chỉ hỗ trợ tệp .mp3 hoặc .mp4.";
+        event.currentTarget.value = "";
+        return;
+      }
+
+      localPracticeMediaUrl = URL.createObjectURL(file);
+      const player = document.querySelector(extension === "mp3" ? "#local-audio-player" : "#local-video-player");
+      player.src = localPracticeMediaUrl;
+      player.hidden = false;
+      player.load();
+      status.textContent = `Đã chọn “${file.name}”. Bấm phát để bắt đầu luyện phiên dịch; tệp không được tải lên máy chủ.`;
+      event.currentTarget.value = "";
+    }
+
     function resetYouTubeVideo() {
       const frame = document.querySelector("#youtube-frame");
       if (!frame.dataset.videoId) return;
@@ -2422,6 +2474,7 @@
       speechRecordingUrls.forEach((url) => URL.revokeObjectURL(url));
       speechRecordingUrls.clear();
       speechRecordingsById.clear();
+      clearLocalPracticeMedia();
     }
 
     function getElapsedTime() {
@@ -2718,6 +2771,15 @@
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
+    localMediaInput.addEventListener("change", loadLocalPracticeMedia);
+    ["#local-audio-player", "#local-video-player"].forEach((selector) => {
+      const player = document.querySelector(selector);
+      player.addEventListener("play", startPracticeWhenVideoPlays);
+      player.addEventListener("error", () => {
+        document.querySelector("#local-media-status").textContent =
+          "Không phát được tệp này. Hãy kiểm tra định dạng hoặc thử mở tệp bằng trình duyệt Chrome/Edge.";
+      });
+    });
     youtubeUrlInput.addEventListener("input", () => {
       if (getYouTubeVideoId(youtubeUrlInput.value)) {
         loadYouTubeVideo();
