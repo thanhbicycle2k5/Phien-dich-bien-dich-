@@ -578,13 +578,10 @@
                 </button>
               </span>
             </label>
-            <label>
-              <span class="field-label" id="content-label">Nội dung</span>
+            <label id="content-selector-field">
+              <span class="field-label">Bài tập</span>
               <span class="content-select-row">
-                <select class="exercise-select" id="exercise-select" aria-label="Chọn nội dung"></select>
-                <button class="quiet-button selector-icon-button" id="delete-saved-material" type="button" aria-label="Xóa nội dung đang chọn" title="Xóa nội dung đang chọn" hidden disabled>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 3v6m4-6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
-                </button>
+                <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
               </span>
             </label>
           </div>
@@ -949,6 +946,7 @@
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
     const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
+    const contentSelectorField = document.querySelector("#content-selector-field");
     const sourceText = document.querySelector("#source-text");
     const answerText = document.querySelector("#answer-text");
     const referenceAnswer = document.querySelector("#reference-answer");
@@ -961,6 +959,7 @@
     let activeTranslationMode = "sample";
     let personalDraft = { source: "", answer: "", reference: "", keywords: "", direction: "VI_EN" };
     let personalDraftTopic = "";
+    const personalDraftsByTopic = new Map();
     let personalDirection = "VI_EN";
     let speechAudioRecorder = null;
     let speechAudioStream = null;
@@ -1075,6 +1074,40 @@
         keywords: personalKeywords.value,
         direction: personalDirection
       };
+      if (personalDraftTopic) personalDraftsByTopic.set(personalDraftTopic, { ...personalDraft });
+    }
+
+    function loadPersonalTopicDraft(topic) {
+      personalDraftTopic = topic;
+      const savedDraft = personalDraftsByTopic.get(topic);
+      const savedMaterial = savedDraft ? null : readPersonalMaterials().find((item) => getMaterialTopic(item) === topic);
+      personalDraft = savedDraft
+        ? { ...savedDraft }
+        : savedMaterial
+          ? {
+              source: savedMaterial.source || "",
+              answer: savedMaterial.answer || "",
+              reference: savedMaterial.reference || "",
+              keywords: savedMaterial.keywords || "",
+              direction: savedMaterial.direction === "EN_VI" ? "EN_VI" : "VI_EN"
+            }
+          : { source: "", answer: "", reference: "", keywords: "", direction: "VI_EN" };
+      if (savedMaterial) personalDraftsByTopic.set(topic, { ...personalDraft });
+      personalDirection = personalDraft.direction;
+      document.querySelector("#personal-direction").value = personalDirection;
+      updatePersonalDirectionLabels();
+      sourceText.value = personalDraft.source;
+      answerText.value = personalDraft.answer;
+      referenceAnswer.value = personalDraft.reference;
+      personalKeywords.value = personalDraft.keywords;
+      feedback.className = "feedback";
+      feedback.textContent = "";
+      document.querySelector("#answer-breakdown").hidden = true;
+      document.querySelector("#translation-save-status").hidden = true;
+      document.querySelector("#personal-status").textContent = savedDraft || savedMaterial
+        ? `Đã mở bản nháp của chủ đề “${topic}”.`
+        : "Dán văn bản hoặc chọn tệp để bắt đầu bản nháp cho chủ đề này.";
+      updateCounts();
     }
 
     function updatePersonalDirectionLabels() {
@@ -1107,15 +1140,17 @@
       const personal = activeTranslationMode === "personal";
       document.querySelector("#personal-controls").hidden = !personal;
       document.querySelector("#reference-editor").hidden = !personal;
-      document.querySelector("#delete-saved-material").hidden = !personal;
+      contentSelectorField.hidden = personal;
       document.querySelector("#open-topic-dialog").hidden = !personal;
       document.querySelector("#sample-mode").setAttribute("aria-pressed", String(!personal));
       document.querySelector("#personal-mode").setAttribute("aria-pressed", String(personal));
-      document.querySelector("#content-label").textContent = "Nội dung";
+      const saveButton = document.querySelector("#save-translation");
+      saveButton.setAttribute("aria-label", personal ? "Lưu bản nháp của chủ đề" : "Lưu bài biên dịch");
+      saveButton.title = personal ? "Lưu bản nháp của chủ đề" : "Lưu bài biên dịch";
       sourceText.readOnly = !personal;
       document.querySelector("#translation-title").textContent = personal ? "Tài liệu tự luyện theo chủ đề" : "Bài dịch theo chủ đề";
       document.querySelector("#translation-caption").textContent = personal
-        ? "Dịch tài liệu từ tiếng Việt sang tiếng Anh hoặc mở bài đã lưu"
+        ? "Chọn chủ đề rồi nhập hoặc tải tài liệu để bắt đầu"
         : "Chọn chủ đề và nội dung để bắt đầu luyện tập";
       document.querySelector("#translation-score-note").textContent = personal
         ? "Gợi ý tham khảo về cách diễn đạt và từ khóa"
@@ -1128,15 +1163,15 @@
       populateTopics(personal ? personalDraftTopic : industrySelect.value);
       if (personal) {
         personalDirection = personalDraft.direction || "VI_EN";
-        document.querySelector("#personal-direction").value = personalDirection;
-        updatePersonalDirectionLabels();
-        personalDraftTopic = industrySelect.value;
-        sourceText.value = personalDraft.source;
-        answerText.value = personalDraft.answer;
-        referenceAnswer.value = personalDraft.reference;
-        personalKeywords.value = personalDraft.keywords;
         document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
-        populatePersonalContents();
+        if (industrySelect.value) loadPersonalTopicDraft(industrySelect.value);
+        else {
+          updatePersonalDirectionLabels();
+          sourceText.value = "";
+          answerText.value = "";
+          referenceAnswer.value = "";
+          personalKeywords.value = "";
+        }
       } else {
         document.querySelector("#source-language").textContent = "EN";
         document.querySelector("#target-language").textContent = "VI";
@@ -1171,7 +1206,7 @@
         window.localStorage.setItem(PERSONAL_TOPICS_KEY, JSON.stringify(topics));
         personalDraftTopic = topic;
         populateTopics(topic);
-        populatePersonalContents();
+        loadPersonalTopicDraft(topic);
         input.value = "";
         dialogStatus.textContent = "";
         document.querySelector("#topic-dialog").close();
@@ -1567,28 +1602,6 @@
       }
     }
 
-    function populatePersonalContents() {
-      const selectedId = activeTranslationMode === "personal" ? exerciseSelect.value : "";
-      document.querySelector("#delete-saved-material").disabled = true;
-      const placeholder = document.createElement("option");
-      placeholder.value = "";
-      placeholder.textContent = "Chọn nội dung đã lưu...";
-      exerciseSelect.replaceChildren(placeholder);
-      readPersonalMaterials()
-        .filter((item) => getMaterialTopic(item) === industrySelect.value)
-        .forEach((item, index) => {
-          const option = document.createElement("option");
-          option.value = item.id;
-          const title = item.title || item.source.slice(0, 60) || "Nội dung";
-          option.textContent = `Nội dung thứ ${index + 1} · ${title}`;
-          exerciseSelect.append(option);
-        });
-      if ([...exerciseSelect.options].some((option) => option.value === selectedId)) {
-        exerciseSelect.value = selectedId;
-        document.querySelector("#delete-saved-material").disabled = false;
-      }
-    }
-
     function saveMaterialDraft(draft, status, title, topic = industrySelect.selectedOptions[0]?.textContent || DEFAULT_PERSONAL_TOPIC) {
       status.hidden = false;
       if (!draft.source.trim()) {
@@ -1609,16 +1622,22 @@
       };
       try {
         const materials = readPersonalMaterials();
-        materials.unshift(entry);
-        window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
         if (activeTranslationMode === "personal") {
-          populatePersonalContents();
-          exerciseSelect.value = entry.id;
-          document.querySelector("#delete-saved-material").disabled = false;
+          const existingIndex = materials.findIndex((material) => getMaterialTopic(material) === topic);
+          if (existingIndex >= 0) {
+            entry.id = materials[existingIndex].id;
+            materials.splice(existingIndex, 1);
+          }
+          materials.unshift(entry);
+          personalDraftsByTopic.set(topic, { ...draft });
+          window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
+          status.textContent = `Đã lưu bản nháp cho chủ đề “${topic}”.`;
         } else {
+          materials.unshift(entry);
+          window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
           personalDraftTopic = topic;
+          status.textContent = "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.";
         }
-        status.textContent = "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.";
       } catch (error) {
         status.textContent = "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
       }
@@ -1652,56 +1671,6 @@
       };
       const title = `${industrySelect.selectedOptions[0].textContent} · ${exerciseSelect.selectedOptions[0].textContent}`;
       saveMaterialDraft(draft, status, title, personalDraftTopic || DEFAULT_PERSONAL_TOPIC);
-    }
-
-    function loadPersonalMaterial() {
-      const selectedId = exerciseSelect.value;
-      document.querySelector("#delete-saved-material").disabled = !selectedId;
-      if (!selectedId) return;
-      const entry = readPersonalMaterials().find((item) => item.id === selectedId);
-      if (!entry) return;
-      personalDraftTopic = getMaterialTopic(entry);
-      personalDraft = {
-        source: entry.source || "",
-        answer: entry.answer || "",
-        reference: entry.reference || "",
-        keywords: entry.keywords || "",
-        direction: entry.direction === "EN_VI" ? "EN_VI" : "VI_EN"
-      };
-      personalDirection = personalDraft.direction;
-      document.querySelector("#personal-direction").value = personalDirection;
-      updatePersonalDirectionLabels();
-      sourceText.value = personalDraft.source;
-      answerText.value = personalDraft.answer;
-      referenceAnswer.value = personalDraft.reference;
-      personalKeywords.value = personalDraft.keywords;
-      feedback.className = "feedback";
-      feedback.textContent = "";
-      document.querySelector("#answer-breakdown").hidden = true;
-      document.querySelector("#personal-status").textContent = `Đã mở tài liệu đã lưu (${new Date(entry.savedAt || Date.now()).toLocaleDateString("vi-VN")}).`;
-      updateCounts();
-    }
-
-    function deleteSavedMaterial() {
-      const selectedId = exerciseSelect.value;
-      const status = document.querySelector("#personal-status");
-      if (!selectedId) return;
-      if (!window.confirm("Xóa riêng nội dung đang chọn?")) return;
-      try {
-        const materials = readPersonalMaterials().filter((item) => item.id !== selectedId);
-        window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials));
-        populateTopics(industrySelect.value);
-        populatePersonalContents();
-        personalDraft = { source: "", answer: "", reference: "", keywords: "" };
-        sourceText.value = "";
-        answerText.value = "";
-        referenceAnswer.value = "";
-        personalKeywords.value = "";
-        updateCounts();
-        status.textContent = "Đã xóa nội dung đang chọn.";
-      } catch (error) {
-        status.textContent = "Không thể xóa tài liệu. Hãy thử lại.";
-      }
     }
 
     async function extractDocxText(file) {
@@ -2307,15 +2276,13 @@
     });
     industrySelect.addEventListener("change", () => {
       if (activeTranslationMode === "personal") {
-        personalDraftTopic = industrySelect.value;
-        populatePersonalContents();
+        loadPersonalTopicDraft(industrySelect.value);
       } else {
         populateExercises();
       }
     });
     exerciseSelect.addEventListener("change", () => {
-      if (activeTranslationMode === "personal") loadPersonalMaterial();
-      else loadExercise();
+      loadExercise();
     });
     sourceText.addEventListener("input", handlePersonalInput);
     answerText.addEventListener("input", handlePersonalInput);
@@ -2342,7 +2309,6 @@
     document.querySelector("#topic-dialog").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
-    document.querySelector("#delete-saved-material").addEventListener("click", deleteSavedMaterial);
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
     document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
     document.querySelector("#open-deepl-settings").addEventListener("click", openDeepLSettings);
