@@ -25,6 +25,8 @@
 
     * { box-sizing: border-box; }
 
+    html { scrollbar-gutter: stable; }
+
     body {
       margin: 0;
       min-width: 320px;
@@ -471,6 +473,8 @@
     .local-media-input { max-width: 100%; font-size: 12px; }
     .local-media-player { width: 100%; max-height: 360px; margin-top: 4px; border-radius: 6px; background: #0f172a; }
     .local-media-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .media-seek-control { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-top: 4px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
+    .media-seek-control input { width: 100%; margin: 0; accent-color: var(--blue); cursor: pointer; }
     .media-speed-control { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
     .media-speed-control select { min-height: 34px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
 
@@ -778,6 +782,11 @@
                 </label>
                 <audio class="local-media-player" id="local-audio-player" preload="metadata" hidden></audio>
                 <video class="local-media-player" id="local-video-player" preload="metadata" playsinline hidden></video>
+                <div class="media-seek-control" id="media-seek-control" hidden>
+                  <output id="media-current-time">00:00</output>
+                  <input id="media-seek" type="range" min="0" max="0" step="0.1" value="0" aria-label="Tua đến vị trí trong tệp">
+                  <output id="media-duration">00:00</output>
+                </div>
                 <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian.</p>
               </div>
               <label class="media-speed-control" id="media-speed-control" hidden>
@@ -2578,6 +2587,10 @@
         player.load();
         player.hidden = true;
       });
+      document.querySelector("#media-seek-control").hidden = true;
+      document.querySelector("#media-seek").value = "0";
+      document.querySelector("#media-current-time").textContent = "00:00";
+      document.querySelector("#media-duration").textContent = "00:00";
       if (localPracticeMediaUrl) {
         URL.revokeObjectURL(localPracticeMediaUrl);
         localPracticeMediaUrl = "";
@@ -2604,10 +2617,11 @@
       player.hidden = false;
       player.load();
       activePracticeSource = "local";
+      document.querySelector("#media-seek-control").hidden = false;
       renderMediaPlaybackRates(mediaPlaybackRates, Number(document.querySelector("#media-playback-rate").value));
       document.querySelector("#media-speed-control").hidden = false;
       applyMediaPlaybackRate();
-      status.textContent = `Đã chọn “${file.name}”. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian; tệp không được tải lên máy chủ.`;
+      status.textContent = `Đã chọn “${file.name}”. Dùng thanh tua để chọn đoạn muốn nghe, rồi bấm “Bắt đầu nói”; thời gian sẽ tự tính và tệp không được tải lên máy chủ.`;
       event.currentTarget.value = "";
     }
 
@@ -2621,6 +2635,26 @@
       } else if (frame.src) {
         frame.src = frame.src;
       }
+    }
+
+    function formatMediaTime(seconds) {
+      if (!Number.isFinite(seconds) || seconds < 0) return "00:00";
+      const totalSeconds = Math.floor(seconds);
+      const hours = Math.floor(totalSeconds / 3600);
+      const minutes = Math.floor((totalSeconds % 3600) / 60);
+      const remainder = totalSeconds % 60;
+      return hours > 0
+        ? `${String(hours).padStart(2, "0")}:${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`
+        : `${String(minutes).padStart(2, "0")}:${String(remainder).padStart(2, "0")}`;
+    }
+
+    function updateLocalMediaSeek(player) {
+      const seek = document.querySelector("#media-seek");
+      const duration = Number.isFinite(player.duration) ? player.duration : 0;
+      seek.max = String(duration);
+      seek.value = String(Math.min(player.currentTime || 0, duration));
+      document.querySelector("#media-current-time").textContent = formatMediaTime(player.currentTime);
+      document.querySelector("#media-duration").textContent = formatMediaTime(duration);
     }
 
     function releaseMediaResources() {
@@ -2929,10 +2963,20 @@
     localMediaInput.addEventListener("change", loadLocalPracticeMedia);
     ["#local-audio-player", "#local-video-player"].forEach((selector) => {
       const player = document.querySelector(selector);
+      ["loadedmetadata", "durationchange", "timeupdate", "seeked"].forEach((eventName) => {
+        player.addEventListener(eventName, () => updateLocalMediaSeek(player));
+      });
       player.addEventListener("error", () => {
         document.querySelector("#local-media-status").textContent =
           "Không phát được tệp này. Hãy kiểm tra định dạng hoặc thử mở tệp bằng trình duyệt Chrome/Edge.";
       });
+    });
+    document.querySelector("#media-seek").addEventListener("input", (event) => {
+      const player = document.querySelector("#local-audio-player").hidden
+        ? document.querySelector("#local-video-player")
+        : document.querySelector("#local-audio-player");
+      player.currentTime = Number(event.currentTarget.value);
+      updateLocalMediaSeek(player);
     });
     youtubeUrlInput.addEventListener("input", () => {
       if (getYouTubeVideoId(youtubeUrlInput.value)) {
