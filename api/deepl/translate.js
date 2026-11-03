@@ -28,16 +28,16 @@ module.exports = async function handler(request, response) {
   }
 
   const payload = request.body;
+  const supportedLanguagePairs = new Set(["VI:EN", "EN:VI"]);
   if (
     !payload ||
     typeof payload !== "object" ||
-    payload.source_lang !== "VI" ||
-    payload.target_lang !== "EN" ||
+    !supportedLanguagePairs.has(`${payload.source_lang}:${payload.target_lang}`) ||
     !Array.isArray(payload.text) ||
     payload.text.length !== 1 ||
     typeof payload.text[0] !== "string"
   ) {
-    return response.status(400).json({ message: "Expected one text with source_lang VI and target_lang EN." });
+    return response.status(400).json({ message: "Expected one text with source_lang/target_lang VI-EN or EN-VI." });
   }
 
   const text = payload.text[0];

@@ -86,15 +86,15 @@ class AppHandler(BaseHTTPRequestHandler):
         except (json.JSONDecodeError, UnicodeDecodeError):
             self._send_json(400, {"message": "Request body must be valid JSON."})
             return
+        supported_language_pairs = {("VI", "EN"), ("EN", "VI")}
         if (
             not isinstance(payload, dict)
-            or payload.get("source_lang") != "VI"
-            or payload.get("target_lang") != "EN"
+            or (payload.get("source_lang"), payload.get("target_lang")) not in supported_language_pairs
             or not isinstance(payload.get("text"), list)
             or len(payload["text"]) != 1
             or not isinstance(payload["text"][0], str)
         ):
-            self._send_json(400, {"message": "Expected one text with source_lang VI and target_lang EN."})
+            self._send_json(400, {"message": "Expected one text with source_lang/target_lang VI-EN or EN-VI."})
             return
         text = payload["text"][0]
         if not text.strip():

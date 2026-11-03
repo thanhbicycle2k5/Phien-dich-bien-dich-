@@ -591,6 +591,12 @@
         </div>
 
         <div class="personal-controls" id="personal-controls" hidden>
+          <label class="file-control" for="personal-direction">Chiều dịch
+            <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
+              <option value="VI_EN">Tiếng Việt → Tiếng Anh</option>
+              <option value="EN_VI">Tiếng Anh → Tiếng Việt</option>
+            </select>
+          </label>
           <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
             <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           </label>
@@ -953,8 +959,9 @@
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let activeTranslationMode = "sample";
-    let personalDraft = { source: "", answer: "", reference: "", keywords: "" };
+    let personalDraft = { source: "", answer: "", reference: "", keywords: "", direction: "VI_EN" };
     let personalDraftTopic = "";
+    let personalDirection = "VI_EN";
     let speechAudioRecorder = null;
     let speechAudioStream = null;
     let speechAudioChunks = [];
@@ -1065,8 +1072,33 @@
         source: sourceText.value,
         answer: answerText.value,
         reference: referenceAnswer.value,
-        keywords: personalKeywords.value
+        keywords: personalKeywords.value,
+        direction: personalDirection
       };
+    }
+
+    function updatePersonalDirectionLabels() {
+      const sourceLanguage = personalDirection === "VI_EN" ? "VI" : "EN";
+      const targetLanguage = personalDirection === "VI_EN" ? "EN" : "VI";
+      document.querySelector("#source-language").textContent = sourceLanguage;
+      document.querySelector("#target-language").textContent = targetLanguage;
+      sourceText.placeholder = `Nhập văn bản ${sourceLanguage}...`;
+      answerText.placeholder = `Viết bản dịch ${targetLanguage} của bạn...`;
+    }
+
+    function changePersonalDirection(direction) {
+      if (direction === personalDirection) return;
+      const previousSource = sourceText.value;
+      sourceText.value = answerText.value;
+      answerText.value = previousSource;
+      referenceAnswer.value = "";
+      personalDirection = direction;
+      personalDraft.direction = direction;
+      updatePersonalDirectionLabels();
+      capturePersonalDraft();
+      updateCounts();
+      invalidateTranslationCheck();
+      document.querySelector("#personal-status").textContent = "Đã đổi chiều dịch và chuyển nội dung hai ô để bạn tiếp tục chỉnh sửa.";
     }
 
     function setTranslationMode(mode) {
@@ -1095,16 +1127,21 @@
 
       populateTopics(personal ? personalDraftTopic : industrySelect.value);
       if (personal) {
+        personalDirection = personalDraft.direction || "VI_EN";
+        document.querySelector("#personal-direction").value = personalDirection;
+        updatePersonalDirectionLabels();
         personalDraftTopic = industrySelect.value;
         sourceText.value = personalDraft.source;
         answerText.value = personalDraft.answer;
         referenceAnswer.value = personalDraft.reference;
         personalKeywords.value = personalDraft.keywords;
-        document.querySelector("#source-language").textContent = "VI";
-        document.querySelector("#target-language").textContent = "EN";
         document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
         populatePersonalContents();
       } else {
+        document.querySelector("#source-language").textContent = "EN";
+        document.querySelector("#target-language").textContent = "VI";
+        sourceText.placeholder = "";
+        answerText.placeholder = "Viết bản dịch của bạn...";
         populateExercises();
         document.querySelector("#source-help").textContent = "Đọc kỹ sắc thái và ngữ cảnh";
       }
@@ -1355,7 +1392,8 @@
       button.textContent = "Đang kiểm tra...";
       showTranslationFeedback("Đang kiểm tra bản dịch", "Đang lấy gợi ý DeepL để đối chiếu với bản dịch của bạn...");
       try {
-        const result = await requestDeepLTranslation(apiKey, source);
+        const [sourceLanguage, targetLanguage] = personalDirection.split("_");
+        const result = await requestDeepLTranslation(apiKey, source, sourceLanguage, targetLanguage);
         const translatedText = result.translations?.[0]?.text?.trim();
         if (!translatedText) throw new Error("DeepL không trả về nội dung bản dịch.");
         referenceAnswer.value = translatedText;
@@ -1461,14 +1499,14 @@
       return payload;
     }
 
-    async function requestDeepLTranslation(apiKey, source) {
+    async function requestDeepLTranslation(apiKey, source, sourceLanguage, targetLanguage) {
       const requestOptions = {
         method: "POST",
         headers: {
           "Authorization": `DeepL-Auth-Key ${apiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ text: [source], source_lang: "VI", target_lang: "EN" })
+        body: JSON.stringify({ text: [source], source_lang: sourceLanguage, target_lang: targetLanguage })
       };
 
       try {
@@ -1591,7 +1629,8 @@
         source: sourceText.value,
         answer: answerText.value,
         reference: exercise.answers[0] || "",
-        keywords: exercise.keyTerms.map((term) => term.translation).join(", ")
+        keywords: exercise.keyTerms.map((term) => term.translation).join(", "),
+        direction: "EN_VI"
       };
       const title = `${industrySelect.selectedOptions[0].textContent} · ${exerciseSelect.selectedOptions[0].textContent}`;
       saveMaterialDraft(draft, status, title, personalDraftTopic || DEFAULT_PERSONAL_TOPIC);
@@ -1608,8 +1647,12 @@
         source: entry.source || "",
         answer: entry.answer || "",
         reference: entry.reference || "",
-        keywords: entry.keywords || ""
+        keywords: entry.keywords || "",
+        direction: entry.direction === "EN_VI" ? "EN_VI" : "VI_EN"
       };
+      personalDirection = personalDraft.direction;
+      document.querySelector("#personal-direction").value = personalDirection;
+      updatePersonalDirectionLabels();
       sourceText.value = personalDraft.source;
       answerText.value = personalDraft.answer;
       referenceAnswer.value = personalDraft.reference;
@@ -2241,6 +2284,9 @@
 
     document.querySelector("#sample-mode").addEventListener("click", () => setTranslationMode("sample"));
     document.querySelector("#personal-mode").addEventListener("click", () => setTranslationMode("personal"));
+    document.querySelector("#personal-direction").addEventListener("change", (event) => {
+      changePersonalDirection(event.currentTarget.value);
+    });
     industrySelect.addEventListener("change", () => {
       if (activeTranslationMode === "personal") {
         personalDraftTopic = industrySelect.value;
