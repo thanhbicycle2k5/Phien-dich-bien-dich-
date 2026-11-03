@@ -624,6 +624,7 @@
             <div class="action-group">
               <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
               <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
+              <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
             </div>
             <div class="timer-tools" aria-label="Đồng hồ luyện tập">
               <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
@@ -631,7 +632,6 @@
               <details class="transcript-tools">
                 <summary aria-label="Thao tác bổ sung">Thêm</summary>
                 <div class="transcript-tool-list">
-                  <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
                   <button class="quiet-button" id="reset-timer" type="button">Đặt lại đồng hồ</button>
                   <button class="quiet-button" id="copy-transcript" type="button">Sao chép transcript</button>
                   <button class="quiet-button" id="clear-transcript" type="button">Xóa transcript</button>
@@ -1415,6 +1415,7 @@
       } else {
         recordingStatus.textContent = "Trình duyệt này không hỗ trợ thu âm. Transcript vẫn có thể hoạt động nếu Web Speech API được hỗ trợ.";
       }
+      if (speechRecordingId !== recordingId) return;
 
       if (!SpeechRecognition) {
         if (canRecordAudio && speechAudioRecorder?.state === "recording") {
@@ -1471,6 +1472,10 @@
       const recordingId = speechRecordingId;
       try {
         const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        if (speechRecordingId !== recordingId) {
+          stream.getTracks().forEach((track) => track.stop());
+          return false;
+        }
         const chunks = [];
         speechAudioStream = stream;
         speechAudioChunks = chunks;
@@ -1556,7 +1561,7 @@
       youtubePlayer = new window.YT.Player(frame, {
         events: {
           onReady: (event) => {
-            document.querySelector("#youtube-status").textContent = "Phát video để tự bắt đầu thu âm và bấm giờ.";
+            document.querySelector("#youtube-status").textContent = "Phát video để tự bắt đầu thu âm và bấm giờ. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
             if (event.target.getPlayerState?.() === window.YT.PlayerState.PLAYING) startPracticeWhenVideoPlays();
           },
           onStateChange: (event) => {
@@ -1618,8 +1623,19 @@
         }
       }
       player.hidden = false;
-      status.textContent = "Video đã nhúng. Phát video để tự bắt đầu thu âm và bấm giờ.";
+      status.textContent = "Video đã nhúng. Phát video để tự bắt đầu thu âm và bấm giờ. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
       ensureYouTubeIframeApi();
+    }
+
+    function resetYouTubeVideo() {
+      const frame = document.querySelector("#youtube-frame");
+      if (!frame.dataset.videoId) return;
+      if (youtubePlayer?.seekTo) {
+        youtubePlayer.pauseVideo?.();
+        youtubePlayer.seekTo(0, true);
+      } else if (frame.src) {
+        frame.src = frame.src;
+      }
     }
 
     function releaseMediaResources() {
@@ -1714,8 +1730,8 @@
       transcript.textContent = "";
       updateCounts();
       resetTimer();
-      youtubePlayer?.pauseVideo?.();
-      setListening(false, "Sẵn sàng. Phát video hoặc bấm bắt đầu nói.");
+      resetYouTubeVideo();
+      setListening(false, "Đã bắt đầu lại. Phát video hoặc bấm bắt đầu nói.");
     }
 
     function readPracticeHistory() {
