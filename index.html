@@ -204,14 +204,14 @@
     .selector-row select { max-width: 220px; }
     .content-select-row { display: flex; align-items: center; gap: 6px; }
     .content-select-row select { min-width: 180px; }
+    .topic-select-row { display: flex; align-items: center; gap: 6px; }
+    .topic-select-row select { min-width: 150px; }
     .selector-icon-button { width: 38px; min-width: 38px; padding: 0; color: var(--muted); }
     .selector-icon-button svg { width: 17px; height: 17px; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
     .source-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
     .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 12px 22px; border-bottom: 1px solid var(--line); background: #f8fbff; }
-    .topic-create { display: flex; align-items: end; gap: 7px; }
-    .topic-create input { width: 180px; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
@@ -234,7 +234,12 @@
       box-shadow: 0 24px 70px rgba(23, 43, 77, .24);
     }
 
-    .deepl-settings::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
+    .deepl-settings::backdrop, .topic-dialog::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
+    .topic-dialog { width: min(420px, calc(100% - 32px)); max-width: none; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); box-shadow: 0 24px 70px rgba(23, 43, 77, .24); }
+    .topic-dialog-body { display: grid; gap: 14px; padding: 18px 20px 20px; }
+    .topic-dialog-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
+    .topic-dialog-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; }
+    .topic-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .deepl-settings-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
     .deepl-settings-title { margin: 0; font-size: 17px; }
     .deepl-modal-close { width: 34px; min-height: 34px; padding: 0; font-size: 20px; }
@@ -483,14 +488,14 @@
       .selector-row select { width: 100%; max-width: none; }
       .content-select-row { width: 100%; }
       .content-select-row select { min-width: 0; flex: 1; }
+      .topic-select-row { width: 100%; }
+      .topic-select-row select { min-width: 0; flex: 1; }
       .workspace-head { align-items: stretch; flex-direction: column; }
       .selector-row { justify-content: flex-start; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
       .personal-controls { align-items: stretch; flex-direction: column; padding: 14px 18px; }
       .personal-controls select, .file-control input { width: 100%; max-width: none; }
-      .topic-create { align-items: stretch; flex-direction: column; }
-      .topic-create input { width: 100%; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
       .feedback { margin-right: 18px; margin-left: 18px; }
       .answer-breakdown { margin-right: 18px; margin-left: 18px; }
@@ -566,7 +571,12 @@
             </label>
             <label>
               <span class="field-label">Chủ đề</span>
-              <select class="exercise-select" id="industry-select" aria-label="Chọn chủ đề"></select>
+              <span class="topic-select-row">
+                <select class="exercise-select" id="industry-select" aria-label="Chọn chủ đề"></select>
+                <button class="quiet-button selector-icon-button" id="open-topic-dialog" type="button" aria-label="Thêm chủ đề" title="Thêm chủ đề" hidden>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+                </button>
+              </span>
             </label>
             <label>
               <span class="field-label" id="content-label">Nội dung</span>
@@ -584,14 +594,25 @@
           <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
             <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           </label>
-          <div class="topic-create">
-            <label class="file-control" for="new-topic">Tên chủ đề mới
-              <input id="new-topic" type="text" maxlength="60" placeholder="Ví dụ: Du lịch, Giáo dục">
-            </label>
-            <button class="quiet-button" id="add-topic" type="button">Thêm chủ đề</button>
-          </div>
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
+
+        <dialog class="topic-dialog" id="topic-dialog" aria-labelledby="topic-dialog-title">
+          <div class="deepl-settings-head">
+            <h2 class="deepl-settings-title" id="topic-dialog-title">Thêm chủ đề</h2>
+            <button class="quiet-button deepl-modal-close" id="close-topic-dialog" type="button" aria-label="Đóng">×</button>
+          </div>
+          <form class="topic-dialog-body" id="topic-form">
+            <label class="file-control" for="new-topic">Tên chủ đề
+              <input class="topic-dialog-input" id="new-topic" type="text" maxlength="60" placeholder="Ví dụ: Du lịch, Giáo dục" required>
+            </label>
+            <p class="topic-dialog-status" id="topic-dialog-status" role="status" aria-live="polite"></p>
+            <div class="topic-dialog-actions">
+              <button class="quiet-button" id="cancel-topic-dialog" type="button">Hủy</button>
+              <button class="primary-button" type="submit">Thêm chủ đề</button>
+            </div>
+          </form>
+        </dialog>
 
         <dialog class="deepl-settings" id="deepl-settings" aria-labelledby="deepl-settings-title">
           <div class="deepl-settings-head">
@@ -1055,6 +1076,7 @@
       document.querySelector("#personal-controls").hidden = !personal;
       document.querySelector("#reference-editor").hidden = !personal;
       document.querySelector("#delete-saved-material").hidden = !personal;
+      document.querySelector("#open-topic-dialog").hidden = !personal;
       document.querySelector("#sample-mode").setAttribute("aria-pressed", String(!personal));
       document.querySelector("#personal-mode").setAttribute("aria-pressed", String(personal));
       document.querySelector("#content-label").textContent = "Nội dung";
@@ -1093,8 +1115,9 @@
       const input = document.querySelector("#new-topic");
       const topic = input.value.trim();
       const status = document.querySelector("#personal-status");
+      const dialogStatus = document.querySelector("#topic-dialog-status");
       if (!topic) {
-        status.textContent = "Nhập tên chủ đề trước khi thêm.";
+        dialogStatus.textContent = "Nhập tên chủ đề trước khi thêm.";
         input.focus();
         return;
       }
@@ -1103,7 +1126,7 @@
         ...readPersonalMaterials().map(getMaterialTopic)
       ];
       if (existingTopics.some((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase())) {
-        status.textContent = "Chủ đề này đã có. Hãy chọn chủ đề trong danh sách.";
+        dialogStatus.textContent = "Chủ đề này đã có. Hãy chọn chủ đề trong danh sách.";
         return;
       }
       try {
@@ -1113,9 +1136,11 @@
         populateTopics(topic);
         populatePersonalContents();
         input.value = "";
+        dialogStatus.textContent = "";
+        document.querySelector("#topic-dialog").close();
         status.textContent = `Đã thêm chủ đề “${topic}”.`;
       } catch (error) {
-        status.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
+        dialogStatus.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
       }
     }
 
@@ -2229,12 +2254,24 @@
     personalKeywords.addEventListener("input", handlePersonalInput);
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
     document.querySelector("#save-translation").addEventListener("click", saveCurrentTranslation);
-    document.querySelector("#add-topic").addEventListener("click", addPersonalTopic);
-    document.querySelector("#new-topic").addEventListener("keydown", (event) => {
-      if (event.key === "Enter") {
-        event.preventDefault();
-        addPersonalTopic();
-      }
+    document.querySelector("#open-topic-dialog").addEventListener("click", () => {
+      const dialog = document.querySelector("#topic-dialog");
+      document.querySelector("#topic-dialog-status").textContent = "";
+      if (!dialog.open) dialog.showModal();
+      document.querySelector("#new-topic").focus();
+    });
+    document.querySelector("#topic-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      addPersonalTopic();
+    });
+    document.querySelector("#close-topic-dialog").addEventListener("click", () => {
+      document.querySelector("#topic-dialog").close();
+    });
+    document.querySelector("#cancel-topic-dialog").addEventListener("click", () => {
+      document.querySelector("#topic-dialog").close();
+    });
+    document.querySelector("#topic-dialog").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) event.currentTarget.close();
     });
     document.querySelector("#delete-saved-material").addEventListener("click", deleteSavedMaterial);
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
