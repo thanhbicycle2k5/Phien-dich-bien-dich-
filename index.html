@@ -178,6 +178,12 @@
 
     .workspace-title { margin: 0; font: 700 16px var(--sans); }
     .workspace-caption { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
+    .workspace-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
+    .collapse-toggle { width: 32px; height: 32px; display: grid; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--muted); cursor: pointer; }
+    .collapse-toggle svg { width: 18px; height: 18px; transition: transform .18s ease; }
+    .collapse-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
+    .collapse-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
+    .translation-content > .selector-row { justify-content: flex-start; padding: 14px 22px; border-bottom: 1px solid var(--line); }
 
     .field-label {
       display: block;
@@ -477,12 +483,14 @@
       .brand-note { display: none; }
       main { padding-top: 16px; }
       .app-sidebar { grid-template-columns: 1fr; }
-      .intro { grid-row: auto; }
+      .intro { display: none; }
+      .quick-guide { display: none; }
       .intro-copy { max-width: 420px; }
       .translation-grid { grid-template-columns: 1fr; }
       .translation-pane { padding: 18px; }
       .translation-pane + .translation-pane { border-top: 1px solid var(--line); border-left: 0; }
       .workspace-head { padding: 12px 16px; }
+      .translation-content > .selector-row { padding: 12px 16px; }
       .selector-row { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
@@ -558,35 +566,41 @@
       <section class="workspace" id="translate-panel" role="tabpanel" aria-labelledby="tab-translate">
         <div class="workspace-head">
           <div>
-            <h2 class="workspace-title" id="translation-title">Bài dịch theo chủ đề</h2>
+            <div class="workspace-title-row">
+              <h2 class="workspace-title" id="translation-title">Bài dịch theo chủ đề</h2>
+              <button class="collapse-toggle" id="toggle-translation-content" type="button" aria-label="Thu gọn phần bài dịch theo chủ đề" aria-expanded="true" aria-controls="translation-content">
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+              </button>
+            </div>
             <p class="workspace-caption" id="translation-caption">Chọn một câu mẫu hoặc tự đưa tài liệu vào luyện tập</p>
-          </div>
-          <div class="selector-row">
-            <label>
-              <span class="field-label">Nguồn luyện tập</span>
-              <span class="source-switch" role="group" aria-label="Nguồn luyện tập">
-                <button id="sample-mode" type="button" aria-pressed="true">Bài mẫu</button>
-                <button id="personal-mode" type="button" aria-pressed="false">Tài liệu cá nhân</button>
-              </span>
-            </label>
-            <label>
-              <span class="field-label">Chủ đề</span>
-              <span class="topic-select-row">
-                <select class="exercise-select" id="industry-select" aria-label="Chọn chủ đề"></select>
-                <button class="quiet-button selector-icon-button" id="open-topic-dialog" type="button" aria-label="Thêm chủ đề" title="Thêm chủ đề" hidden>
-                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-                </button>
-              </span>
-            </label>
-            <label id="content-selector-field">
-              <span class="field-label">Bài tập</span>
-              <span class="content-select-row">
-                <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
-              </span>
-            </label>
           </div>
         </div>
 
+        <div class="translation-content" id="translation-content">
+        <div class="selector-row">
+          <label>
+            <span class="field-label">Nguồn luyện tập</span>
+            <span class="source-switch" role="group" aria-label="Nguồn luyện tập">
+              <button id="sample-mode" type="button" aria-pressed="true">Bài mẫu</button>
+              <button id="personal-mode" type="button" aria-pressed="false">Tài liệu cá nhân</button>
+            </span>
+          </label>
+          <label>
+            <span class="field-label">Chủ đề</span>
+            <span class="topic-select-row">
+              <select class="exercise-select" id="industry-select" aria-label="Chọn chủ đề"></select>
+              <button class="quiet-button selector-icon-button" id="open-topic-dialog" type="button" aria-label="Thêm chủ đề" title="Thêm chủ đề" hidden>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
+              </button>
+            </span>
+          </label>
+          <label id="content-selector-field">
+            <span class="field-label">Bài tập</span>
+            <span class="content-select-row">
+              <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
+            </span>
+          </label>
+        </div>
         <div class="personal-controls" id="personal-controls" hidden>
           <label class="file-control" for="personal-direction">Chiều dịch
             <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
@@ -693,6 +707,7 @@
           <ul class="term-list" id="key-terms"></ul>
           <p class="context-note" id="translation-context"></p>
         </section>
+        </div>
       </section>
 
       <section class="workspace" id="interpret-panel" role="tabpanel" aria-labelledby="tab-interpret" hidden>
@@ -2271,6 +2286,14 @@
 
     document.querySelector("#sample-mode").addEventListener("click", () => setTranslationMode("sample"));
     document.querySelector("#personal-mode").addEventListener("click", () => setTranslationMode("personal"));
+    document.querySelector("#toggle-translation-content").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      const content = document.querySelector("#translation-content");
+      const isExpanded = button.getAttribute("aria-expanded") === "true";
+      button.setAttribute("aria-expanded", String(!isExpanded));
+      button.setAttribute("aria-label", `${isExpanded ? "Mở rộng" : "Thu gọn"} phần ${document.querySelector("#translation-title").textContent}`);
+      content.hidden = isExpanded;
+    });
     document.querySelector("#personal-direction").addEventListener("change", (event) => {
       changePersonalDirection(event.currentTarget.value);
     });
