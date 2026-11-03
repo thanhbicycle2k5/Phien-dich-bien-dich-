@@ -199,9 +199,13 @@
     }
 
     .selector-row { display: flex; align-items: end; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
-    .selector-row label { min-width: 150px; }
+    .selector-row label { min-width: 150px; display: grid; gap: 0; }
     .selector-row .field-label { margin-bottom: 5px; }
     .selector-row select { max-width: 220px; }
+    .content-select-row { display: flex; align-items: center; gap: 6px; }
+    .content-select-row select { min-width: 180px; }
+    .selector-icon-button { width: 38px; min-width: 38px; padding: 0; color: var(--muted); }
+    .selector-icon-button svg { width: 17px; height: 17px; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
     .source-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
@@ -477,6 +481,8 @@
       .selector-row { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
+      .content-select-row { width: 100%; }
+      .content-select-row select { min-width: 0; flex: 1; }
       .workspace-head { align-items: stretch; flex-direction: column; }
       .selector-row { justify-content: flex-start; }
       .selector-row label { flex: 1 1 135px; }
@@ -564,7 +570,12 @@
             </label>
             <label>
               <span class="field-label" id="content-label">Nội dung</span>
-              <select class="exercise-select" id="exercise-select" aria-label="Chọn nội dung"></select>
+              <span class="content-select-row">
+                <select class="exercise-select" id="exercise-select" aria-label="Chọn nội dung"></select>
+                <button class="quiet-button selector-icon-button" id="delete-saved-material" type="button" aria-label="Xóa nội dung đang chọn" title="Xóa nội dung đang chọn" hidden disabled>
+                  <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M9 7V4h6v3m3 0-.8 13H6.8L6 7m4 3v6m4-6v6" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"/></svg>
+                </button>
+              </span>
             </label>
           </div>
         </div>
@@ -579,7 +590,6 @@
             </label>
             <button class="quiet-button" id="add-topic" type="button">Thêm chủ đề</button>
           </div>
-          <button class="quiet-button" id="delete-saved-material" type="button" disabled>Xóa nội dung</button>
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
@@ -906,7 +916,7 @@
     const MAX_HISTORY_ITEMS = 30;
     const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
     const PERSONAL_TOPICS_KEY = "lingua-lab-personal-topics-v1";
-    const DEFAULT_PERSONAL_TOPIC = "Tài liệu cá nhân";
+    const DEFAULT_PERSONAL_TOPIC = "Chưa phân loại";
     const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
@@ -923,7 +933,7 @@
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let activeTranslationMode = "sample";
     let personalDraft = { source: "", answer: "", reference: "", keywords: "" };
-    let personalDraftTopic = DEFAULT_PERSONAL_TOPIC;
+    let personalDraftTopic = "";
     let speechAudioRecorder = null;
     let speechAudioStream = null;
     let speechAudioChunks = [];
@@ -961,16 +971,20 @@
     }
 
     function populateTopics(selectedTopic) {
-      const currentTopic = selectedTopic || industrySelect.value;
+      const currentTopic = selectedTopic ?? industrySelect.value;
       const topics = activeTranslationMode === "sample"
         ? exerciseGroups.map((group) => ({ value: group.id, label: group.label }))
         : [...new Set([
-            ...exerciseGroups.map((group) => group.label),
-            DEFAULT_PERSONAL_TOPIC,
             ...readPersonalTopics(),
             ...readPersonalMaterials().map(getMaterialTopic)
           ])].map((topic) => ({ value: topic, label: topic }));
       industrySelect.replaceChildren();
+      if (activeTranslationMode === "personal") {
+        const placeholder = document.createElement("option");
+        placeholder.value = "";
+        placeholder.textContent = topics.length ? "Chọn chủ đề..." : "Thêm chủ đề để bắt đầu...";
+        industrySelect.append(placeholder);
+      }
       topics.forEach(({ value, label }) => {
         const option = document.createElement("option");
         option.value = value;
@@ -978,7 +992,7 @@
         industrySelect.append(option);
       });
       if (topics.some((topic) => topic.value === currentTopic)) industrySelect.value = currentTopic;
-      else if (activeTranslationMode === "personal") industrySelect.value = DEFAULT_PERSONAL_TOPIC;
+      else if (activeTranslationMode === "personal") industrySelect.value = "";
       else if (topics.length) industrySelect.value = topics[0].value;
     }
 
@@ -1040,6 +1054,7 @@
       const personal = activeTranslationMode === "personal";
       document.querySelector("#personal-controls").hidden = !personal;
       document.querySelector("#reference-editor").hidden = !personal;
+      document.querySelector("#delete-saved-material").hidden = !personal;
       document.querySelector("#sample-mode").setAttribute("aria-pressed", String(!personal));
       document.querySelector("#personal-mode").setAttribute("aria-pressed", String(personal));
       document.querySelector("#content-label").textContent = "Nội dung";
@@ -1084,9 +1099,8 @@
         return;
       }
       const existingTopics = [
-        ...exerciseGroups.map((group) => group.label),
-        DEFAULT_PERSONAL_TOPIC,
-        ...readPersonalTopics()
+        ...readPersonalTopics(),
+        ...readPersonalMaterials().map(getMaterialTopic)
       ];
       if (existingTopics.some((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase())) {
         status.textContent = "Chủ đề này đã có. Hãy chọn chủ đề trong danh sách.";
@@ -1533,6 +1547,10 @@
         return;
       }
       if (activeTranslationMode === "personal") {
+        if (!industrySelect.value) {
+          document.querySelector("#personal-status").textContent = "Hãy thêm hoặc chọn chủ đề trước khi lưu nội dung.";
+          return;
+        }
         capturePersonalDraft();
         saveMaterialDraft(personalDraft, status, undefined, personalDraftTopic);
         return;
@@ -1546,7 +1564,7 @@
         keywords: exercise.keyTerms.map((term) => term.translation).join(", ")
       };
       const title = `${industrySelect.selectedOptions[0].textContent} · ${exerciseSelect.selectedOptions[0].textContent}`;
-      saveMaterialDraft(draft, status, title, industrySelect.selectedOptions[0].textContent);
+      saveMaterialDraft(draft, status, title, personalDraftTopic || DEFAULT_PERSONAL_TOPIC);
     }
 
     function loadPersonalMaterial() {
@@ -1577,13 +1595,19 @@
       const selectedId = exerciseSelect.value;
       const status = document.querySelector("#personal-status");
       if (!selectedId) return;
-      if (!window.confirm("Xóa tài liệu đã lưu này?")) return;
+      if (!window.confirm("Xóa riêng nội dung đang chọn?")) return;
       try {
         const materials = readPersonalMaterials().filter((item) => item.id !== selectedId);
         window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials));
         populateTopics(industrySelect.value);
         populatePersonalContents();
-        status.textContent = "Đã xóa nội dung đã lưu.";
+        personalDraft = { source: "", answer: "", reference: "", keywords: "" };
+        sourceText.value = "";
+        answerText.value = "";
+        referenceAnswer.value = "";
+        personalKeywords.value = "";
+        updateCounts();
+        status.textContent = "Đã xóa nội dung đang chọn.";
       } catch (error) {
         status.textContent = "Không thể xóa tài liệu. Hãy thử lại.";
       }
@@ -2191,7 +2215,6 @@
       if (activeTranslationMode === "personal") {
         personalDraftTopic = industrySelect.value;
         populatePersonalContents();
-        document.querySelector("#delete-saved-material").disabled = true;
       } else {
         populateExercises();
       }
