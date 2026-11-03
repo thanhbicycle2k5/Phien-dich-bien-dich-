@@ -10,6 +10,10 @@ python3 server.py
 
 Sau đó mở http://localhost:8000. Máy chủ chỉ lắng nghe trên máy hiện tại và dùng proxy cục bộ cho DeepL để tránh CORS; không chạy máy chủ này trên mạng công khai. Trình duyệt có thể yêu cầu quyền micro. Web Speech API chỉ được hỗ trợ trên một số trình duyệt; khả năng nhận dạng ngoại tuyến tùy trình duyệt và ngôn ngữ, một số triển khai gửi âm thanh tới dịch vụ của nhà cung cấp trình duyệt. Vì vậy, không nên coi API này là giải pháp đảm bảo riêng tư hoặc chạy hoàn toàn offline.
 
+## Cài ứng dụng trên điện thoại
+
+Mở website bằng Chrome trên Android hoặc Safari trên iPhone, chọn **Cài đặt ứng dụng**/**Thêm vào Màn hình chính**, rồi mở ứng dụng từ biểu tượng vừa tạo. Ứng dụng sẽ mở ở chế độ toàn màn hình, không có thanh tên miền của trình duyệt như khi mở link thông thường. Việc cài đặt cần HTTPS (hoặc `localhost` để thử trên máy tính); nếu tiếp tục mở URL trong trình duyệt, thanh trình duyệt vẫn hiển thị.
+
 ## Có gì trong bản mẫu
 
 - **Biên dịch:** chuyển nhanh giữa Bài mẫu và Tài liệu cá nhân ngay trên giao diện. Bài mẫu có các chủ đề dựng sẵn và bộ chọn bài tập; trong Tài liệu cá nhân, người dùng thêm chủ đề qua popup rồi làm việc trực tiếp trên bản nháp riêng của chủ đề đó. Nhấn Enter trong ô bản dịch để kiểm tra và nhận xét; Ctrl+Enter để xuống dòng. Biểu tượng lưu cập nhật bản nháp theo chủ đề; đổi chủ đề sẽ mở bản nháp đã lưu gần nhất hoặc một bản nháp trống. Có 12 bài mẫu Anh–Việt, chia đều cho Kinh tế - Tài chính, Công nghệ thông tin, Chính trị - Xã hội và Y khoa; mỗi bài có đáp án mẫu, thuật ngữ cốt lõi và ghi chú ngữ cảnh/văn phong. Với tài liệu cá nhân, có thể chọn chiều Việt → Anh hoặc Anh → Việt, dán văn bản hoặc nhập `.txt`/`.docx`; chiều dịch được lưu theo từng chủ đề.

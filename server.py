@@ -46,6 +46,10 @@ class AppHandler(BaseHTTPRequestHandler):
             "/": ("index.html", "text/html; charset=utf-8"),
             "/index.html": ("index.html", "text/html; charset=utf-8"),
             "/favicon.svg": ("favicon.svg", "image/svg+xml"),
+            "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json; charset=utf-8"),
+            "/service-worker.js": ("service-worker.js", "text/javascript; charset=utf-8"),
+            "/icons/icon-192.png": ("icons/icon-192.png", "image/png"),
+            "/icons/icon-512.png": ("icons/icon-512.png", "image/png"),
         }
         asset = files.get(path)
         if asset is None:
