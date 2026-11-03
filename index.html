@@ -198,13 +198,16 @@
       font-size: 12px;
     }
 
-    .selector-row { display: flex; flex-wrap: wrap; gap: 10px; }
+    .selector-row { display: flex; align-items: end; flex-wrap: wrap; justify-content: flex-end; gap: 10px; }
     .selector-row label { min-width: 150px; }
     .selector-row .field-label { margin-bottom: 5px; }
     .selector-row select { max-width: 220px; }
-    .sample-exercise-controls { display: flex; flex-wrap: wrap; gap: 10px; }
-    .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: #f8fbff; }
-    .saved-material-actions { display: flex; align-items: end; gap: 8px; }
+    .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
+    .source-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
+    .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 12px 22px; border-bottom: 1px solid var(--line); background: #f8fbff; }
+    .topic-create { display: flex; align-items: end; gap: 7px; }
+    .topic-create input { width: 180px; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
@@ -474,12 +477,14 @@
       .selector-row { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
-      .sample-exercise-controls { width: 100%; }
-      .sample-exercise-controls label { flex: 1 1 135px; }
-      .sample-exercise-controls select { width: 100%; max-width: none; }
+      .workspace-head { align-items: stretch; flex-direction: column; }
+      .selector-row { justify-content: flex-start; }
+      .selector-row label { flex: 1 1 135px; }
+      .selector-row select { width: 100%; max-width: none; }
       .personal-controls { align-items: stretch; flex-direction: column; padding: 14px 18px; }
       .personal-controls select, .file-control input { width: 100%; max-width: none; }
-      .saved-material-actions { align-items: stretch; flex-direction: column; }
+      .topic-create { align-items: stretch; flex-direction: column; }
+      .topic-create input { width: 100%; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
       .feedback { margin-right: 18px; margin-left: 18px; }
       .answer-breakdown { margin-right: 18px; margin-left: 18px; }
@@ -532,7 +537,7 @@
           <h2 id="quick-guide-title">Bắt đầu nhanh</h2>
           <p id="quick-guide-description">Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn.</p>
           <ol>
-            <li id="quick-guide-step-one">Chọn chuyên ngành và bài tập.</li>
+            <li id="quick-guide-step-one">Chọn chủ đề và nội dung thứ bạn muốn luyện.</li>
             <li id="quick-guide-step-two">Viết bản dịch rồi chọn “Kiểm tra &amp; Xem gợi ý”.</li>
           </ol>
         </section>
@@ -542,27 +547,25 @@
       <section class="workspace" id="translate-panel" role="tabpanel" aria-labelledby="tab-translate">
         <div class="workspace-head">
           <div>
-            <h2 class="workspace-title" id="translation-title">Bài dịch theo chuyên ngành</h2>
+            <h2 class="workspace-title" id="translation-title">Bài dịch theo chủ đề</h2>
             <p class="workspace-caption" id="translation-caption">Chọn một câu mẫu hoặc tự đưa tài liệu vào luyện tập</p>
           </div>
           <div class="selector-row">
             <label>
-              <span class="field-label">Nguồn bài tập</span>
-              <select class="exercise-select" id="translation-mode" aria-label="Chọn nguồn bài tập">
-                <option value="sample">Bài mẫu</option>
-                <option value="personal">Tài liệu cá nhân</option>
-              </select>
+              <span class="field-label">Nguồn luyện tập</span>
+              <span class="source-switch" role="group" aria-label="Nguồn luyện tập">
+                <button id="sample-mode" type="button" aria-pressed="true">Bài mẫu</button>
+                <button id="personal-mode" type="button" aria-pressed="false">Tài liệu cá nhân</button>
+              </span>
             </label>
-            <div class="sample-exercise-controls" id="sample-exercise-controls">
-              <label>
-                <span class="field-label">Chuyên ngành</span>
-                <select class="exercise-select" id="industry-select" aria-label="Chọn chuyên ngành"></select>
-              </label>
-              <label>
-                <span class="field-label">Bài tập</span>
-                <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
-              </label>
-            </div>
+            <label>
+              <span class="field-label">Chủ đề</span>
+              <select class="exercise-select" id="industry-select" aria-label="Chọn chủ đề"></select>
+            </label>
+            <label>
+              <span class="field-label" id="content-label">Nội dung</span>
+              <select class="exercise-select" id="exercise-select" aria-label="Chọn nội dung"></select>
+            </label>
           </div>
         </div>
 
@@ -570,14 +573,13 @@
           <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
             <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           </label>
-          <div class="saved-material-actions">
-            <label class="file-control" for="saved-materials">Mở tài liệu đã lưu
-              <select class="exercise-select" id="saved-materials">
-                <option value="">Chọn tài liệu...</option>
-              </select>
+          <div class="topic-create">
+            <label class="file-control" for="new-topic">Tên chủ đề mới
+              <input id="new-topic" type="text" maxlength="60" placeholder="Ví dụ: Du lịch, Giáo dục">
             </label>
-            <button class="quiet-button" id="delete-saved-material" type="button" disabled>Xóa tài liệu</button>
+            <button class="quiet-button" id="add-topic" type="button">Thêm chủ đề</button>
           </div>
+          <button class="quiet-button" id="delete-saved-material" type="button" disabled>Xóa nội dung</button>
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
@@ -903,10 +905,11 @@
     const HISTORY_KEY = "lingua-lab-practice-history-v1";
     const MAX_HISTORY_ITEMS = 30;
     const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
+    const PERSONAL_TOPICS_KEY = "lingua-lab-personal-topics-v1";
+    const DEFAULT_PERSONAL_TOPIC = "Tài liệu cá nhân";
     const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
-    const translationMode = document.querySelector("#translation-mode");
     const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
     const sourceText = document.querySelector("#source-text");
@@ -920,6 +923,7 @@
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let activeTranslationMode = "sample";
     let personalDraft = { source: "", answer: "", reference: "", keywords: "" };
+    let personalDraftTopic = DEFAULT_PERSONAL_TOPIC;
     let speechAudioRecorder = null;
     let speechAudioStream = null;
     let speechAudioChunks = [];
@@ -936,15 +940,46 @@
     let timerStartedAt = null;
     let timerInterval = null;
 
-    exerciseGroups.forEach((group) => {
-      const option = document.createElement("option");
-      option.value = group.id;
-      option.textContent = group.label;
-      industrySelect.append(option);
-    });
-
     function currentExercises() {
-      return exerciseGroups.find((group) => group.id === industrySelect.value).exercises;
+      return exerciseGroups.find((group) => group.id === industrySelect.value)?.exercises || [];
+    }
+
+    function readPersonalTopics() {
+      try {
+        const topics = JSON.parse(window.localStorage.getItem(PERSONAL_TOPICS_KEY) || "[]");
+        return Array.isArray(topics) ? topics.filter((topic) => typeof topic === "string" && topic.trim()) : [];
+      } catch (error) {
+        document.querySelector("#personal-status").textContent = "Không thể đọc danh sách chủ đề đã lưu.";
+        return [];
+      }
+    }
+
+    function getMaterialTopic(material) {
+      return typeof material.topic === "string" && material.topic.trim()
+        ? material.topic.trim()
+        : DEFAULT_PERSONAL_TOPIC;
+    }
+
+    function populateTopics(selectedTopic) {
+      const currentTopic = selectedTopic || industrySelect.value;
+      const topics = activeTranslationMode === "sample"
+        ? exerciseGroups.map((group) => ({ value: group.id, label: group.label }))
+        : [...new Set([
+            ...exerciseGroups.map((group) => group.label),
+            DEFAULT_PERSONAL_TOPIC,
+            ...readPersonalTopics(),
+            ...readPersonalMaterials().map(getMaterialTopic)
+          ])].map((topic) => ({ value: topic, label: topic }));
+      industrySelect.replaceChildren();
+      topics.forEach(({ value, label }) => {
+        const option = document.createElement("option");
+        option.value = value;
+        option.textContent = label;
+        industrySelect.append(option);
+      });
+      if (topics.some((topic) => topic.value === currentTopic)) industrySelect.value = currentTopic;
+      else if (activeTranslationMode === "personal") industrySelect.value = DEFAULT_PERSONAL_TOPIC;
+      else if (topics.length) industrySelect.value = topics[0].value;
     }
 
     function populateExercises() {
@@ -952,7 +987,7 @@
       currentExercises().forEach((exercise, index) => {
         const option = document.createElement("option");
         option.value = String(index);
-        option.textContent = `Câu ${index + 1} · ${exercise.source.slice(0, 42)}${exercise.source.length > 42 ? "..." : ""}`;
+        option.textContent = `Nội dung thứ ${index + 1} · ${exercise.source.slice(0, 42)}${exercise.source.length > 42 ? "..." : ""}`;
         exerciseSelect.append(option);
       });
       loadExercise();
@@ -999,18 +1034,20 @@
       };
     }
 
-    function setTranslationMode() {
+    function setTranslationMode(mode) {
       if (activeTranslationMode === "personal") capturePersonalDraft();
-      activeTranslationMode = translationMode.value;
+      activeTranslationMode = mode;
       const personal = activeTranslationMode === "personal";
-      document.querySelector("#sample-exercise-controls").hidden = personal;
       document.querySelector("#personal-controls").hidden = !personal;
       document.querySelector("#reference-editor").hidden = !personal;
+      document.querySelector("#sample-mode").setAttribute("aria-pressed", String(!personal));
+      document.querySelector("#personal-mode").setAttribute("aria-pressed", String(personal));
+      document.querySelector("#content-label").textContent = "Nội dung";
       sourceText.readOnly = !personal;
-      document.querySelector("#translation-title").textContent = personal ? "Tài liệu tự luyện" : "Bài dịch theo chuyên ngành";
+      document.querySelector("#translation-title").textContent = personal ? "Tài liệu tự luyện theo chủ đề" : "Bài dịch theo chủ đề";
       document.querySelector("#translation-caption").textContent = personal
-        ? "Dán văn bản, tải tệp hoặc mở lại tài liệu đã lưu"
-        : "Chọn một câu mẫu hoặc tự đưa tài liệu vào luyện tập";
+        ? "Tạo nội dung mới hoặc chọn bài đã lưu trong chủ đề"
+        : "Chọn chủ đề và nội dung để bắt đầu luyện tập";
       document.querySelector("#translation-score-note").textContent = personal
         ? "Nhận xét dựa trên nội dung và gợi ý DeepL"
         : "Nhận xét dựa trên nội dung và thuật ngữ chính";
@@ -1019,7 +1056,9 @@
       feedback.textContent = "";
       document.querySelector("#answer-breakdown").hidden = true;
 
+      populateTopics(personal ? personalDraftTopic : industrySelect.value);
       if (personal) {
+        personalDraftTopic = industrySelect.value;
         sourceText.value = personalDraft.source;
         answerText.value = personalDraft.answer;
         referenceAnswer.value = personalDraft.reference;
@@ -1027,11 +1066,43 @@
         document.querySelector("#source-language").textContent = "TÀI LIỆU";
         document.querySelector("#target-language").textContent = "BẢN DỊCH";
         document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
+        populatePersonalContents();
       } else {
-        loadExercise();
+        populateExercises();
         document.querySelector("#source-help").textContent = "Đọc kỹ sắc thái và ngữ cảnh";
       }
       updateCounts();
+    }
+
+    function addPersonalTopic() {
+      const input = document.querySelector("#new-topic");
+      const topic = input.value.trim();
+      const status = document.querySelector("#personal-status");
+      if (!topic) {
+        status.textContent = "Nhập tên chủ đề trước khi thêm.";
+        input.focus();
+        return;
+      }
+      const existingTopics = [
+        ...exerciseGroups.map((group) => group.label),
+        DEFAULT_PERSONAL_TOPIC,
+        ...readPersonalTopics()
+      ];
+      if (existingTopics.some((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase())) {
+        status.textContent = "Chủ đề này đã có. Hãy chọn chủ đề trong danh sách.";
+        return;
+      }
+      try {
+        const topics = [...readPersonalTopics(), topic];
+        window.localStorage.setItem(PERSONAL_TOPICS_KEY, JSON.stringify(topics));
+        personalDraftTopic = topic;
+        populateTopics(topic);
+        populatePersonalContents();
+        input.value = "";
+        status.textContent = `Đã thêm chủ đề “${topic}”.`;
+      } catch (error) {
+        status.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
+      }
     }
 
     function updateCheckButtonLabel() {
@@ -1369,22 +1440,29 @@
       }
     }
 
-    function populateSavedMaterials() {
-      const savedMaterials = document.querySelector("#saved-materials");
+    function populatePersonalContents() {
+      const selectedId = activeTranslationMode === "personal" ? exerciseSelect.value : "";
       document.querySelector("#delete-saved-material").disabled = true;
       const placeholder = document.createElement("option");
       placeholder.value = "";
-      placeholder.textContent = "Chọn tài liệu...";
-      savedMaterials.replaceChildren(placeholder);
-      readPersonalMaterials().forEach((item) => {
-        const option = document.createElement("option");
-        option.value = item.id;
-        option.textContent = item.title || item.source.slice(0, 60) || "Tài liệu không tên";
-        savedMaterials.append(option);
-      });
+      placeholder.textContent = "Chọn nội dung đã lưu...";
+      exerciseSelect.replaceChildren(placeholder);
+      readPersonalMaterials()
+        .filter((item) => getMaterialTopic(item) === industrySelect.value)
+        .forEach((item, index) => {
+          const option = document.createElement("option");
+          option.value = item.id;
+          const title = item.title || item.source.slice(0, 60) || "Nội dung";
+          option.textContent = `Nội dung thứ ${index + 1} · ${title}`;
+          exerciseSelect.append(option);
+        });
+      if ([...exerciseSelect.options].some((option) => option.value === selectedId)) {
+        exerciseSelect.value = selectedId;
+        document.querySelector("#delete-saved-material").disabled = false;
+      }
     }
 
-    function saveMaterialDraft(draft, status, title) {
+    function saveMaterialDraft(draft, status, title, topic = industrySelect.selectedOptions[0]?.textContent || DEFAULT_PERSONAL_TOPIC) {
       status.hidden = false;
       if (!draft.source.trim()) {
         status.textContent = "Hãy thêm văn bản nguồn trước khi lưu.";
@@ -1398,6 +1476,7 @@
       const entry = {
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: title || draft.source.replace(/\s+/g, " ").trim().slice(0, 60),
+        topic,
         savedAt: new Date().toISOString(),
         ...draft
       };
@@ -1405,10 +1484,14 @@
         const materials = readPersonalMaterials();
         materials.unshift(entry);
         window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
-        populateSavedMaterials();
-        document.querySelector("#saved-materials").value = entry.id;
-        document.querySelector("#delete-saved-material").disabled = false;
-        status.textContent = "Đã lưu bài biên dịch. Bạn có thể mở lại trong Tài liệu cá nhân.";
+        if (activeTranslationMode === "personal") {
+          populatePersonalContents();
+          exerciseSelect.value = entry.id;
+          document.querySelector("#delete-saved-material").disabled = false;
+        } else {
+          personalDraftTopic = topic;
+        }
+        status.textContent = "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.";
       } catch (error) {
         status.textContent = "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
       }
@@ -1424,7 +1507,7 @@
       }
       if (activeTranslationMode === "personal") {
         capturePersonalDraft();
-        saveMaterialDraft(personalDraft, status);
+        saveMaterialDraft(personalDraft, status, undefined, personalDraftTopic);
         return;
       }
 
@@ -1436,15 +1519,16 @@
         keywords: exercise.keyTerms.map((term) => term.translation).join(", ")
       };
       const title = `${industrySelect.selectedOptions[0].textContent} · ${exerciseSelect.selectedOptions[0].textContent}`;
-      saveMaterialDraft(draft, status, title);
+      saveMaterialDraft(draft, status, title, industrySelect.selectedOptions[0].textContent);
     }
 
     function loadPersonalMaterial() {
-      const selectedId = document.querySelector("#saved-materials").value;
+      const selectedId = exerciseSelect.value;
       document.querySelector("#delete-saved-material").disabled = !selectedId;
       if (!selectedId) return;
       const entry = readPersonalMaterials().find((item) => item.id === selectedId);
       if (!entry) return;
+      personalDraftTopic = getMaterialTopic(entry);
       personalDraft = {
         source: entry.source || "",
         answer: entry.answer || "",
@@ -1463,16 +1547,16 @@
     }
 
     function deleteSavedMaterial() {
-      const savedMaterials = document.querySelector("#saved-materials");
-      const selectedId = savedMaterials.value;
+      const selectedId = exerciseSelect.value;
       const status = document.querySelector("#personal-status");
       if (!selectedId) return;
       if (!window.confirm("Xóa tài liệu đã lưu này?")) return;
       try {
         const materials = readPersonalMaterials().filter((item) => item.id !== selectedId);
         window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials));
-        populateSavedMaterials();
-        status.textContent = "Đã xóa tài liệu đã lưu.";
+        populateTopics(industrySelect.value);
+        populatePersonalContents();
+        status.textContent = "Đã xóa nội dung đã lưu.";
       } catch (error) {
         status.textContent = "Không thể xóa tài liệu. Hãy thử lại.";
       }
@@ -1587,7 +1671,7 @@
         ? "Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn."
         : "Nghe video, chọn ngôn ngữ rồi luyện nói và theo dõi thời gian.";
       document.querySelector("#quick-guide-step-one").textContent = translating
-        ? "Chọn chuyên ngành và bài tập."
+        ? "Chọn chủ đề và nội dung thứ bạn muốn luyện."
         : "Dán link YouTube hoặc bắt đầu nói trực tiếp.";
       document.querySelector("#quick-guide-step-two").textContent = translating
         ? "Viết bản dịch rồi chọn “Kiểm tra & Xem gợi ý”."
@@ -2074,16 +2158,34 @@
       }
     }
 
-    translationMode.addEventListener("change", setTranslationMode);
-    industrySelect.addEventListener("change", populateExercises);
-    exerciseSelect.addEventListener("change", loadExercise);
+    document.querySelector("#sample-mode").addEventListener("click", () => setTranslationMode("sample"));
+    document.querySelector("#personal-mode").addEventListener("click", () => setTranslationMode("personal"));
+    industrySelect.addEventListener("change", () => {
+      if (activeTranslationMode === "personal") {
+        personalDraftTopic = industrySelect.value;
+        populatePersonalContents();
+        document.querySelector("#delete-saved-material").disabled = true;
+      } else {
+        populateExercises();
+      }
+    });
+    exerciseSelect.addEventListener("change", () => {
+      if (activeTranslationMode === "personal") loadPersonalMaterial();
+      else loadExercise();
+    });
     sourceText.addEventListener("input", handlePersonalInput);
     answerText.addEventListener("input", handlePersonalInput);
     referenceAnswer.addEventListener("input", handlePersonalInput);
     personalKeywords.addEventListener("input", handlePersonalInput);
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
     document.querySelector("#save-translation").addEventListener("click", saveCurrentTranslation);
-    document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
+    document.querySelector("#add-topic").addEventListener("click", addPersonalTopic);
+    document.querySelector("#new-topic").addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        addPersonalTopic();
+      }
+    });
     document.querySelector("#delete-saved-material").addEventListener("click", deleteSavedMaterial);
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
     document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
@@ -2163,8 +2265,8 @@
 
     window.addEventListener("pagehide", releaseMediaResources);
     loadDeepLKey();
+    populateTopics(exerciseGroups[0].id);
     populateExercises();
-    populateSavedMaterials();
     renderTimer();
     renderPracticeHistory();
   </script>
