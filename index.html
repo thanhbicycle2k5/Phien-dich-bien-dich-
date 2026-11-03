@@ -385,7 +385,7 @@
       padding: 18px;
     }
 
-    .interpret-session { min-width: 0; }
+    .interpret-source-column, .interpret-session { min-width: 0; }
 
     .interpret-toolbar {
       display: flex;
@@ -405,7 +405,7 @@
     @keyframes pulse { 50% { box-shadow: 0 0 0 5px rgba(59, 130, 246, .2); } }
 
     .transcript {
-      min-height: 190px;
+      min-height: 360px;
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 6px;
@@ -420,12 +420,13 @@
 
     .transcript-foot {
       display: flex;
-      justify-content: space-between;
+      justify-content: flex-end;
       gap: 12px;
       margin-top: 5px;
       color: var(--muted);
       font-size: 11px;
     }
+    .practice-status { margin: 10px 0 0; color: var(--muted); font-size: 11px; line-height: 1.45; }
 
     .speech-recording-preview { display: grid; gap: 7px; margin-top: 9px; padding: 10px; border: 1px solid var(--line); border-radius: 6px; background: var(--soft-blue); }
     .speech-recording-preview .field-label { margin-bottom: 0; }
@@ -437,6 +438,7 @@
       display: flex;
       align-items: center;
       justify-content: space-between;
+      flex-wrap: wrap;
       gap: 12px;
       margin-top: 10px;
     }
@@ -530,6 +532,7 @@
       .interpret-toolbar { align-items: start; flex-direction: column; }
       .language-control { width: 100%; }
       .interpret-actions, .page-foot { align-items: start; flex-direction: column; }
+      .transcript { min-height: 240px; }
       .timer-tools { width: 100%; }
       .history-meta { flex-direction: column; gap: 2px; }
       .youtube-input-row { align-items: stretch; flex-direction: column; }
@@ -754,96 +757,99 @@
         </div>
 
         <div class="interpret-body">
-          <section class="youtube-practice" aria-labelledby="youtube-heading">
-            <h3 class="youtube-heading" id="youtube-heading">Chọn nguồn luyện phiên dịch</h3>
-            <div class="youtube-input-row">
-              <label class="youtube-url-label" for="youtube-url">
-                <span class="field-label">Video YouTube</span>
-                <input class="youtube-input" id="youtube-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url">
+          <div class="interpret-source-column">
+            <section class="youtube-practice" aria-labelledby="youtube-heading">
+              <h3 class="youtube-heading" id="youtube-heading">Chọn nguồn luyện phiên dịch</h3>
+              <div class="youtube-input-row">
+                <label class="youtube-url-label" for="youtube-url">
+                  <span class="field-label">Video YouTube</span>
+                  <input class="youtube-input" id="youtube-url" type="url" inputmode="url" placeholder="https://www.youtube.com/watch?v=..." autocomplete="url">
+                </label>
+                <button class="primary-button" id="load-youtube" type="button">Tải video</button>
+              </div>
+              <div class="youtube-player" id="youtube-player" hidden>
+                <iframe id="youtube-frame" title="Video YouTube luyện phiên dịch" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
+              </div>
+              <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
+              <div class="local-media-source">
+                <label class="file-control" for="local-media-file">
+                  <span class="field-label">Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)</span>
+                  <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
+                </label>
+                <audio class="local-media-player" id="local-audio-player" preload="metadata" hidden></audio>
+                <video class="local-media-player" id="local-video-player" preload="metadata" playsinline hidden></video>
+                <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian.</p>
+              </div>
+              <label class="media-speed-control" id="media-speed-control" hidden>
+                <span class="field-label">Tốc độ phát</span>
+                <select id="media-playback-rate" aria-label="Tốc độ phát">
+                  <option value="0.5">0,5×</option>
+                  <option value="0.75">0,75×</option>
+                  <option value="1" selected>1× (bình thường)</option>
+                  <option value="1.25">1,25×</option>
+                  <option value="1.5">1,5×</option>
+                  <option value="1.75">1,75×</option>
+                  <option value="2">2×</option>
+                </select>
               </label>
-              <button class="primary-button" id="load-youtube" type="button">Tải video</button>
-            </div>
-            <div class="youtube-player" id="youtube-player" hidden>
-              <iframe id="youtube-frame" title="Video YouTube luyện phiên dịch" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
-            </div>
-            <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
-            <div class="local-media-source">
-              <label class="file-control" for="local-media-file">
-                <span class="field-label">Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)</span>
-                <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
+            </section>
+            <section class="practice-controls-panel" aria-label="Điều khiển buổi luyện tập">
+              <label class="language-control">
+                <span class="field-label">Ngôn ngữ đang nói</span>
+                <select class="language-select" id="speech-language">
+                  <option value="en-US">English (US)</option>
+                  <option value="en-GB">English (UK)</option>
+                  <option value="vi-VN">Tiếng Việt</option>
+                  <option value="fr-FR">Français</option>
+                  <option value="ja-JP">日本語</option>
+                </select>
               </label>
-              <audio class="local-media-player" id="local-audio-player" preload="metadata" hidden></audio>
-              <video class="local-media-player" id="local-video-player" preload="metadata" playsinline hidden></video>
-              <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian.</p>
-            </div>
-            <label class="media-speed-control" id="media-speed-control" hidden>
-              <span class="field-label">Tốc độ phát</span>
-              <select id="media-playback-rate" aria-label="Tốc độ phát">
-                <option value="0.5">0,5×</option>
-                <option value="0.75">0,75×</option>
-                <option value="1" selected>1× (bình thường)</option>
-                <option value="1.25">1,25×</option>
-                <option value="1.5">1,5×</option>
-                <option value="1.75">1,75×</option>
-                <option value="2">2×</option>
-              </select>
-            </label>
-          </section>
-          <div class="interpret-session">
-          <div class="interpret-toolbar">
-            <label class="language-control">
-              <span class="field-label">Ngôn ngữ đang nói</span>
-              <select class="language-select" id="speech-language">
-                <option value="en-US">English (US)</option>
-                <option value="en-GB">English (UK)</option>
-                <option value="vi-VN">Tiếng Việt</option>
-                <option value="fr-FR">Français</option>
-                <option value="ja-JP">日本語</option>
-              </select>
-            </label>
-            <span class="score-note">Nội dung bạn vừa nói</span>
-          </div>
-
-          <div class="transcript" id="transcript" role="textbox" aria-label="Bản chép lời" aria-readonly="true" aria-live="polite"></div>
-          <div class="transcript-foot"><span id="speech-status">Chọn ngôn ngữ rồi nhấn bắt đầu</span><span id="transcript-count">0 từ</span></div>
-          <div class="speech-recording-preview" id="speech-recording-preview" hidden>
-            <span class="field-label">Nghe lại phần dịch của bạn</span>
-            <div class="speech-recording-controls">
-              <audio id="speech-recorded-audio" controls preload="metadata"></audio>
-              <a class="quiet-button" id="download-speech-recording" download hidden>Tải bản ghi</a>
-            </div>
-            <p class="speech-recording-status" id="speech-recording-status" role="status" aria-live="polite"></p>
-          </div>
-
-          <div class="interpret-actions practice-controls">
-            <div class="action-group">
-              <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
-              <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
-              <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
-              <button class="quiet-button icon-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch" disabled>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
-              </button>
-            </div>
-            <div class="timer-tools" aria-label="Đồng hồ luyện tập">
-              <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
-              <details class="transcript-tools">
-                <summary aria-label="Thao tác bổ sung">Thêm</summary>
-                <div class="transcript-tool-list">
-                  <button class="quiet-button" id="copy-transcript" type="button">Sao chép bản chép lời</button>
-                  <button class="quiet-button" id="clear-transcript" type="button">Xóa bản chép lời</button>
+              <p class="practice-status" id="speech-status" aria-live="polite">Chọn ngôn ngữ rồi nhấn bắt đầu</p>
+              <div class="interpret-actions practice-controls">
+                <div class="action-group">
+                  <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
+                  <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
+                  <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
+                  <button class="quiet-button icon-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch" disabled>
+                    <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                  </button>
                 </div>
+                <div class="timer-tools" aria-label="Đồng hồ luyện tập">
+                  <output class="timer-display" id="timer-display" aria-live="off">00:00</output>
+                  <details class="transcript-tools">
+                    <summary aria-label="Thao tác bổ sung">Thêm</summary>
+                    <div class="transcript-tool-list">
+                      <button class="quiet-button" id="copy-transcript" type="button">Sao chép bản chép lời</button>
+                      <button class="quiet-button" id="clear-transcript" type="button">Xóa bản chép lời</button>
+                    </div>
+                  </details>
+                </div>
+              </div>
+              <details class="history" id="history-panel">
+                <summary id="history-summary">Lịch sử luyện tập</summary>
+                <div class="history-tools">
+                  <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
+                  <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
+                </div>
+                <ul class="history-list" id="history-list"></ul>
               </details>
-            </div>
+              <p class="notice" id="speech-notice">Cho phép truy cập micro để bắt đầu luyện nói.</p>
+            </section>
           </div>
-          <details class="history" id="history-panel">
-            <summary id="history-summary">Lịch sử luyện tập</summary>
-            <div class="history-tools">
-              <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
-              <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
+          <div class="interpret-session">
+            <div class="interpret-toolbar">
+              <span class="score-note">Nội dung bạn vừa nói</span>
             </div>
-            <ul class="history-list" id="history-list"></ul>
-          </details>
-          <p class="notice" id="speech-notice">Cho phép truy cập micro để bắt đầu luyện nói.</p>
+            <div class="transcript" id="transcript" role="textbox" aria-label="Bản chép lời" aria-readonly="true" aria-live="polite"></div>
+            <div class="transcript-foot"><span id="transcript-count">0 từ</span></div>
+            <div class="speech-recording-preview" id="speech-recording-preview" hidden>
+              <span class="field-label">Nghe lại phần dịch của bạn</span>
+              <div class="speech-recording-controls">
+                <audio id="speech-recorded-audio" controls preload="metadata"></audio>
+                <a class="quiet-button" id="download-speech-recording" download hidden>Tải bản ghi</a>
+              </div>
+              <p class="speech-recording-status" id="speech-recording-status" role="status" aria-live="polite"></p>
+            </div>
           </div>
         </div>
       </section>
