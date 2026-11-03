@@ -213,14 +213,33 @@
     .reference-fields { display: grid; gap: 12px; padding: 0 13px 13px; }
     .reference-fields .text-area { min-height: 100px; font-family: var(--sans); font-size: 13px; }
     .keyword-input { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
-    .deepl-settings { margin: 12px 22px; border: 1px solid var(--line); border-radius: 6px; background: #f8fbff; }
-    .deepl-settings summary { padding: 9px 12px; color: var(--blue-dark); cursor: pointer; font-size: 12px; font-weight: 700; }
-    .deepl-settings-body { display: grid; gap: 9px; padding: 0 12px 12px; }
+    .deepl-settings {
+      width: min(460px, calc(100% - 32px));
+      max-width: none;
+      max-height: min(90vh, 680px);
+      padding: 0;
+      overflow: auto;
+      border: 1px solid var(--line);
+      border-radius: 12px;
+      background: var(--white);
+      color: var(--ink);
+      box-shadow: 0 24px 70px rgba(23, 43, 77, .24);
+    }
+
+    .deepl-settings::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
+    .deepl-settings-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
+    .deepl-settings-title { margin: 0; font-size: 17px; }
+    .deepl-modal-close { width: 34px; min-height: 34px; padding: 0; font-size: 20px; }
+    .deepl-settings-body { display: grid; gap: 15px; padding: 18px 20px 20px; }
     .deepl-key-row { display: flex; align-items: end; gap: 8px; }
     .deepl-key-field { flex: 1; min-width: 0; }
     .deepl-key-field .field-label { margin-bottom: 5px; }
     .deepl-key-input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); font: 12px var(--sans); }
-    .deepl-security-note, .deepl-status { margin: 0; color: var(--muted); font-size: 11px; }
+    .deepl-guide { padding: 13px 15px; border-radius: 7px; background: #f8fbff; }
+    .deepl-guide h3 { margin: 0 0 8px; font-size: 13px; }
+    .deepl-guide ol { display: grid; gap: 7px; margin: 0; padding-left: 19px; color: var(--muted); font-size: 12px; }
+    .deepl-guide a { color: var(--blue-dark); font-weight: 650; }
+    .deepl-status { margin: 0; color: var(--muted); font-size: 12px; }
     .deepl-status { min-height: 16px; }
     .deepl-status.is-low { color: var(--blue-dark); }
     .translation-button-group { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -460,7 +479,6 @@
       .feedback { margin-right: 18px; margin-left: 18px; }
       .answer-breakdown { margin-right: 18px; margin-left: 18px; }
       .reference-editor { margin-right: 18px; margin-left: 18px; }
-      .deepl-settings { margin-right: 18px; margin-left: 18px; }
       .deepl-key-row { align-items: stretch; flex-direction: column; }
       .term-list { grid-template-columns: 1fr; }
       .interpret-body { grid-template-columns: 1fr; gap: 0; padding: 18px; }
@@ -556,8 +574,11 @@
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
-        <details class="deepl-settings" id="deepl-settings">
-          <summary>Cài đặt DeepL API (tùy chọn)</summary>
+        <dialog class="deepl-settings" id="deepl-settings" aria-labelledby="deepl-settings-title">
+          <div class="deepl-settings-head">
+            <h2 class="deepl-settings-title" id="deepl-settings-title">Cài đặt DeepL API</h2>
+            <button class="quiet-button deepl-modal-close" id="close-deepl-settings" type="button" aria-label="Đóng cài đặt DeepL">×</button>
+          </div>
           <div class="deepl-settings-body">
             <div class="deepl-key-row">
               <label class="deepl-key-field" for="deepl-api-key">
@@ -569,10 +590,17 @@
                 <button class="quiet-button" id="remove-deepl-key" type="button">Xóa key</button>
               </div>
             </div>
-            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; yêu cầu sẽ gửi key và văn bản tới DeepL. Nếu trình duyệt chặn kết nối trực tiếp bởi CORS, ứng dụng dùng endpoint cùng domain; khi deploy Vercel, cần triển khai thư mục api/deepl.</p>
+            <section class="deepl-guide" aria-labelledby="deepl-guide-title">
+              <h3 id="deepl-guide-title">Cách lấy API Key miễn phí</h3>
+              <ol>
+                <li><a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Đăng ký DeepL API Free</a> trên trang chính thức của DeepL.</li>
+                <li>Mở <strong>Account settings</strong> để xem Authentication Key.</li>
+                <li>Dán key vào ô phía trên và bấm <strong>Lưu key</strong>.</li>
+              </ol>
+            </section>
             <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.</p>
           </div>
-        </details>
+        </dialog>
 
         <div class="translation-grid">
           <section class="translation-pane" aria-labelledby="source-label">
@@ -606,6 +634,7 @@
         <div class="workspace-actions">
           <span class="score-note" id="translation-score-note">So sánh token cục bộ; không thay thế đánh giá ngữ nghĩa</span>
           <div class="translation-button-group">
+            <button class="quiet-button" id="open-deepl-settings" type="button">⚙ Cài đặt DeepL API</button>
             <button class="quiet-button" id="suggest-deepl" type="button">Gợi ý bằng DeepL</button>
             <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem gợi ý <span aria-hidden="true">→</span></button>
           </div>
@@ -1144,6 +1173,11 @@
       status.classList.toggle("is-low", isError);
     }
 
+    function openDeepLSettings() {
+      const settings = document.querySelector("#deepl-settings");
+      if (!settings.open) settings.showModal();
+    }
+
     function loadDeepLKey() {
       try {
         const savedKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
@@ -1243,18 +1277,17 @@
 
     async function suggestWithDeepL() {
       const button = document.querySelector("#suggest-deepl");
-      const settings = document.querySelector("#deepl-settings");
       let apiKey = "";
       try {
         apiKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
       } catch (error) {
         setDeepLStatus("Không thể đọc key trong localStorage.", true);
-        settings.open = true;
+        openDeepLSettings();
         return;
       }
 
       if (!apiKey) {
-        settings.open = true;
+        openDeepLSettings();
         deeplApiKeyInput.focus();
         setDeepLStatus(deeplApiKeyInput.value.trim()
           ? "Key chưa được lưu. Bấm Lưu key hoặc đăng ký gói DeepL API Free rồi thử lại."
@@ -1949,6 +1982,13 @@
     document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
     document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
+    document.querySelector("#open-deepl-settings").addEventListener("click", openDeepLSettings);
+    document.querySelector("#close-deepl-settings").addEventListener("click", () => {
+      document.querySelector("#deepl-settings").close();
+    });
+    document.querySelector("#deepl-settings").addEventListener("click", (event) => {
+      if (event.target === event.currentTarget) event.currentTarget.close();
+    });
     document.querySelector("#suggest-deepl").addEventListener("click", suggestWithDeepL);
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
     youtubeUrlInput.addEventListener("input", () => {
