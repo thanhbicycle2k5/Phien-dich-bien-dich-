@@ -204,6 +204,7 @@
     .selector-row select { max-width: 220px; }
     .sample-exercise-controls { display: flex; flex-wrap: wrap; gap: 10px; }
     .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 14px 22px; border-bottom: 1px solid var(--line); background: #f8fbff; }
+    .saved-material-actions { display: flex; align-items: end; gap: 8px; }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
@@ -478,6 +479,7 @@
       .sample-exercise-controls select { width: 100%; max-width: none; }
       .personal-controls { align-items: stretch; flex-direction: column; padding: 14px 18px; }
       .personal-controls select, .file-control input { width: 100%; max-width: none; }
+      .saved-material-actions { align-items: stretch; flex-direction: column; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
       .feedback { margin-right: 18px; margin-left: 18px; }
       .answer-breakdown { margin-right: 18px; margin-left: 18px; }
@@ -568,11 +570,14 @@
           <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
             <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           </label>
-          <label class="file-control" for="saved-materials">Mở tài liệu đã lưu
-            <select class="exercise-select" id="saved-materials">
-              <option value="">Chọn tài liệu...</option>
-            </select>
-          </label>
+          <div class="saved-material-actions">
+            <label class="file-control" for="saved-materials">Mở tài liệu đã lưu
+              <select class="exercise-select" id="saved-materials">
+                <option value="">Chọn tài liệu...</option>
+              </select>
+            </label>
+            <button class="quiet-button" id="delete-saved-material" type="button" disabled>Xóa tài liệu</button>
+          </div>
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
 
@@ -636,7 +641,7 @@
         <div class="workspace-actions">
           <span class="score-note" id="translation-score-note">Nhận xét dựa trên nội dung và thuật ngữ chính</span>
           <div class="translation-button-group">
-            <button class="quiet-button icon-button" id="save-translation" type="button" aria-label="Lưu bài biên dịch" title="Lưu bài biên dịch">
+            <button class="quiet-button icon-button" id="save-translation" type="button" aria-label="Lưu bài biên dịch" title="Lưu bài biên dịch" disabled>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
             </button>
             <button class="quiet-button" id="open-deepl-settings" type="button">⚙ Cài đặt DeepL API</button>
@@ -709,7 +714,7 @@
               <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
               <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
               <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
-              <button class="quiet-button icon-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch">
+              <button class="quiet-button icon-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch" disabled>
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
               </button>
             </div>
@@ -961,6 +966,13 @@
       document.querySelector("#source-count").textContent = `${wordCount(sourceText.value)} từ`;
       document.querySelector("#answer-count").textContent = `${wordCount(answerText.value)} từ`;
       document.querySelector("#transcript-count").textContent = `${wordCount(transcript.textContent)} từ`;
+      updateSaveButtonStates();
+    }
+
+    function updateSaveButtonStates() {
+      document.querySelector("#save-translation").disabled = !answerText.value.trim();
+      document.querySelector("#save-practice").disabled = !transcript.textContent.trim()
+        && !speechRecordingsById.has(speechRecordingId);
     }
 
     function loadExercise() {
@@ -1359,6 +1371,7 @@
 
     function populateSavedMaterials() {
       const savedMaterials = document.querySelector("#saved-materials");
+      document.querySelector("#delete-saved-material").disabled = true;
       const placeholder = document.createElement("option");
       placeholder.value = "";
       placeholder.textContent = "Chọn tài liệu...";
@@ -1394,6 +1407,7 @@
         window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
         populateSavedMaterials();
         document.querySelector("#saved-materials").value = entry.id;
+        document.querySelector("#delete-saved-material").disabled = false;
         status.textContent = "Đã lưu bài biên dịch. Bạn có thể mở lại trong Tài liệu cá nhân.";
       } catch (error) {
         status.textContent = "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
@@ -1404,6 +1418,10 @@
       const status = document.querySelector("#translation-save-status");
       status.hidden = false;
       status.textContent = "";
+      if (!answerText.value.trim()) {
+        status.textContent = "Hãy viết bản dịch trước khi lưu.";
+        return;
+      }
       if (activeTranslationMode === "personal") {
         capturePersonalDraft();
         saveMaterialDraft(personalDraft, status);
@@ -1423,6 +1441,7 @@
 
     function loadPersonalMaterial() {
       const selectedId = document.querySelector("#saved-materials").value;
+      document.querySelector("#delete-saved-material").disabled = !selectedId;
       if (!selectedId) return;
       const entry = readPersonalMaterials().find((item) => item.id === selectedId);
       if (!entry) return;
@@ -1441,6 +1460,22 @@
       document.querySelector("#answer-breakdown").hidden = true;
       document.querySelector("#personal-status").textContent = `Đã mở tài liệu đã lưu (${new Date(entry.savedAt || Date.now()).toLocaleDateString("vi-VN")}).`;
       updateCounts();
+    }
+
+    function deleteSavedMaterial() {
+      const savedMaterials = document.querySelector("#saved-materials");
+      const selectedId = savedMaterials.value;
+      const status = document.querySelector("#personal-status");
+      if (!selectedId) return;
+      if (!window.confirm("Xóa tài liệu đã lưu này?")) return;
+      try {
+        const materials = readPersonalMaterials().filter((item) => item.id !== selectedId);
+        window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials));
+        populateSavedMaterials();
+        status.textContent = "Đã xóa tài liệu đã lưu.";
+      } catch (error) {
+        status.textContent = "Không thể xóa tài liệu. Hãy thử lại.";
+      }
     }
 
     async function extractDocxText(file) {
@@ -1684,6 +1719,7 @@
             const recordingUrl = URL.createObjectURL(recording);
             speechRecordingUrls.add(recordingUrl);
             speechRecordingsById.set(recordingId, { url: recordingUrl, mimeType });
+            updateSaveButtonStates();
             document.querySelector("#speech-recorded-audio").src = recordingUrl;
             const downloadLink = document.querySelector("#download-speech-recording");
             const extension = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
@@ -1944,7 +1980,7 @@
         return;
       }
 
-      entries.forEach((entry) => {
+      entries.forEach((entry, index) => {
         const item = document.createElement("li");
         item.className = "history-item";
         const metadata = document.createElement("div");
@@ -1955,7 +1991,13 @@
         details.textContent = entry.kind === "media"
           ? `${entry.mediaName || "Bài nghe"} · ${entry.language || ""} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`
           : `${entry.language || "Không rõ ngôn ngữ"} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`;
-        metadata.append(date, details);
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "quiet-button";
+        deleteButton.type = "button";
+        deleteButton.textContent = "Xóa";
+        deleteButton.setAttribute("aria-label", `Xóa buổi luyện ngày ${date.textContent}`);
+        deleteButton.addEventListener("click", () => deletePracticeHistoryEntry(index));
+        metadata.append(date, details, deleteButton);
         const text = document.createElement("p");
         text.className = "history-transcript";
         text.textContent = entry.kind === "media"
@@ -1986,13 +2028,28 @@
       });
     }
 
+    function deletePracticeHistoryEntry(index) {
+      if (!window.confirm("Xóa buổi luyện này khỏi lịch sử?")) return;
+      const historyMessage = document.querySelector("#history-message");
+      try {
+        const entries = readPracticeHistory();
+        if (index < 0 || index >= entries.length) return;
+        entries.splice(index, 1);
+        window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+        historyMessage.textContent = "Đã xóa buổi luyện khỏi lịch sử.";
+        renderPracticeHistory();
+      } catch (error) {
+        historyMessage.textContent = "Không thể xóa buổi luyện. Hãy thử lại.";
+      }
+    }
+
     function savePractice() {
       const savedTranscript = transcript.textContent.trim();
       const durationSeconds = Math.floor(getElapsedTime() / 1000);
       const historyMessage = document.querySelector("#history-message");
       const speechStatus = document.querySelector("#speech-status");
-      if (!savedTranscript && durationSeconds === 0 && !speechRecordingsById.has(speechRecordingId)) {
-        historyMessage.textContent = "Hãy bắt đầu buổi luyện trước khi lưu.";
+      if (!savedTranscript && !speechRecordingsById.has(speechRecordingId)) {
+        historyMessage.textContent = "Hãy có bản chép lời hoặc bản ghi âm trước khi lưu.";
         speechStatus.textContent = historyMessage.textContent;
         return;
       }
@@ -2027,6 +2084,7 @@
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
     document.querySelector("#save-translation").addEventListener("click", saveCurrentTranslation);
     document.querySelector("#saved-materials").addEventListener("change", loadPersonalMaterial);
+    document.querySelector("#delete-saved-material").addEventListener("click", deleteSavedMaterial);
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
     document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
     document.querySelector("#open-deepl-settings").addEventListener("click", openDeepLSettings);
