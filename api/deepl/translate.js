@@ -31,12 +31,13 @@ module.exports = async function handler(request, response) {
   if (
     !payload ||
     typeof payload !== "object" ||
-    payload.target_lang !== "VI" ||
+    payload.source_lang !== "VI" ||
+    payload.target_lang !== "EN" ||
     !Array.isArray(payload.text) ||
     payload.text.length !== 1 ||
     typeof payload.text[0] !== "string"
   ) {
-    return response.status(400).json({ message: "Expected one text and target_lang VI." });
+    return response.status(400).json({ message: "Expected one text with source_lang VI and target_lang EN." });
   }
 
   const text = payload.text[0];

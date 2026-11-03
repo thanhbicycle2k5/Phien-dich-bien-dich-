@@ -1083,7 +1083,7 @@
       sourceText.readOnly = !personal;
       document.querySelector("#translation-title").textContent = personal ? "Tài liệu tự luyện theo chủ đề" : "Bài dịch theo chủ đề";
       document.querySelector("#translation-caption").textContent = personal
-        ? "Tạo nội dung mới hoặc chọn bài đã lưu trong chủ đề"
+        ? "Dịch tài liệu từ tiếng Việt sang tiếng Anh hoặc mở bài đã lưu"
         : "Chọn chủ đề và nội dung để bắt đầu luyện tập";
       document.querySelector("#translation-score-note").textContent = personal
         ? "Gợi ý tham khảo về cách diễn đạt và từ khóa"
@@ -1100,8 +1100,8 @@
         answerText.value = personalDraft.answer;
         referenceAnswer.value = personalDraft.reference;
         personalKeywords.value = personalDraft.keywords;
-        document.querySelector("#source-language").textContent = "TÀI LIỆU";
-        document.querySelector("#target-language").textContent = "BẢN DỊCH";
+        document.querySelector("#source-language").textContent = "VI";
+        document.querySelector("#target-language").textContent = "EN";
         document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
         populatePersonalContents();
       } else {
@@ -1444,12 +1444,17 @@
 
       if (!response.ok) {
         const statusMessages = {
+          400: "DeepL không chấp nhận nội dung hoặc cặp ngôn ngữ được yêu cầu.",
           401: "DeepL không nhận ra khóa này. Hãy kiểm tra lại khóa.",
           403: "Khóa DeepL chưa được cấp quyền sử dụng. Hãy kiểm tra lại tài khoản và khóa.",
           429: "DeepL đang nhận quá nhiều yêu cầu. Hãy chờ một chút rồi thử lại.",
           456: "Tài khoản DeepL đã dùng hết lượt miễn phí. Hãy kiểm tra hạn mức tài khoản."
         };
-        const details = typeof payload.message === "string" ? payload.message.trim() : "";
+        const details = typeof payload.message === "string"
+          ? payload.message.trim()
+          : typeof payload.error === "string"
+            ? payload.error.trim()
+            : "";
         const summary = statusMessages[response.status] || "DeepL chưa thể xử lý yêu cầu này.";
         throw new Error(details ? `${summary} Chi tiết: ${details}` : summary);
       }
@@ -1463,7 +1468,7 @@
           "Authorization": `DeepL-Auth-Key ${apiKey}`,
           "Content-Type": "application/json"
         },
-        body: JSON.stringify({ text: [source], target_lang: "VI" })
+        body: JSON.stringify({ text: [source], source_lang: "VI", target_lang: "EN" })
       };
 
       try {

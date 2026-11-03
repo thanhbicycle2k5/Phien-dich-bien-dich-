@@ -88,12 +88,13 @@ class AppHandler(BaseHTTPRequestHandler):
             return
         if (
             not isinstance(payload, dict)
-            or payload.get("target_lang") != "VI"
+            or payload.get("source_lang") != "VI"
+            or payload.get("target_lang") != "EN"
             or not isinstance(payload.get("text"), list)
             or len(payload["text"]) != 1
             or not isinstance(payload["text"][0], str)
         ):
-            self._send_json(400, {"message": "Expected one text and target_lang VI."})
+            self._send_json(400, {"message": "Expected one text with source_lang VI and target_lang EN."})
             return
         text = payload["text"][0]
         if not text.strip():
@@ -121,8 +122,14 @@ class AppHandler(BaseHTTPRequestHandler):
                 self.end_headers()
                 self.wfile.write(body)
         except HTTPError as error:
+            body = error.read()
+            content_type = error.headers.get("Content-Type", "application/json; charset=utf-8")
             error.close()
-            self._send_json(error.code, {"message": "DeepL rejected the request."})
+            self.send_response(error.code)
+            self.send_header("Content-Type", content_type)
+            self.send_header("Content-Length", str(len(body)))
+            self.end_headers()
+            self.wfile.write(body)
         except (TimeoutError, URLError, OSError):
             self._send_json(502, {"message": "Could not reach DeepL. Check the internet connection."})
 
