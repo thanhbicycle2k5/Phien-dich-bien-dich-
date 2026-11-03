@@ -40,7 +40,7 @@
     button, select { color: inherit; }
 
     .shell {
-      width: min(1120px, calc(100% - 48px));
+      width: min(1440px, calc(100% - 48px));
       margin: 0 auto;
     }
 
@@ -79,14 +79,23 @@
 
     .local-dot { width: 8px; height: 8px; border-radius: 50%; background: var(--blue); }
 
-    main { padding: 45px 0 64px; }
+    main { padding: 22px 0 32px; }
+
+    .app-layout {
+      display: grid;
+      grid-template-columns: minmax(230px, 280px) minmax(0, 1fr);
+      align-items: start;
+      gap: 20px;
+    }
+
+    .app-sidebar { display: grid; align-content: start; gap: 12px; }
+    .app-workspace { min-width: 0; }
 
     .intro {
-      display: flex;
-      align-items: end;
-      justify-content: space-between;
-      gap: 24px;
-      margin-bottom: 30px;
+      padding: 16px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--white);
     }
 
     .eyebrow {
@@ -100,19 +109,19 @@
 
     h1 {
       margin: 0;
-      font: 400 clamp(32px, 5vw, 48px)/1.08 var(--sans);
+      font: 400 clamp(30px, 3vw, 40px)/1.08 var(--sans);
       letter-spacing: 0;
     }
 
-    .mode-tagline { margin: 8px 0 0; color: var(--blue-dark); font: 500 20px/1.35 var(--sans); }
+    .mode-tagline { margin: 8px 0 0; color: var(--blue-dark); font: 500 17px/1.35 var(--sans); }
 
-    .intro-copy { max-width: 330px; margin: 0 0 3px; color: var(--muted); font-size: 14px; }
+    .intro-copy { margin: 10px 0 0; color: var(--muted); font-size: 12px; }
 
     .mode-tabs {
-      display: flex;
+      display: grid;
+      grid-template-columns: 1fr 1fr;
       gap: 5px;
-      width: fit-content;
-      margin-bottom: 25px;
+      margin: 0;
       padding: 5px;
       border: 1px solid var(--line);
       border-radius: 9px;
@@ -132,6 +141,17 @@
     }
 
     .mode-tab[aria-selected="true"] { background: var(--blue); color: white; }
+
+    .quick-guide {
+      padding: 15px 16px;
+      border: 1px solid var(--line);
+      border-radius: 9px;
+      background: #f8fbff;
+    }
+
+    .quick-guide h2 { margin: 0 0 8px; font-size: 14px; }
+    .quick-guide p { margin: 0 0 8px; color: var(--muted); font-size: 12px; }
+    .quick-guide ol { display: grid; gap: 7px; margin: 0; padding-left: 18px; color: var(--muted); font-size: 12px; }
 
     .workspace {
       border: 1px solid var(--line);
@@ -305,7 +325,15 @@
     .term-item strong { display: block; margin-bottom: 2px; color: var(--blue-dark); }
     .context-note { margin: 14px 0 0; color: var(--muted); font-size: 12px; }
 
-    .interpret-body { padding: 18px; }
+    .interpret-body {
+      display: grid;
+      grid-template-columns: minmax(250px, .85fr) minmax(0, 1.15fr);
+      align-items: start;
+      gap: 0 18px;
+      padding: 18px;
+    }
+
+    .interpret-session { min-width: 0; }
 
     .interpret-toolbar {
       display: flex;
@@ -383,7 +411,7 @@
     .youtube-url-label { flex: 1; min-width: 0; }
     .youtube-input { width: 100%; min-height: 38px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
     .youtube-status { min-height: 16px; margin: 6px 0 0; color: var(--muted); font-size: 11px; }
-    .youtube-player { width: min(100%, 640px); margin: 8px auto 0; overflow: hidden; border-radius: 6px; background: #0f172a; aspect-ratio: 16 / 9; }
+    .youtube-player { width: 100%; margin: 8px auto 0; overflow: hidden; border-radius: 6px; background: #0f172a; aspect-ratio: 16 / 9; }
     .youtube-player iframe { display: block; width: 100%; height: 100%; border: 0; }
 
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
@@ -400,12 +428,21 @@
 
     [hidden] { display: none !important; }
 
+    @media (max-width: 1050px) {
+      .app-layout { grid-template-columns: 1fr; }
+      .app-sidebar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+      .intro { grid-row: span 2; }
+      .mode-tabs { align-self: start; }
+      .quick-guide { align-self: start; }
+    }
+
     @media (max-width: 700px) {
       .shell { width: min(100% - 28px, 560px); }
       .topbar { min-height: 64px; }
       .brand-note { display: none; }
-      main { padding-top: 33px; }
-      .intro { align-items: start; flex-direction: column; gap: 10px; }
+      main { padding-top: 16px; }
+      .app-sidebar { grid-template-columns: 1fr; }
+      .intro { grid-row: auto; }
       .intro-copy { max-width: 420px; }
       .translation-grid { grid-template-columns: 1fr; }
       .translation-pane { padding: 18px; }
@@ -426,7 +463,7 @@
       .deepl-settings { margin-right: 18px; margin-left: 18px; }
       .deepl-key-row { align-items: stretch; flex-direction: column; }
       .term-list { grid-template-columns: 1fr; }
-      .interpret-body { padding: 18px; }
+      .interpret-body { grid-template-columns: 1fr; gap: 0; padding: 18px; }
       .interpret-toolbar { align-items: start; flex-direction: column; }
       .language-control { width: 100%; }
       .interpret-actions, .page-foot { align-items: start; flex-direction: column; }
@@ -452,21 +489,33 @@
       <div class="local-label"><span class="local-dot" aria-hidden="true"></span>Giao diện chạy trên thiết bị</div>
     </header>
 
-    <main>
-      <section class="intro" aria-labelledby="page-title">
-        <div>
-          <p class="eyebrow">Phòng thực hành ngôn ngữ</p>
-          <h1>Interslation</h1>
-          <p class="mode-tagline" id="page-title">Đọc kỹ. Cân nhắc. Viết chuẩn xác.</p>
-        </div>
-        <p class="intro-copy">Luyện phiên dịch và biên dịch miễn phí, trực tiếp trên thiết bị của bạn.</p>
-      </section>
+    <main class="app-layout">
+      <aside class="app-sidebar">
+        <section class="intro" aria-labelledby="page-title">
+          <div>
+            <p class="eyebrow">Phòng thực hành ngôn ngữ</p>
+            <h1>Interslation</h1>
+            <p class="mode-tagline" id="page-title">Đọc kỹ. Cân nhắc. Viết chuẩn xác.</p>
+          </div>
+          <p class="intro-copy">Luyện phiên dịch và biên dịch miễn phí, trực tiếp trên thiết bị của bạn.</p>
+        </section>
 
-      <nav class="mode-tabs" role="tablist" aria-label="Chọn bài luyện tập">
-        <button class="mode-tab" id="tab-translate" type="button" role="tab" aria-selected="true" aria-controls="translate-panel">Biên dịch</button>
-        <button class="mode-tab" id="tab-interpret" type="button" role="tab" aria-selected="false" aria-controls="interpret-panel">Phiên dịch</button>
-      </nav>
+        <nav class="mode-tabs" role="tablist" aria-label="Chọn bài luyện tập">
+          <button class="mode-tab" id="tab-translate" type="button" role="tab" aria-selected="true" aria-controls="translate-panel">Biên dịch</button>
+          <button class="mode-tab" id="tab-interpret" type="button" role="tab" aria-selected="false" aria-controls="interpret-panel">Phiên dịch</button>
+        </nav>
 
+        <section class="quick-guide" aria-labelledby="quick-guide-title">
+          <h2 id="quick-guide-title">Bắt đầu nhanh</h2>
+          <p id="quick-guide-description">Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn.</p>
+          <ol>
+            <li id="quick-guide-step-one">Chọn chuyên ngành và bài tập.</li>
+            <li id="quick-guide-step-two">Viết bản dịch rồi chọn “Kiểm tra &amp; Xem gợi ý”.</li>
+          </ol>
+        </section>
+      </aside>
+
+      <div class="app-workspace">
       <section class="workspace" id="translate-panel" role="tabpanel" aria-labelledby="tab-translate">
         <div class="workspace-head">
           <div>
@@ -595,6 +644,7 @@
             </div>
             <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
           </section>
+          <div class="interpret-session">
           <div class="interpret-toolbar">
             <label class="language-control">
               <span class="field-label">Ngôn ngữ đang nói</span>
@@ -649,6 +699,7 @@
             <ul class="history-list" id="history-list"></ul>
           </details>
           <p class="notice" id="speech-notice">Nhận dạng giọng nói cần được trình duyệt hỗ trợ và có thể cần kết nối Internet. Xem README để biết giới hạn quyền riêng tư và lựa chọn Whisper offline.</p>
+          </div>
         </div>
       </section>
 
@@ -656,6 +707,7 @@
         <span>Bản mẫu học tập · Không gửi bản dịch tới API chấm điểm</span>
         <span>Không lưu transcript sau khi đóng trang</span>
       </footer>
+      </div>
     </main>
   </div>
 
@@ -1385,6 +1437,15 @@
 
     function setMode(mode) {
       const translating = mode === "translate";
+      document.querySelector("#quick-guide-description").textContent = translating
+        ? "Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn."
+        : "Nghe video, chọn ngôn ngữ rồi luyện nói và theo dõi thời gian.";
+      document.querySelector("#quick-guide-step-one").textContent = translating
+        ? "Chọn chuyên ngành và bài tập."
+        : "Dán link YouTube hoặc bắt đầu nói trực tiếp.";
+      document.querySelector("#quick-guide-step-two").textContent = translating
+        ? "Viết bản dịch rồi chọn “Kiểm tra & Xem gợi ý”."
+        : "Dùng “Bắt đầu lại” để xóa transcript và đặt lại buổi luyện.";
       document.querySelector("#page-title").textContent = translating
         ? "Đọc kỹ. Cân nhắc. Viết chuẩn xác."
         : "Nghe kỹ. Chuyển ý. Nói tự tin.";
