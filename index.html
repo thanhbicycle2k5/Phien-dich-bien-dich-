@@ -520,7 +520,7 @@
                 <button class="quiet-button" id="remove-deepl-key" type="button">Xóa key</button>
               </div>
             </div>
-            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; văn bản nguồn sẽ được gửi tới DeepL khi bạn yêu cầu dịch. Gọi API trực tiếp cũng có thể bị trình duyệt chặn bởi CORS.</p>
+            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; máy chủ cục bộ chuyển key và văn bản nguồn tới DeepL khi bạn yêu cầu dịch. Hãy chạy ứng dụng bằng server.py, không mở trực tiếp tệp HTML.</p>
             <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.</p>
           </div>
         </details>
@@ -1141,15 +1141,19 @@
         setDeepLStatus("Đoạn văn vượt giới hạn gửi an toàn 120 KB. Hãy chia nhỏ văn bản.", true);
         return;
       }
+      if (window.location.protocol === "file:") {
+        setDeepLStatus("Để dùng DeepL, hãy chạy python3 server.py rồi mở http://localhost:8000.", true);
+        return;
+      }
 
       button.disabled = true;
       button.textContent = "Đang dịch...";
       setDeepLStatus("Đang gửi văn bản tới DeepL API Free...");
       try {
-        const response = await fetch("https://api-free.deepl.com/v2/translate", {
+        const response = await fetch("/api/deepl/translate", {
           method: "POST",
           headers: {
-            "Authorization": `DeepL-Auth-Key ${apiKey}`,
+            "DeepL-Auth-Key": apiKey,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({ text: [source], target_lang: "VI" })
@@ -1160,7 +1164,9 @@
             401: "DeepL không chấp nhận key. Hãy kiểm tra Authentication Key.",
             403: "DeepL từ chối key hoặc quyền truy cập (403). Hãy kiểm tra key và loại tài khoản.",
             429: "DeepL đang giới hạn tần suất request (429). Hãy chờ rồi thử lại.",
-            456: "Đã hết quota DeepL API Free (456). Quota sẽ được đặt lại theo chu kỳ của DeepL."
+            456: "Đã hết quota DeepL API Free (456). Quota sẽ được đặt lại theo chu kỳ của DeepL.",
+            502: "Máy chủ cục bộ không kết nối được DeepL. Hãy kiểm tra Internet rồi thử lại.",
+            404: "Không tìm thấy proxy DeepL. Hãy chạy python3 server.py rồi mở http://localhost:8000."
           };
           throw new Error(errorMessages[response.status] || `DeepL trả lỗi HTTP ${response.status}. Hãy thử lại sau.`);
         }
@@ -1176,7 +1182,7 @@
         setDeepLStatus("Đã điền gợi ý vào breakdown và ô đáp án gợi ý.");
       } catch (error) {
         const message = error instanceof TypeError
-          ? "Không kết nối được DeepL. Có thể do mất mạng hoặc trình duyệt chặn CORS; không gửi key qua proxy không tin cậy."
+          ? "Không kết nối được máy chủ cục bộ. Hãy chạy python3 server.py rồi mở http://localhost:8000."
           : error.message || "Không thể hoàn tất yêu cầu DeepL.";
         setDeepLStatus(message, true);
       } finally {
