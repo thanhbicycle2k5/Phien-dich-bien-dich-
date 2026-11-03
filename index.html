@@ -692,7 +692,7 @@
               </div>
             </div>
             <textarea class="text-area" id="answer-text" placeholder="Viết bản dịch của bạn..." spellcheck="true"></textarea>
-            <div class="pane-foot"><span>Đáp án mẫu chỉ dùng để đối chiếu từ vựng</span><span id="answer-count">0 từ</span></div>
+            <div class="pane-foot"><span>Enter: kiểm tra · Ctrl+Enter: xuống dòng</span><span id="answer-count">0 từ</span></div>
           </section>
         </div>
 
@@ -2619,6 +2619,19 @@
       });
       textarea.addEventListener("blur", () => flushEditHistory(textarea));
       textarea.addEventListener("keydown", (event) => {
+        if (
+          textarea === answerText &&
+          event.key === "Enter" &&
+          !event.ctrlKey &&
+          !event.metaKey &&
+          !event.shiftKey &&
+          !event.isComposing &&
+          event.keyCode !== 229
+        ) {
+          event.preventDefault();
+          document.querySelector("#check-answer").click();
+          return;
+        }
         if (!(event.ctrlKey || event.metaKey)) return;
         const key = event.key.toLocaleLowerCase();
         const isUndo = key === "z" && !event.shiftKey;
