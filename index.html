@@ -183,7 +183,7 @@
     .collapse-toggle svg { width: 18px; height: 18px; transition: transform .18s ease; }
     .collapse-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
     .collapse-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
-    .translation-content > .selector-row { justify-content: flex-start; padding: 14px 22px; border-bottom: 1px solid var(--line); }
+    .translation-settings > .selector-row { justify-content: flex-start; padding: 14px 22px; border-bottom: 1px solid var(--line); }
 
     .field-label {
       display: block;
@@ -490,7 +490,7 @@
       .translation-pane { padding: 18px; }
       .translation-pane + .translation-pane { border-top: 1px solid var(--line); border-left: 0; }
       .workspace-head { padding: 12px 16px; }
-      .translation-content > .selector-row { padding: 12px 16px; }
+      .translation-settings > .selector-row { padding: 12px 16px; }
       .selector-row { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
@@ -568,7 +568,7 @@
           <div>
             <div class="workspace-title-row">
               <h2 class="workspace-title" id="translation-title">Bài dịch theo chủ đề</h2>
-              <button class="collapse-toggle" id="toggle-translation-content" type="button" aria-label="Thu gọn phần bài dịch theo chủ đề" aria-expanded="true" aria-controls="translation-content">
+              <button class="collapse-toggle" id="toggle-translation-content" type="button" aria-label="Thu gọn phần chọn nguồn, chủ đề và bài tập" aria-expanded="true" aria-controls="translation-settings">
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>
               </button>
             </div>
@@ -576,7 +576,7 @@
           </div>
         </div>
 
-        <div class="translation-content" id="translation-content">
+        <div class="translation-settings" id="translation-settings">
         <div class="selector-row">
           <label>
             <span class="field-label">Nguồn luyện tập</span>
@@ -612,6 +612,7 @@
             <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
           </label>
           <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
+        </div>
         </div>
 
         <dialog class="topic-dialog" id="topic-dialog" aria-labelledby="topic-dialog-title">
@@ -707,7 +708,6 @@
           <ul class="term-list" id="key-terms"></ul>
           <p class="context-note" id="translation-context"></p>
         </section>
-        </div>
       </section>
 
       <section class="workspace" id="interpret-panel" role="tabpanel" aria-labelledby="tab-interpret" hidden>
@@ -2288,10 +2288,10 @@
     document.querySelector("#personal-mode").addEventListener("click", () => setTranslationMode("personal"));
     document.querySelector("#toggle-translation-content").addEventListener("click", (event) => {
       const button = event.currentTarget;
-      const content = document.querySelector("#translation-content");
+      const content = document.querySelector("#translation-settings");
       const isExpanded = button.getAttribute("aria-expanded") === "true";
       button.setAttribute("aria-expanded", String(!isExpanded));
-      button.setAttribute("aria-label", `${isExpanded ? "Mở rộng" : "Thu gọn"} phần ${document.querySelector("#translation-title").textContent}`);
+      button.setAttribute("aria-label", `${isExpanded ? "Mở rộng" : "Thu gọn"} phần chọn nguồn, chủ đề và bài tập`);
       content.hidden = isExpanded;
     });
     document.querySelector("#personal-direction").addEventListener("change", (event) => {
