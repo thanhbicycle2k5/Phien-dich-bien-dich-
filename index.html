@@ -520,7 +520,7 @@
                 <button class="quiet-button" id="remove-deepl-key" type="button">Xóa key</button>
               </div>
             </div>
-            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; máy chủ cục bộ chuyển key và văn bản nguồn tới DeepL khi bạn yêu cầu dịch. Hãy chạy ứng dụng bằng server.py, không mở trực tiếp tệp HTML.</p>
+            <p class="deepl-security-note">Key được lưu dạng văn bản trong localStorage, không được mã hóa. Chỉ dùng trên thiết bị cá nhân; proxy cục bộ hoặc Vercel sẽ chuyển key và văn bản nguồn tới DeepL khi bạn yêu cầu dịch. Hãy chạy server.py ở local hoặc triển khai kèm API function trên Vercel.</p>
             <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Tính năng DeepL là tùy chọn; không ảnh hưởng chức năng luyện tập cục bộ.</p>
           </div>
         </details>
@@ -1002,13 +1002,28 @@
     }
 
     function extractKeywordCandidates(text) {
-      const stopWords = new Set("the a an and or to of in on for from with is are was were be been being this that it we you they he she as at by can should may do does did have has had their its your into before after not no per each more than over under".split(" "));
-      const counts = new Map();
-      tokenize(text).forEach((word) => {
-        if (word.length < 4 || stopWords.has(word)) return;
-        counts.set(word, (counts.get(word) || 0) + 1);
-      });
-      return [...counts.keys()].sort((left, right) => right.length - left.length || (counts.get(right) - counts.get(left))).slice(0, 6);
+      const stopWords = new Set("the a an and or to of in on for from with is are was were be been being this that it we you they he she as at by can should may do does did have has had their its your into before after not no per each more than over under đã đang sẽ được bị và là của cho với trong trên tại từ đến về này đó các một những mọi như khi nếu nhưng vì để mà cũng rất hơn nhất thêm vẫn còn phải cần hãy nên có không giữ nguyên nhằm sự việc chúng tôi bạn họ nó người".split(" "));
+      const genericPhrases = new Set(["cơ bản", "hỗ trợ"]);
+      const words = tokenize(text);
+      const candidates = [];
+      for (let index = 0; index < words.length;) {
+        const word = words[index];
+        if (stopWords.has(word) || /^\p{N}+$/u.test(word)) {
+          index += 1;
+          continue;
+        }
+
+        const nextWord = words[index + 1];
+        if (nextWord && !stopWords.has(nextWord) && !/^\p{N}+$/u.test(nextWord)) {
+          const phrase = `${word} ${nextWord}`;
+          if (!genericPhrases.has(phrase)) candidates.push(phrase);
+          index += 2;
+        } else {
+          if (word.length >= 4) candidates.push(word);
+          index += 1;
+        }
+      }
+      return [...new Set(candidates)].slice(0, 6);
     }
 
     function checkPersonalTranslation(answerTokens) {
@@ -1043,11 +1058,11 @@
       const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
       const keywords = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(reference);
       document.querySelector("#breakdown-title").textContent = "Đáp án gợi ý của bạn";
-      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Từ nổi bật trong đáp án gợi ý";
+      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Cụm từ đáng chú ý trong đáp án gợi ý";
       document.querySelector("#model-answer").textContent = reference || "Bạn chưa nhập đáp án gợi ý cho tài liệu này.";
       document.querySelector("#translation-context").textContent = enteredKeywords.length
         ? "Từ khóa do bạn cung cấp; hãy đối chiếu cách dùng theo ngữ cảnh của văn bản."
-        : "Các từ nổi bật được chọn theo độ dài token, không phải phân tích ngữ nghĩa. Bạn có thể tự nhập từ khóa trong mục đáp án gợi ý.";
+        : "Các cụm từ được ghép từ những từ đứng liền nhau, không phải phân tích ngữ nghĩa. Bạn có thể tự nhập từ khóa trong mục đáp án gợi ý.";
       renderKeyTerms(keywords.map((word) => ({
         source: word,
         translation: "",
@@ -1060,7 +1075,7 @@
       const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
       const keywords = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(translatedText);
       document.querySelector("#breakdown-title").textContent = "Gợi ý bản dịch từ DeepL";
-      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Từ nổi bật trong bản dịch";
+      document.querySelector("#breakdown-terms-title").textContent = enteredKeywords.length ? "Từ khóa cần lưu ý" : "Cụm từ đáng chú ý trong bản dịch";
       document.querySelector("#model-answer").textContent = translatedText;
       document.querySelector("#translation-context").textContent = "Bản dịch tự động cần được rà soát về thuật ngữ, sắc thái và ngữ cảnh trước khi sử dụng.";
       renderKeyTerms(keywords.map((word) => ({
@@ -1166,7 +1181,7 @@
             429: "DeepL đang giới hạn tần suất request (429). Hãy chờ rồi thử lại.",
             456: "Đã hết quota DeepL API Free (456). Quota sẽ được đặt lại theo chu kỳ của DeepL.",
             502: "Máy chủ cục bộ không kết nối được DeepL. Hãy kiểm tra Internet rồi thử lại.",
-            404: "Không tìm thấy proxy DeepL. Hãy chạy python3 server.py rồi mở http://localhost:8000."
+            404: "Không tìm thấy proxy DeepL. Ở local, hãy chạy python3 server.py; trên Vercel, cần triển khai kèm API function."
           };
           throw new Error(errorMessages[response.status] || `DeepL trả lỗi HTTP ${response.status}. Hãy thử lại sau.`);
         }
