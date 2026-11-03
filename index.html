@@ -1051,6 +1051,7 @@
     let personalDirection = "VI_EN";
     let speechAudioRecorder = null;
     let speechAudioStream = null;
+    let speechAudioContext = null;
     let speechAudioChunks = [];
     let speechRecordingId = "";
     const speechRecordingUrls = new Set();
@@ -2304,7 +2305,13 @@
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
       const recordingId = speechRecordingId;
       try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+        const stream = await navigator.mediaDevices.getUserMedia({
+          audio: {
+            autoGainControl: true,
+            echoCancellation: true,
+            noiseSuppression: true
+          }
+        });
         if (speechRecordingId !== recordingId) {
           stream.getTracks().forEach((track) => track.stop());
           return false;
@@ -2312,13 +2319,38 @@
         const chunks = [];
         speechAudioStream = stream;
         speechAudioChunks = chunks;
-        const recorder = new MediaRecorder(stream);
+        const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+        if (!AudioContextClass) throw new Error("AudioContext is unavailable");
+        const audioContext = new AudioContextClass();
+        speechAudioContext = audioContext;
+        await audioContext.resume();
+        if (speechRecordingId !== recordingId) {
+          stream.getTracks().forEach((track) => track.stop());
+          await audioContext.close();
+          if (speechAudioStream === stream) speechAudioStream = null;
+          if (speechAudioContext === audioContext) speechAudioContext = null;
+          return false;
+        }
+        const input = audioContext.createMediaStreamSource(stream);
+        const compressor = audioContext.createDynamicsCompressor();
+        compressor.threshold.value = -24;
+        compressor.knee.value = 18;
+        compressor.ratio.value = 4;
+        compressor.attack.value = 0.003;
+        compressor.release.value = 0.25;
+        const normalizedStream = audioContext.createMediaStreamDestination();
+        input.connect(compressor);
+        compressor.connect(normalizedStream);
+        const recorder = new MediaRecorder(normalizedStream.stream);
         speechAudioRecorder = recorder;
         recorder.addEventListener("dataavailable", (event) => {
           if (event.data.size > 0) chunks.push(event.data);
         });
         recorder.addEventListener("stop", () => {
           stream.getTracks().forEach((track) => track.stop());
+          normalizedStream.stream.getTracks().forEach((track) => track.stop());
+          if (speechAudioContext === audioContext) speechAudioContext = null;
+          audioContext.close();
           if (speechAudioStream === stream) speechAudioStream = null;
           if (discardedSpeechRecordings.has(recordingId)) {
             discardedSpeechRecordings.delete(recordingId);
@@ -2339,7 +2371,7 @@
             downloadLink.textContent = `Tải file .${extension}`;
             downloadLink.hidden = false;
             document.querySelector("#speech-recording-preview").hidden = false;
-            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng nghe lại hoặc tải xuống. Bản ghi được giữ tạm trong phiên trang này.";
+            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng nghe lại hoặc tải xuống. Âm lượng đã được cân bằng tự động; bản ghi được giữ tạm trong phiên trang này.";
             renderPracticeHistory();
           } else {
             document.querySelector("#speech-recording-status").textContent = "Không thu được âm thanh. Hãy kiểm tra micro và thử lại.";
@@ -2353,7 +2385,12 @@
       } catch (error) {
         speechAudioStream?.getTracks().forEach((track) => track.stop());
         speechAudioStream = null;
-        document.querySelector("#speech-recording-status").textContent = "Không thể mở micro để ghi âm. Hãy cấp quyền micro và thử lại.";
+        if (speechAudioContext) {
+          const audioContext = speechAudioContext;
+          speechAudioContext = null;
+          await audioContext.close();
+        }
+        document.querySelector("#speech-recording-status").textContent = "Không thể xử lý âm thanh micro để tạo bản ghi. Hãy kiểm tra quyền micro và thử lại.";
         return false;
       }
     }
