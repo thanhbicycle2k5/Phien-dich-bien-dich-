@@ -959,6 +959,7 @@
     const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
+    const PERSONAL_DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
     const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
     const contentSelectorField = document.querySelector("#content-selector-field");
@@ -1010,6 +1011,26 @@
       return typeof material.topic === "string" && material.topic.trim()
         ? material.topic.trim()
         : DEFAULT_PERSONAL_TOPIC;
+    }
+
+    function readPersonalDrafts() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(PERSONAL_DRAFTS_KEY) || "{}");
+        if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+          throw new Error("Invalid personal drafts");
+        }
+        return Object.fromEntries(Object.entries(saved).filter(([, draft]) =>
+          draft &&
+          typeof draft.source === "string" &&
+          typeof draft.answer === "string" &&
+          typeof draft.reference === "string" &&
+          typeof draft.keywords === "string" &&
+          (draft.direction === "VI_EN" || draft.direction === "EN_VI")
+        ));
+      } catch (error) {
+        document.querySelector("#personal-status").textContent = "Không thể đọc bản nháp đã lưu trong trình duyệt này.";
+        return null;
+      }
     }
 
     function populateTopics(selectedTopic) {
@@ -1089,12 +1110,29 @@
         keywords: personalKeywords.value,
         direction: personalDirection
       };
-      if (personalDraftTopic) personalDraftsByTopic.set(personalDraftTopic, { ...personalDraft });
+      if (!industrySelect.value || activeTranslationMode !== "personal") return false;
+      personalDraftTopic = industrySelect.value;
+      personalDraftsByTopic.set(personalDraftTopic, { ...personalDraft });
+      const savedDrafts = readPersonalDrafts();
+      if (!savedDrafts) return false;
+      if (Object.values(personalDraft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
+        document.querySelector("#personal-status").textContent = "Bản nháp quá dài để tự lưu. Mỗi ô giới hạn 50.000 ký tự.";
+        return false;
+      }
+      try {
+        savedDrafts[personalDraftTopic] = { ...personalDraft };
+        window.localStorage.setItem(PERSONAL_DRAFTS_KEY, JSON.stringify(savedDrafts));
+        document.querySelector("#personal-status").textContent = `Đã tự lưu bản nháp cho chủ đề “${personalDraftTopic}”.`;
+        return true;
+      } catch (error) {
+        document.querySelector("#personal-status").textContent = "Không thể tự lưu bản nháp. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
+        return false;
+      }
     }
 
     function loadPersonalTopicDraft(topic) {
       personalDraftTopic = topic;
-      const savedDraft = personalDraftsByTopic.get(topic);
+      const savedDraft = personalDraftsByTopic.get(topic) || readPersonalDrafts()?.[topic];
       const savedMaterial = savedDraft ? null : readPersonalMaterials().find((item) => getMaterialTopic(item) === topic);
       personalDraft = savedDraft
         ? { ...savedDraft }
@@ -1768,9 +1806,11 @@
         if (!content.trim()) throw new Error("Không tìm thấy văn bản trong tệp.");
         if (content.length > MAX_PERSONAL_TEXT_LENGTH) throw new Error("Văn bản vượt quá giới hạn 50.000 ký tự.");
         sourceText.value = content;
-        capturePersonalDraft();
+        const saved = capturePersonalDraft();
         invalidateTranslationCheck();
-        status.textContent = `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}.`;
+        status.textContent = saved
+          ? `Đã nhập ${wordCount(content)} từ từ tệp ${file.name} và tự lưu theo chủ đề.`
+          : `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}, nhưng chưa tự lưu được bản nháp.`;
       } catch (error) {
         status.textContent = error.message || "Không thể đọc tệp trên thiết bị này.";
       } finally {
