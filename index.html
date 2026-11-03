@@ -88,7 +88,7 @@
       gap: 20px;
     }
 
-    .app-sidebar { display: grid; align-content: start; gap: 12px; }
+    .app-sidebar { position: sticky; top: 16px; display: grid; align-content: start; gap: 12px; }
     .app-workspace { min-width: 0; }
 
     .intro {
@@ -490,7 +490,7 @@
 
     @media (max-width: 1050px) {
       .app-layout { grid-template-columns: 1fr; }
-      .app-sidebar { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
+      .app-sidebar { position: static; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
       .intro { grid-row: span 2; }
       .mode-tabs { align-self: start; }
       .quick-guide { align-self: start; }
