@@ -219,6 +219,9 @@
     .source-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
     .personal-controls { display: contents; }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
+    .direction-control { font-weight: 700; }
+    #personal-direction { font-weight: 700; }
+    #personal-direction option { font-weight: 700; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
     .personal-status { flex: 1 1 100%; min-height: 16px; margin: 0; color: var(--muted); font-size: 11px; }
@@ -597,7 +600,7 @@
             </span>
           </label>
           <div class="personal-controls" id="personal-controls" hidden>
-            <label class="file-control" for="personal-direction">Chiều dịch
+            <label class="file-control direction-control" for="personal-direction">Chiều dịch
               <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
                 <option value="VI_EN">Tiếng Việt → Tiếng Anh</option>
                 <option value="EN_VI">Tiếng Anh → Tiếng Việt</option>
