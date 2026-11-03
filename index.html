@@ -257,6 +257,7 @@
     .deepl-guide { padding: 13px 15px; border-radius: 7px; background: #f8fbff; }
     .deepl-guide h3 { margin: 0 0 8px; font-size: 13px; }
     .deepl-guide ol { display: grid; gap: 7px; margin: 0; padding-left: 19px; color: var(--muted); font-size: 12px; }
+    .deepl-guide-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
     .deepl-guide a { color: var(--blue-dark); font-weight: 650; }
     .deepl-status { margin: 0; color: var(--muted); font-size: 12px; }
     .deepl-status { min-height: 16px; }
@@ -652,10 +653,12 @@
             <section class="deepl-guide" aria-labelledby="deepl-guide-title">
               <h3 id="deepl-guide-title">Cách lấy API Key miễn phí</h3>
               <ol>
-                <li><a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Đăng ký DeepL API Free</a> trên trang chính thức của DeepL.</li>
-                <li>Mở <strong>Account settings</strong> để xem Authentication Key.</li>
-                <li>Dán key vào ô phía trên và bấm <strong>Lưu key</strong>.</li>
+                <li><a href="https://www.deepl.com/pro-api" target="_blank" rel="noopener noreferrer">Đăng ký tài khoản DeepL API</a>; ở bước chọn gói, chọn <strong>DeepL API Free</strong> (không phải gói DeepL Pro dành cho dịch trên website).</li>
+                <li>Xác nhận tài khoản theo hướng dẫn của DeepL, sau đó mở phần quản lý tài khoản và tìm mục <strong>API Keys</strong> hoặc <strong>Authentication Key</strong>.</li>
+                <li>Sao chép Authentication Key, dán vào ô phía trên và bấm <strong>Lưu key</strong>.</li>
+                <li>Đóng cửa sổ này, chọn <strong>Tài liệu cá nhân</strong>, rồi đặt <strong>Chiều dịch</strong> theo văn bản của bạn trước khi bấm kiểm tra.</li>
               </ol>
+              <p class="deepl-guide-note">Key dùng được cho cả hai chiều, không cần chọn ngôn ngữ đích khi tạo key. Ứng dụng tự gửi ngôn ngữ nguồn và đích theo lựa chọn: Tiếng Việt → Tiếng Anh hoặc Tiếng Anh → Tiếng Việt.</p>
             </section>
             <p class="deepl-status" id="deepl-status" role="status" aria-live="polite">Bạn có thể dùng DeepL để nhận gợi ý cho tài liệu cá nhân.</p>
           </div>
