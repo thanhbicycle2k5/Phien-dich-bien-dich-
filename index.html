@@ -217,7 +217,7 @@
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
     .source-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
-    .personal-controls { display: flex; align-items: end; flex-wrap: wrap; gap: 10px; padding: 12px 22px; border-bottom: 1px solid var(--line); background: #f8fbff; }
+    .personal-controls { display: contents; }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
@@ -502,7 +502,6 @@
       .selector-row { justify-content: flex-start; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
-      .personal-controls { align-items: stretch; flex-direction: column; padding: 14px 18px; }
       .personal-controls select, .file-control input { width: 100%; max-width: none; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
       .feedback { margin-right: 18px; margin-left: 18px; }
@@ -594,24 +593,24 @@
               </button>
             </span>
           </label>
+          <div class="personal-controls" id="personal-controls" hidden>
+            <label class="file-control" for="personal-direction">Chiều dịch
+              <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
+                <option value="VI_EN">Tiếng Việt → Tiếng Anh</option>
+                <option value="EN_VI">Tiếng Anh → Tiếng Việt</option>
+              </select>
+            </label>
+            <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
+              <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
+            </label>
+            <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
+          </div>
           <label id="content-selector-field">
             <span class="field-label">Bài tập</span>
             <span class="content-select-row">
               <select class="exercise-select" id="exercise-select" aria-label="Chọn bài tập"></select>
             </span>
           </label>
-        </div>
-        <div class="personal-controls" id="personal-controls" hidden>
-          <label class="file-control" for="personal-direction">Chiều dịch
-            <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
-              <option value="VI_EN">Tiếng Việt → Tiếng Anh</option>
-              <option value="EN_VI">Tiếng Anh → Tiếng Việt</option>
-            </select>
-          </label>
-          <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
-            <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
-          </label>
-          <p class="personal-status" id="personal-status" role="status" aria-live="polite">Bạn có thể dán văn bản vào khung nguồn hoặc chọn một tệp trên thiết bị.</p>
         </div>
         </div>
 
@@ -973,7 +972,16 @@
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let activeTranslationMode = "sample";
-    let personalDraft = { source: "", answer: "", reference: "", keywords: "", direction: "VI_EN" };
+    let personalDraft = {
+      source: "",
+      answer: "",
+      reference: "",
+      keywords: "",
+      direction: "VI_EN",
+      referenceSource: "",
+      referenceDirection: "",
+      checkedResult: null
+    };
     let personalDraftTopic = "";
     const personalDraftsByTopic = new Map();
     let personalDirection = "VI_EN";
@@ -1026,7 +1034,22 @@
           typeof draft.reference === "string" &&
           typeof draft.keywords === "string" &&
           (draft.direction === "VI_EN" || draft.direction === "EN_VI")
-        ));
+        ).map(([topic, draft]) => [topic, {
+          ...draft,
+          referenceSource: typeof draft.referenceSource === "string" ? draft.referenceSource : "",
+          referenceDirection: draft.referenceDirection === "VI_EN" || draft.referenceDirection === "EN_VI"
+            ? draft.referenceDirection
+            : "",
+          checkedResult: draft.checkedResult &&
+            typeof draft.checkedResult.source === "string" &&
+            typeof draft.checkedResult.answer === "string" &&
+            typeof draft.checkedResult.direction === "string" &&
+            typeof draft.checkedResult.keywords === "string" &&
+            typeof draft.checkedResult.title === "string" &&
+            typeof draft.checkedResult.message === "string"
+            ? draft.checkedResult
+            : null
+        }]));
       } catch (error) {
         document.querySelector("#personal-status").textContent = "Không thể đọc bản nháp đã lưu trong trình duyệt này.";
         return null;
@@ -1103,13 +1126,20 @@
     }
 
     function capturePersonalDraft() {
+      const previousDraft = personalDraft;
       personalDraft = {
         source: sourceText.value,
         answer: answerText.value,
         reference: referenceAnswer.value,
         keywords: personalKeywords.value,
-        direction: personalDirection
+        direction: personalDirection,
+        referenceSource: previousDraft.referenceSource || "",
+        referenceDirection: previousDraft.referenceDirection || "",
+        checkedResult: previousDraft.checkedResult
       };
+      if (personalDraft.checkedResult && !isCurrentPersonalCheck(personalDraft.checkedResult)) {
+        personalDraft.checkedResult = null;
+      }
       if (!industrySelect.value || activeTranslationMode !== "personal") return false;
       personalDraftTopic = industrySelect.value;
       personalDraftsByTopic.set(personalDraftTopic, { ...personalDraft });
@@ -1130,6 +1160,14 @@
       }
     }
 
+    function isCurrentPersonalCheck(result) {
+      return result &&
+        result.source === sourceText.value &&
+        result.answer === answerText.value &&
+        result.direction === personalDirection &&
+        result.keywords === personalKeywords.value;
+    }
+
     function loadPersonalTopicDraft(topic) {
       personalDraftTopic = topic;
       const savedDraft = personalDraftsByTopic.get(topic) || readPersonalDrafts()?.[topic];
@@ -1142,9 +1180,21 @@
               answer: savedMaterial.answer || "",
               reference: savedMaterial.reference || "",
               keywords: savedMaterial.keywords || "",
-              direction: savedMaterial.direction === "EN_VI" ? "EN_VI" : "VI_EN"
+              direction: savedMaterial.direction === "EN_VI" ? "EN_VI" : "VI_EN",
+              referenceSource: "",
+              referenceDirection: "",
+              checkedResult: null
             }
-          : { source: "", answer: "", reference: "", keywords: "", direction: "VI_EN" };
+          : {
+              source: "",
+              answer: "",
+              reference: "",
+              keywords: "",
+              direction: "VI_EN",
+              referenceSource: "",
+              referenceDirection: "",
+              checkedResult: null
+            };
       if (savedMaterial) personalDraftsByTopic.set(topic, { ...personalDraft });
       personalDirection = personalDraft.direction;
       document.querySelector("#personal-direction").value = personalDirection;
@@ -1153,9 +1203,15 @@
       answerText.value = personalDraft.answer;
       referenceAnswer.value = personalDraft.reference;
       personalKeywords.value = personalDraft.keywords;
-      feedback.className = "feedback";
-      feedback.textContent = "";
-      document.querySelector("#answer-breakdown").hidden = true;
+      invalidateTranslationCheck();
+      const hasCurrentReference = personalDraft.reference.trim() &&
+        personalDraft.referenceSource === personalDraft.source &&
+        personalDraft.referenceDirection === personalDraft.direction;
+      if (hasCurrentReference) renderDeepLBreakdown(personalDraft.reference);
+      if (personalDraft.checkedResult && isCurrentPersonalCheck(personalDraft.checkedResult)) {
+        const { title, message } = personalDraft.checkedResult;
+        showTranslationFeedback(title, message);
+      }
       document.querySelector("#translation-save-status").hidden = true;
       document.querySelector("#personal-status").textContent = savedDraft || savedMaterial
         ? `Đã mở bản nháp của chủ đề “${topic}”.`
@@ -1271,7 +1327,7 @@
 
     function updateCheckButtonLabel() {
       document.querySelector("#check-answer").innerHTML = activeTranslationMode === "personal"
-        ? 'Kiểm tra &amp; Nhận xét bằng DeepL <span aria-hidden="true">→</span>'
+        ? 'Kiểm tra &amp; Nhận xét <span aria-hidden="true">→</span>'
         : 'Kiểm tra &amp; Xem nhận xét <span aria-hidden="true">→</span>';
     }
 
@@ -1281,6 +1337,9 @@
 
     function showTranslationFeedback(title, message, isLow = false) {
       feedback.className = `feedback is-visible${isLow ? " is-low" : ""}`;
+      feedback.dataset.title = title;
+      feedback.dataset.message = message;
+      feedback.dataset.isLow = String(isLow);
       const heading = document.createElement("strong");
       heading.textContent = title;
       feedback.replaceChildren(heading, document.createTextNode(message));
@@ -1388,7 +1447,18 @@
         termGuidance,
         "Gợi ý DeepL chỉ mang tính tham khảo; hãy chọn cách diễn đạt phù hợp với ngữ cảnh."
       ].filter(Boolean).join(" ");
-      showTranslationFeedback(`${title} · Tài liệu cá nhân`, `${introduction} ${guidance}`);
+      const feedbackTitle = `${title} · Tài liệu cá nhân`;
+      const feedbackMessage = `${introduction} ${guidance}`;
+      showTranslationFeedback(feedbackTitle, feedbackMessage);
+      personalDraft.checkedResult = {
+        source: sourceText.value,
+        answer: answerText.value,
+        direction: personalDirection,
+        keywords: personalKeywords.value,
+        title: feedbackTitle,
+        message: feedbackMessage
+      };
+      capturePersonalDraft();
     }
 
     async function checkTranslation() {
@@ -1471,6 +1541,21 @@
         showTranslationFeedback("Chưa có văn bản nguồn", "Hãy dán văn bản hoặc tải tài liệu trước khi kiểm tra.", true);
         return;
       }
+      if (new TextEncoder().encode(source).length > 120000) {
+        showTranslationFeedback("Văn bản quá dài", "Hãy chia nhỏ văn bản rồi thử lại.", true);
+        return;
+      }
+
+      if (
+        referenceAnswer.value.trim() &&
+        personalDraft.referenceSource === sourceText.value &&
+        personalDraft.referenceDirection === personalDirection
+      ) {
+        renderDeepLBreakdown(referenceAnswer.value.trim());
+        checkPersonalTranslationAgainstReference(answerText.value);
+        setDeepLStatus("Đã dùng lại gợi ý DeepL đã lưu; không gửi yêu cầu mới.");
+        return;
+      }
 
       let apiKey = "";
       try {
@@ -1487,11 +1572,6 @@
         deeplApiKeyInput.focus();
         return;
       }
-      if (new TextEncoder().encode(source).length > 120000) {
-        showTranslationFeedback("Văn bản quá dài", "Hãy chia nhỏ văn bản rồi thử lại.", true);
-        return;
-      }
-
       const button = document.querySelector("#check-answer");
       button.disabled = true;
       button.textContent = "Đang kiểm tra...";
@@ -1502,7 +1582,8 @@
         const translatedText = result.translations?.[0]?.text?.trim();
         if (!translatedText) throw new Error("DeepL không trả về nội dung bản dịch.");
         referenceAnswer.value = translatedText;
-        capturePersonalDraft();
+        personalDraft.referenceSource = sourceText.value;
+        personalDraft.referenceDirection = personalDirection;
         renderDeepLBreakdown(translatedText);
         checkPersonalTranslationAgainstReference(answerText.value);
         setDeepLStatus("Đã nhận gợi ý DeepL và hoàn tất nhận xét bản dịch.");
@@ -1821,6 +1902,9 @@
     function invalidateTranslationCheck() {
       feedback.className = "feedback";
       feedback.textContent = "";
+      delete feedback.dataset.title;
+      delete feedback.dataset.message;
+      delete feedback.dataset.isLow;
       document.querySelector("#answer-breakdown").hidden = true;
     }
 
