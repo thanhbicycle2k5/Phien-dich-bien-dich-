@@ -278,6 +278,8 @@
       justify-content: space-between;
       gap: 10px;
     }
+    .pane-tools { display: flex; align-items: center; gap: 5px; }
+    .history-button svg { width: 18px; height: 18px; }
 
     .text-area {
       width: 100%;
@@ -663,7 +665,15 @@
           <section class="translation-pane" aria-labelledby="source-label">
             <div class="pane-top">
               <label class="field-label" id="source-label" for="source-text">Văn bản gốc <span id="source-language">EN</span></label>
-              <button class="tool-button" id="speak-source" type="button" title="Đọc văn bản gốc" aria-label="Đọc văn bản gốc">▶</button>
+              <div class="pane-tools">
+                <button class="tool-button history-button" id="undo-source" type="button" title="Hoàn tác văn bản gốc" aria-label="Hoàn tác văn bản gốc">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/></svg>
+                </button>
+                <button class="tool-button history-button" id="redo-source" type="button" title="Làm lại văn bản gốc" aria-label="Làm lại văn bản gốc">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4 5 5-5 5"/><path d="M20 9h-9a7 7 0 0 0 0 14h2"/></svg>
+                </button>
+                <button class="tool-button" id="speak-source" type="button" title="Đọc văn bản gốc" aria-label="Đọc văn bản gốc">▶</button>
+              </div>
             </div>
             <textarea class="text-area" id="source-text" readonly spellcheck="false"></textarea>
             <div class="pane-foot"><span id="source-help">Đọc kỹ sắc thái và ngữ cảnh</span><span id="source-count">0 từ</span></div>
@@ -672,6 +682,14 @@
           <section class="translation-pane" aria-labelledby="answer-label">
             <div class="pane-top">
               <label class="field-label" id="answer-label" for="answer-text">Bản dịch của bạn <span id="target-language">VI</span></label>
+              <div class="pane-tools">
+                <button class="tool-button history-button" id="undo-answer" type="button" title="Hoàn tác bản dịch" aria-label="Hoàn tác bản dịch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/></svg>
+                </button>
+                <button class="tool-button history-button" id="redo-answer" type="button" title="Làm lại bản dịch" aria-label="Làm lại bản dịch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m15 4 5 5-5 5"/><path d="M20 9h-9a7 7 0 0 0 0 14h2"/></svg>
+                </button>
+              </div>
             </div>
             <textarea class="text-area" id="answer-text" placeholder="Viết bản dịch của bạn..." spellcheck="true"></textarea>
             <div class="pane-foot"><span>Đáp án mẫu chỉ dùng để đối chiếu từ vựng</span><span id="answer-count">0 từ</span></div>
@@ -958,6 +976,8 @@
     const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
+    const MAX_EDIT_HISTORY = 100;
+    const EDIT_HISTORY_DELAY = 500;
     const PERSONAL_DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
     const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
@@ -984,6 +1004,7 @@
     };
     let personalDraftTopic = "";
     const personalDraftsByTopic = new Map();
+    const translationEditHistories = new WeakMap();
     let personalDirection = "VI_EN";
     let speechAudioRecorder = null;
     let speechAudioStream = null;
@@ -1097,11 +1118,89 @@
       return (text.trim().match(/[\p{L}\p{N}]+/gu) || []).length;
     }
 
+    function getEditHistoryKey(textarea) {
+      const context = activeTranslationMode === "personal"
+        ? `personal:${industrySelect.value}`
+        : `sample:${industrySelect.value}:${exerciseSelect.value}`;
+      return `${context}:${textarea.id}`;
+    }
+
+    function getEditHistory(textarea) {
+      const key = getEditHistoryKey(textarea);
+      let history = translationEditHistories.get(textarea);
+      if (!history || history.key !== key) {
+        if (history && history.timer !== null) window.clearTimeout(history.timer);
+        history = { key, values: [textarea.value], index: 0, timer: null };
+        translationEditHistories.set(textarea, history);
+      }
+      return { key, history };
+    }
+
+    function updateEditHistoryButtons() {
+      [sourceText, answerText].forEach((textarea) => {
+        const { history } = getEditHistory(textarea);
+        const hasUncommittedEdit = textarea.value !== history.values[history.index];
+        const isEditable = textarea === answerText || activeTranslationMode === "personal";
+        document.querySelector(`#undo-${textarea === sourceText ? "source" : "answer"}`).disabled =
+          !isEditable || (!hasUncommittedEdit && history.index === 0);
+        document.querySelector(`#redo-${textarea === sourceText ? "source" : "answer"}`).disabled =
+          !isEditable || hasUncommittedEdit || history.index >= history.values.length - 1;
+      });
+    }
+
+    function commitEditHistory(textarea, key, history) {
+      if (history.timer !== null) {
+        window.clearTimeout(history.timer);
+        history.timer = null;
+      }
+      if (getEditHistoryKey(textarea) !== key) return;
+      if (history.values[history.index] === textarea.value) return;
+      history.values = history.values.slice(0, history.index + 1);
+      history.values.push(textarea.value);
+      if (history.values.length > MAX_EDIT_HISTORY) history.values.shift();
+      history.index = history.values.length - 1;
+      updateEditHistoryButtons();
+    }
+
+    function recordEditHistoryInput(textarea) {
+      const { key, history } = getEditHistory(textarea);
+      history.values = history.values.slice(0, history.index + 1);
+      if (history.timer !== null) window.clearTimeout(history.timer);
+      history.timer = window.setTimeout(() => commitEditHistory(textarea, key, history), EDIT_HISTORY_DELAY);
+      updateEditHistoryButtons();
+    }
+
+    function flushEditHistory(textarea) {
+      const { key, history } = getEditHistory(textarea);
+      commitEditHistory(textarea, key, history);
+    }
+
+    function applyEditHistory(textarea, direction) {
+      const { history } = getEditHistory(textarea);
+      flushEditHistory(textarea);
+      if (direction === "undo" && history.index > 0) history.index -= 1;
+      else if (direction === "redo" && history.index < history.values.length - 1) history.index += 1;
+      else return false;
+      textarea.value = history.values[history.index];
+      textarea.focus();
+      handlePersonalInput();
+      return true;
+    }
+
+    function resetEditHistory(textarea) {
+      const { history } = getEditHistory(textarea);
+      if (history.timer !== null) window.clearTimeout(history.timer);
+      history.values = [textarea.value];
+      history.index = 0;
+      history.timer = null;
+    }
+
     function updateCounts() {
       document.querySelector("#source-count").textContent = `${wordCount(sourceText.value)} từ`;
       document.querySelector("#answer-count").textContent = `${wordCount(answerText.value)} từ`;
       document.querySelector("#transcript-count").textContent = `${wordCount(transcript.textContent)} từ`;
       updateSaveButtonStates();
+      updateEditHistoryButtons();
     }
 
     function updateSaveButtonStates() {
@@ -1119,6 +1218,8 @@
       document.querySelector("#source-language").textContent = "EN";
       document.querySelector("#target-language").textContent = "VI";
       answerText.value = "";
+      resetEditHistory(sourceText);
+      resetEditHistory(answerText);
       feedback.className = "feedback";
       feedback.textContent = "";
       document.querySelector("#answer-breakdown").hidden = true;
@@ -1233,6 +1334,8 @@
       const previousSource = sourceText.value;
       sourceText.value = answerText.value;
       answerText.value = previousSource;
+      resetEditHistory(sourceText);
+      resetEditHistory(answerText);
       referenceAnswer.value = "";
       personalDirection = direction;
       personalDraft.direction = direction;
@@ -1435,21 +1538,34 @@
     function checkPersonalTranslationAgainstReference(answerTextValue) {
       const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
       const targetLanguage = personalDirection === "VI_EN" ? "EN" : "VI";
+      const referenceMatchWarning = getPersonalReferenceMatchWarning(
+        answerTextValue,
+        referenceAnswer.value,
+        targetLanguage
+      );
       const polishSuggestions = getPersonalPolishSuggestions(answerTextValue, targetLanguage);
       const termGuidance = buildPersonalTermGuidance(enteredKeywords);
+      const needsReview = Boolean(referenceMatchWarning);
       const needsPolish = polishSuggestions.length > 0;
-      const title = needsPolish ? "Gợi ý hoàn thiện" : "Diễn đạt tốt";
-      const introduction = needsPolish
+      const title = needsReview
+        ? "Cần rà lại nội dung"
+        : needsPolish
+          ? "Gợi ý hoàn thiện"
+          : "Diễn đạt tốt";
+      const introduction = needsReview
+        ? "Bản dịch có thể chưa truyền đạt cùng nội dung với gợi ý tham khảo:"
+        : needsPolish
         ? "Bản dịch đã có nền tảng tốt. Bạn có thể tinh chỉnh một vài điểm để câu văn tự nhiên hơn:"
         : "Tuyệt vời! Hãy tiếp tục ưu tiên cách diễn đạt tự nhiên và chính xác về nghĩa; bản dịch không cần trùng từng chữ với gợi ý DeepL.";
       const guidance = [
+        referenceMatchWarning,
         ...polishSuggestions,
         termGuidance,
         "Gợi ý DeepL chỉ mang tính tham khảo; hãy chọn cách diễn đạt phù hợp với ngữ cảnh."
       ].filter(Boolean).join(" ");
       const feedbackTitle = `${title} · Tài liệu cá nhân`;
       const feedbackMessage = `${introduction} ${guidance}`;
-      showTranslationFeedback(feedbackTitle, feedbackMessage);
+      showTranslationFeedback(feedbackTitle, feedbackMessage, needsReview);
       personalDraft.checkedResult = {
         source: sourceText.value,
         answer: answerText.value,
@@ -1459,6 +1575,32 @@
         message: feedbackMessage
       };
       capturePersonalDraft();
+    }
+
+    function getPersonalReferenceMatchWarning(answer, reference, targetLanguage) {
+      const stopWords = targetLanguage === "EN"
+        ? new Set([
+            "a", "an", "and", "are", "as", "at", "be", "been", "being", "but", "by", "for", "from",
+            "had", "has", "have", "he", "her", "hers", "him", "his", "i", "if", "in", "into", "is",
+            "it", "its", "me", "my", "of", "on", "or", "our", "ours", "she", "that", "the", "their",
+            "theirs", "them", "they", "this", "those", "to", "us", "was", "we", "were", "what", "when",
+            "where", "which", "who", "will", "with", "you", "your"
+          ])
+        : new Set([
+            "à", "ấy", "bị", "bởi", "cả", "các", "cái", "cho", "chứ", "có", "của", "cùng", "đã",
+            "đang", "đây", "đó", "được", "gì", "khi", "không", "là", "lại", "mà", "mỗi", "một", "này",
+            "nên", "nếu", "như", "những", "ở", "sẽ", "thì", "trong", "từ", "và", "vẫn", "về", "với"
+          ]);
+      const contentTokens = (text) => [...new Set(tokenize(text).filter((token) => !stopWords.has(token)))];
+      const answerTokens = contentTokens(answer);
+      const referenceTokens = contentTokens(reference);
+      if (answerTokens.length < 4 || referenceTokens.length < 4) return "";
+
+      const referenceTokenSet = new Set(referenceTokens);
+      const sharedCount = answerTokens.filter((token) => referenceTokenSet.has(token)).length;
+      const overlap = (2 * sharedCount) / (answerTokens.length + referenceTokens.length);
+      if (overlap >= 0.12) return "";
+      return "Bản dịch và gợi ý DeepL có rất ít từ khóa nội dung trùng nhau. Đây chỉ là đối chiếu từ vựng, nên cách diễn đạt khác vẫn có thể đúng; hãy kiểm tra lại xem ý chính có bị lệch hoặc thiếu không.";
     }
 
     async function checkTranslation() {
@@ -1886,7 +2028,10 @@
         else throw new Error("Chỉ hỗ trợ tệp .txt hoặc .docx.");
         if (!content.trim()) throw new Error("Không tìm thấy văn bản trong tệp.");
         if (content.length > MAX_PERSONAL_TEXT_LENGTH) throw new Error("Văn bản vượt quá giới hạn 50.000 ký tự.");
+        flushEditHistory(sourceText);
         sourceText.value = content;
+        recordEditHistoryInput(sourceText);
+        flushEditHistory(sourceText);
         const saved = capturePersonalDraft();
         invalidateTranslationCheck();
         status.textContent = saved
@@ -2431,8 +2576,26 @@
     exerciseSelect.addEventListener("change", () => {
       loadExercise();
     });
-    sourceText.addEventListener("input", handlePersonalInput);
-    answerText.addEventListener("input", handlePersonalInput);
+    [sourceText, answerText].forEach((textarea) => {
+      textarea.addEventListener("input", () => {
+        recordEditHistoryInput(textarea);
+        handlePersonalInput();
+      });
+      textarea.addEventListener("blur", () => flushEditHistory(textarea));
+      textarea.addEventListener("keydown", (event) => {
+        if (!(event.ctrlKey || event.metaKey)) return;
+        const key = event.key.toLocaleLowerCase();
+        const isUndo = key === "z" && !event.shiftKey;
+        const isRedo = key === "y" || (key === "z" && event.shiftKey);
+        if (!isUndo && !isRedo) return;
+        event.preventDefault();
+        applyEditHistory(textarea, isUndo ? "undo" : "redo");
+      });
+    });
+    document.querySelector("#undo-source").addEventListener("click", () => applyEditHistory(sourceText, "undo"));
+    document.querySelector("#redo-source").addEventListener("click", () => applyEditHistory(sourceText, "redo"));
+    document.querySelector("#undo-answer").addEventListener("click", () => applyEditHistory(answerText, "undo"));
+    document.querySelector("#redo-answer").addEventListener("click", () => applyEditHistory(answerText, "redo"));
     referenceAnswer.addEventListener("input", handlePersonalInput);
     personalKeywords.addEventListener("input", handlePersonalInput);
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
