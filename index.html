@@ -469,6 +469,8 @@
     .local-media-input { max-width: 100%; font-size: 12px; }
     .local-media-player { width: 100%; max-height: 360px; margin-top: 4px; border-radius: 6px; background: #0f172a; }
     .local-media-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
+    .media-speed-control { display: flex; align-items: center; gap: 8px; margin-top: 10px; }
+    .media-speed-control select { min-height: 34px; padding: 5px 8px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
 
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .notice { margin: 15px 0 0; color: var(--muted); font-size: 11px; }
@@ -774,6 +776,18 @@
               <video class="local-media-player" id="local-video-player" preload="metadata" playsinline hidden></video>
               <p class="local-media-status" id="local-media-status" role="status" aria-live="polite">Tệp chỉ phát trên thiết bị này. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian.</p>
             </div>
+            <label class="media-speed-control" id="media-speed-control" hidden>
+              <span class="field-label">Tốc độ phát</span>
+              <select id="media-playback-rate" aria-label="Tốc độ phát">
+                <option value="0.5">0,5×</option>
+                <option value="0.75">0,75×</option>
+                <option value="1" selected>1× (bình thường)</option>
+                <option value="1.25">1,25×</option>
+                <option value="1.5">1,5×</option>
+                <option value="1.75">1,75×</option>
+                <option value="2">2×</option>
+              </select>
+            </label>
           </section>
           <div class="interpret-session">
           <div class="interpret-toolbar">
@@ -1042,6 +1056,7 @@
     let localPracticeMediaUrl = "";
     let activePracticeSource = "";
     let pendingYouTubePlayback = false;
+    const mediaPlaybackRates = [0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
     let recognition = null;
     let finalTranscript = "";
     let timerElapsedMs = 0;
@@ -2385,6 +2400,46 @@
       }
     }
 
+    function renderMediaPlaybackRates(rates, preferredRate) {
+      const speedSelect = document.querySelector("#media-playback-rate");
+      const uniqueRates = [...new Set(rates)].sort((first, second) => first - second);
+      speedSelect.replaceChildren(...uniqueRates.map((rate) => {
+        const option = document.createElement("option");
+        option.value = String(rate);
+        option.textContent = rate === 1 ? "1× (bình thường)" : `${String(rate).replace(".", ",")}×`;
+        return option;
+      }));
+      speedSelect.value = String(uniqueRates.includes(preferredRate) ? preferredRate : uniqueRates.includes(1) ? 1 : uniqueRates[0]);
+    }
+
+    function applyMediaPlaybackRate() {
+      const rate = Number(document.querySelector("#media-playback-rate").value);
+      if (activePracticeSource === "local") {
+        document.querySelector("#local-audio-player").playbackRate = rate;
+        document.querySelector("#local-video-player").playbackRate = rate;
+      } else if (activePracticeSource === "youtube" && youtubePlayer?.setPlaybackRate) {
+        const availableRates = youtubePlayer.getAvailablePlaybackRates?.() || [];
+        if (availableRates.includes(rate)) {
+          youtubePlayer.setPlaybackRate(rate);
+        } else {
+          const currentRate = youtubePlayer.getPlaybackRate?.() || 1;
+          document.querySelector("#media-playback-rate").value = String(currentRate);
+          document.querySelector("#youtube-status").textContent = `Video này không hỗ trợ tốc độ ${String(rate).replace(".", ",")}×.`;
+        }
+      }
+    }
+
+    function updateYouTubePlaybackRates() {
+      const availableRates = youtubePlayer?.getAvailablePlaybackRates?.();
+      if (!availableRates?.length) return;
+      const selectedRate = Number(document.querySelector("#media-playback-rate").value);
+      const rate = availableRates.includes(selectedRate)
+        ? selectedRate
+        : availableRates.includes(1) ? 1 : availableRates[0];
+      document.querySelector("#media-playback-rate").value = String(rate);
+      youtubePlayer.setPlaybackRate(rate);
+    }
+
     function initializeYouTubePlayer() {
       if (!window.YT?.Player || youtubePlayer) return;
       const frame = document.querySelector("#youtube-frame");
@@ -2397,9 +2452,11 @@
               pendingYouTubePlayback = false;
               event.target.playVideo();
             }
+            updateYouTubePlaybackRates();
           },
           onStateChange: (event) => {
             if (event.data === window.YT.PlayerState.PLAYING) {
+              updateYouTubePlaybackRates();
               document.querySelector("#youtube-status").textContent = "Video đang phát. Đồng hồ được tính tự động từ lúc bắt đầu nói.";
             }
           },
@@ -2452,6 +2509,7 @@
       }
 
       activePracticeSource = "youtube";
+      document.querySelector("#media-speed-control").hidden = false;
       if (frame.dataset.videoId !== videoId) {
         frame.dataset.videoId = videoId;
         if (youtubePlayer?.cueVideoById) {
@@ -2503,6 +2561,9 @@
       player.hidden = false;
       player.load();
       activePracticeSource = "local";
+      renderMediaPlaybackRates(mediaPlaybackRates, Number(document.querySelector("#media-playback-rate").value));
+      document.querySelector("#media-speed-control").hidden = false;
+      applyMediaPlaybackRate();
       status.textContent = `Đã chọn “${file.name}”. Bấm “Bắt đầu nói” để phát tệp và tự động tính thời gian; tệp không được tải lên máy chủ.`;
       event.currentTarget.value = "";
     }
@@ -2821,6 +2882,7 @@
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
+    document.querySelector("#media-playback-rate").addEventListener("change", applyMediaPlaybackRate);
     localMediaInput.addEventListener("change", loadLocalPracticeMedia);
     ["#local-audio-player", "#local-video-player"].forEach((selector) => {
       const player = document.querySelector(selector);
