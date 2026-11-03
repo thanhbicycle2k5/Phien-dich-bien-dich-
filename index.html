@@ -641,7 +641,7 @@
         </details>
 
         <div class="workspace-actions">
-          <span class="score-note" id="translation-score-note">Nhận xét dựa trên nội dung và thuật ngữ chính</span>
+          <span class="score-note" id="translation-score-note">Gợi ý về ý nghĩa, văn phong và thuật ngữ</span>
           <div class="translation-button-group">
             <button class="quiet-button icon-button" id="save-translation" type="button" aria-label="Lưu bài biên dịch" title="Lưu bài biên dịch" disabled>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
@@ -1049,8 +1049,8 @@
         ? "Tạo nội dung mới hoặc chọn bài đã lưu trong chủ đề"
         : "Chọn chủ đề và nội dung để bắt đầu luyện tập";
       document.querySelector("#translation-score-note").textContent = personal
-        ? "Nhận xét dựa trên nội dung và gợi ý DeepL"
-        : "Nhận xét dựa trên nội dung và thuật ngữ chính";
+        ? "Gợi ý tham khảo về cách diễn đạt và từ khóa"
+        : "Gợi ý về ý nghĩa, văn phong và thuật ngữ";
       updateCheckButtonLabel();
       feedback.className = "feedback";
       feedback.textContent = "";
@@ -1115,23 +1115,6 @@
       return text.toLocaleLowerCase().match(/[\p{L}\p{N}]+/gu) || [];
     }
 
-    function editDistance(left, right) {
-      let previous = Array.from({ length: right.length + 1 }, (_, index) => index);
-      for (let row = 1; row <= left.length; row += 1) {
-        const current = [row];
-        for (let column = 1; column <= right.length; column += 1) {
-          const substitutionCost = left[row - 1] === right[column - 1] ? 0 : 1;
-          current[column] = Math.min(
-            current[column - 1] + 1,
-            previous[column] + 1,
-            previous[column - 1] + substitutionCost
-          );
-        }
-        previous = current;
-      }
-      return previous[right.length];
-    }
-
     function showTranslationFeedback(title, message, isLow = false) {
       feedback.className = `feedback is-visible${isLow ? " is-low" : ""}`;
       const heading = document.createElement("strong");
@@ -1147,49 +1130,93 @@
       );
     }
 
-    function checkSampleTranslation(answerTokens, exercise) {
-      const bestDistance = Math.min(...exercise.answers.map((sample) => editDistance(answerTokens, tokenize(sample))));
-      const referenceLength = Math.max(...exercise.answers.map((sample) => tokenize(sample).length));
-      const similarity = Math.max(0, Math.round((1 - bestDistance / Math.max(answerTokens.length, referenceLength, 1)) * 100));
-      const matchedTerms = exercise.keyTerms.filter((term) =>
-        (term.translation || "").split(/[,;/]/).some((variant) => includesTokenSequence(answerTokens, variant))
-      );
-      const missingTerms = exercise.keyTerms.filter((term) => !matchedTerms.includes(term));
-      const assessment = similarity >= 85
-        ? "Bản dịch khá sát đáp án mẫu."
-        : similarity >= 60
-          ? "Bản dịch giữ được một phần nội dung; hãy rà lại cách dùng từ và cấu trúc."
-          : "Bản dịch còn khác đáp án mẫu đáng kể; hãy kiểm tra lại ý chính và thuật ngữ.";
-      const termNote = matchedTerms.length
-        ? ` Đã nhận diện ${matchedTerms.length}/${exercise.keyTerms.length} thuật ngữ chính (${matchedTerms.map((term) => term.translation).join(", ")}).`
-        : " Chưa nhận diện được thuật ngữ chính nào theo đáp án mẫu.";
-      const missingNote = missingTerms.length
-        ? ` Có thể rà lại: ${missingTerms.map((term) => term.translation).join(", ")}.`
-        : "";
-      showTranslationFeedback(
-        `Nhận xét bản dịch · Độ tương đồng từ vựng ${similarity}%`,
-        `${assessment}${termNote}${missingNote} Nhận xét mang tính tham khảo; hãy kiểm tra ý nghĩa theo ngữ cảnh.`,
-        similarity < 50
+    function findTermMatches(answerTokens, terms) {
+      return terms.filter((term) => {
+        const variants = typeof term === "string" ? [term] : (term.translation || "").split(/[,;/]/);
+        return variants.some((variant) => includesTokenSequence(answerTokens, variant));
+      });
+    }
+
+    function getTranslationPolishSuggestions(answer, referenceText) {
+      const answerTokens = tokenize(answer);
+      const referenceLength = tokenize(referenceText).length;
+      const suggestions = [];
+
+      if (referenceLength >= 8 && answerTokens.length < referenceLength * 0.55) {
+        suggestions.push("Bản dịch đang khá gọn; hãy rà lại xem các ý và sắc thái quan trọng của câu gốc đã được chuyển tải đầy đủ chưa.");
+      } else if (referenceLength >= 8 && answerTokens.length > referenceLength * 1.8) {
+        suggestions.push("Bản dịch có thêm diễn giải; hãy kiểm tra để chắc rằng phần bổ sung làm rõ ý chứ không đưa thêm thông tin ngoài câu gốc.");
+      }
+
+      const repeatedWord = answer.match(/\b([\p{L}\p{N}]{3,})\s+\1\b/iu);
+      if (repeatedWord) {
+        suggestions.push(`Từ “${repeatedWord[1]}” đang được lặp liền nhau; bạn có thể sửa nhịp câu để lời văn tự nhiên hơn.`);
+      }
+      if (/\s{2,}/u.test(answer)) {
+        suggestions.push("Có khoảng trắng thừa trong câu; chỉnh lại định dạng sẽ giúp bản dịch dễ đọc hơn.");
+      }
+
+      const calqueHints = [
+        [/\btrong thứ tự để\b/iu, "Cụm “trong thứ tự để” có thể rút gọn thành “để” cho tự nhiên hơn."],
+        [/\blàm một quyết định\b/iu, "“Đưa ra quyết định” thường tự nhiên hơn cách nói “làm một quyết định”."],
+        [/\bcó một ảnh hưởng\b/iu, "Thử cân nhắc “ảnh hưởng” hoặc “tác động” để câu gọn và thuận tai hơn."]
+      ];
+      const calqueHint = calqueHints.find(([pattern]) => pattern.test(answer));
+      if (calqueHint) suggestions.push(calqueHint[1]);
+
+      return suggestions;
+    }
+
+    function buildTermGuidance(answerTokens, terms) {
+      if (!terms.length) return { text: "", hasUnmatched: false };
+      const matchedTerms = findTermMatches(answerTokens, terms);
+      const unmatchedTerms = terms.filter((term) => !matchedTerms.includes(term));
+      const suggestions = [];
+      if (matchedTerms.length) {
+        const matchedLabels = matchedTerms.slice(0, 3).map((term) => typeof term === "string" ? term : term.translation);
+        suggestions.push(`Cách bạn chuyển tải ${matchedLabels.join(", ")} đang thể hiện rõ trong bản dịch.`);
+      }
+      if (unmatchedTerms.length) {
+        const unmatchedLabels = unmatchedTerms.slice(0, 3).map((term) => typeof term === "string" ? term : term.translation);
+        suggestions.push(`Bạn có thể rà lại cách chuyển tải ${unmatchedLabels.join(", ")}; nếu đã dùng từ tương đương phù hợp ngữ cảnh thì không cần giữ nguyên cách diễn đạt mẫu.`);
+      }
+      return { text: suggestions.join(" "), hasUnmatched: unmatchedTerms.length > 0 };
+    }
+
+    function showQualitativeTranslationFeedback(answer, referenceText, terms, sourceLabel) {
+      const answerTokens = tokenize(answer);
+      const polishSuggestions = getTranslationPolishSuggestions(answer, referenceText);
+      const termGuidance = buildTermGuidance(answerTokens, terms);
+      const needsPolish = polishSuggestions.length > 0 || termGuidance.hasUnmatched;
+      const title = needsPolish ? "Gợi ý hoàn thiện" : "Diễn đạt tốt";
+      const introduction = needsPolish
+        ? "Bạn đã có cách diễn đạt riêng. Hãy tham khảo vài gợi ý để câu tự nhiên và truyền tải ý trọn vẹn hơn:"
+        : "Tuyệt vời! Bản dịch có thể dùng cách diễn đạt linh hoạt, không cần trùng nguyên văn với đáp án.";
+      const guidance = [
+        ...polishSuggestions,
+        termGuidance.text,
+        "Đọc lại câu thành tiếng và đối chiếu ngữ cảnh để kiểm tra nhịp điệu, sắc thái và ý nghĩa."
+      ].filter(Boolean).join(" ");
+      showTranslationFeedback(`${title}${sourceLabel ? ` · ${sourceLabel}` : ""}`, `${introduction} ${guidance}`);
+    }
+
+    function checkSampleTranslation(answerTextValue, exercise) {
+      showQualitativeTranslationFeedback(
+        answerTextValue,
+        exercise.answers[0] || exercise.source,
+        exercise.keyTerms,
+        "Bài mẫu"
       );
     }
 
-    function checkPersonalTranslationAgainstReference(answerTokens, translatedText, source) {
-      const referenceTokens = tokenize(translatedText);
-      const similarity = Math.max(0, Math.round((1 - editDistance(answerTokens, referenceTokens) / Math.max(answerTokens.length, referenceTokens.length, 1)) * 100));
-      const keyPhrases = extractKeywordCandidates(translatedText);
-      const matchedPhrases = keyPhrases.filter((phrase) => includesTokenSequence(answerTokens, phrase));
-      const assessment = similarity >= 85
-        ? "Bản dịch của bạn khá sát gợi ý DeepL về mặt từ vựng."
-        : similarity >= 60
-          ? "Bản dịch có một số điểm tương đồng; hãy rà lại các cụm từ và ý chính."
-          : "Bản dịch khác gợi ý DeepL đáng kể; hãy đối chiếu lại nội dung và thuật ngữ.";
-      const phraseNote = keyPhrases.length
-        ? ` Giữ được ${matchedPhrases.length}/${keyPhrases.length} cụm từ được chọn từ gợi ý${matchedPhrases.length ? ` (${matchedPhrases.join(", ")})` : ""}.`
-        : "";
-      showTranslationFeedback(
-        `Nhận xét bản dịch · ${wordCount(source)} từ nguồn · Độ tương đồng từ vựng ${similarity}%`,
-        `${assessment}${phraseNote} Nhận xét mang tính tham khảo; hãy kiểm tra ý nghĩa theo ngữ cảnh.`,
-        similarity < 50
+    function checkPersonalTranslationAgainstReference(answerTextValue, translatedText) {
+      const enteredKeywords = personalKeywords.value.split(/[,;\n]/).map((term) => term.trim()).filter(Boolean);
+      const keyPhrases = enteredKeywords.length ? enteredKeywords : extractKeywordCandidates(translatedText);
+      showQualitativeTranslationFeedback(
+        answerTextValue,
+        translatedText,
+        keyPhrases,
+        "Tài liệu cá nhân"
       );
     }
 
@@ -1200,11 +1227,11 @@
         return;
       }
       if (activeTranslationMode === "personal") {
-        await checkPersonalTranslation(answer);
+        await checkPersonalTranslation();
         return;
       }
       const exercise = currentExercises()[Number(exerciseSelect.value)];
-      checkSampleTranslation(answer, exercise);
+      checkSampleTranslation(answerText.value, exercise);
       renderSampleBreakdown(exercise);
     }
 
@@ -1257,7 +1284,7 @@
       return [...new Set(candidates)].slice(0, 6);
     }
 
-    async function checkPersonalTranslation(answerTokens) {
+    async function checkPersonalTranslation() {
       const source = sourceText.value.trim();
       if (!source) {
         showTranslationFeedback("Chưa có văn bản nguồn", "Hãy dán văn bản hoặc tải tài liệu trước khi kiểm tra.", true);
@@ -1295,7 +1322,7 @@
         referenceAnswer.value = translatedText;
         capturePersonalDraft();
         renderDeepLBreakdown(translatedText);
-        checkPersonalTranslationAgainstReference(answerTokens, translatedText, source);
+        checkPersonalTranslationAgainstReference(answerText.value, translatedText);
         setDeepLStatus("Đã nhận gợi ý DeepL và hoàn tất nhận xét bản dịch.");
       } catch (error) {
         const message = error.message || "Không thể hoàn tất yêu cầu DeepL.";
