@@ -224,7 +224,7 @@
     #personal-direction option { font-weight: 700; }
     .file-control input { max-width: min(100%, 290px); font-size: 12px; }
     .personal-controls select { max-width: 240px; }
-    .personal-status { flex: 1 1 100%; min-height: 16px; margin: 0; color: var(--muted); font-size: 11px; }
+    .personal-status { display: flex; flex: 1 1 100%; align-items: center; gap: 9px; min-height: 36px; margin: 0; padding: 8px 11px; border-radius: 6px; color: var(--muted); font-size: 14px; line-height: 1.4; }
     .reference-editor { margin: 0 22px 18px; border: 1px solid var(--line); border-radius: 6px; }
     .reference-editor summary { padding: 11px 13px; cursor: pointer; font-size: 12px; font-weight: 700; }
     .reference-fields { display: grid; gap: 12px; padding: 0 13px 13px; }
@@ -343,7 +343,10 @@
     }
 
     .score-note { color: var(--muted); font-size: 12px; }
-    .save-status { margin: -7px 22px 14px; color: var(--muted); font-size: 12px; }
+    .save-status { min-height: 36px; display: flex; align-items: center; gap: 9px; margin: -7px 22px 14px; padding: 8px 11px; border-radius: 6px; color: var(--muted); font-size: 14px; line-height: 1.4; }
+    .save-status.is-success, .personal-status.is-success { color: #166534; background: #f0fdf4; font-weight: 650; }
+    .save-status.is-error, .personal-status.is-error { color: #9a3412; background: #fff7ed; }
+    .save-status-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #16a34a; }
 
     .feedback {
       display: none;
@@ -1037,7 +1040,7 @@
         const topics = JSON.parse(window.localStorage.getItem(PERSONAL_TOPICS_KEY) || "[]");
         return Array.isArray(topics) ? topics.filter((topic) => typeof topic === "string" && topic.trim()) : [];
       } catch (error) {
-        document.querySelector("#personal-status").textContent = "Không thể đọc danh sách chủ đề đã lưu.";
+        setSaveStatus(document.querySelector("#personal-status"), "Không thể đọc danh sách chủ đề đã lưu.");
         return [];
       }
     }
@@ -1078,7 +1081,7 @@
             : null
         }]));
       } catch (error) {
-        document.querySelector("#personal-status").textContent = "Không thể đọc bản nháp đã lưu trong trình duyệt này.";
+        setSaveStatus(document.querySelector("#personal-status"), "Không thể đọc bản nháp đã lưu trong trình duyệt này.");
         return null;
       }
     }
@@ -1209,6 +1212,36 @@
       updateEditHistoryButtons();
     }
 
+    function setSaveStatus(status, message, success = false) {
+      status.hidden = false;
+      status.classList.toggle("is-success", success);
+      status.classList.toggle("is-error", !success);
+      const content = document.createElement("span");
+      content.textContent = message;
+      if (success) {
+        const icon = document.createElementNS("http://www.w3.org/2000/svg", "svg");
+        icon.setAttribute("class", "save-status-icon");
+        icon.setAttribute("viewBox", "0 0 20 20");
+        icon.setAttribute("fill", "none");
+        icon.setAttribute("aria-hidden", "true");
+        const circle = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+        circle.setAttribute("cx", "10");
+        circle.setAttribute("cy", "10");
+        circle.setAttribute("r", "8.5");
+        circle.setAttribute("fill", "currentColor");
+        const check = document.createElementNS("http://www.w3.org/2000/svg", "path");
+        check.setAttribute("d", "m6.2 10.1 2.4 2.4 5.2-5.2");
+        check.setAttribute("stroke", "#fff");
+        check.setAttribute("stroke-width", "1.8");
+        check.setAttribute("stroke-linecap", "round");
+        check.setAttribute("stroke-linejoin", "round");
+        icon.append(circle, check);
+        status.replaceChildren(icon, content);
+        return;
+      }
+      status.replaceChildren(content);
+    }
+
     function updateSaveButtonStates() {
       document.querySelector("#save-translation").disabled = !answerText.value.trim();
       document.querySelector("#save-practice").disabled = !transcript.textContent.trim()
@@ -1253,16 +1286,16 @@
       const savedDrafts = readPersonalDrafts();
       if (!savedDrafts) return false;
       if (Object.values(personalDraft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
-        document.querySelector("#personal-status").textContent = "Bản nháp quá dài để tự lưu. Mỗi ô giới hạn 50.000 ký tự.";
+        setSaveStatus(document.querySelector("#personal-status"), "Bản nháp quá dài để tự lưu. Mỗi ô giới hạn 50.000 ký tự.");
         return false;
       }
       try {
         savedDrafts[personalDraftTopic] = { ...personalDraft };
         window.localStorage.setItem(PERSONAL_DRAFTS_KEY, JSON.stringify(savedDrafts));
-        document.querySelector("#personal-status").textContent = `Đã tự lưu bản nháp cho chủ đề “${personalDraftTopic}”.`;
+        setSaveStatus(document.querySelector("#personal-status"), `Đã tự lưu bản nháp cho chủ đề “${personalDraftTopic}”.`, true);
         return true;
       } catch (error) {
-        document.querySelector("#personal-status").textContent = "Không thể tự lưu bản nháp. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
+        setSaveStatus(document.querySelector("#personal-status"), "Không thể tự lưu bản nháp. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.");
         return false;
       }
     }
@@ -1320,7 +1353,9 @@
         showTranslationFeedback(title, message);
       }
       document.querySelector("#translation-save-status").hidden = true;
-      document.querySelector("#personal-status").textContent = savedDraft || savedMaterial
+      const personalStatus = document.querySelector("#personal-status");
+      personalStatus.classList.remove("is-success", "is-error");
+      personalStatus.textContent = savedDraft || savedMaterial
         ? `Đã mở bản nháp của chủ đề “${topic}”.`
         : "Dán văn bản hoặc chọn tệp để bắt đầu bản nháp cho chủ đề này.";
       updateCounts();
@@ -1349,6 +1384,7 @@
       capturePersonalDraft();
       updateCounts();
       invalidateTranslationCheck();
+      document.querySelector("#personal-status").classList.remove("is-success", "is-error");
       document.querySelector("#personal-status").textContent = "Đã đổi chiều dịch và chuyển nội dung hai ô để bạn tiếp tục chỉnh sửa.";
     }
 
@@ -1428,8 +1464,9 @@
         input.value = "";
         dialogStatus.textContent = "";
         document.querySelector("#topic-dialog").close();
-        status.textContent = `Đã thêm chủ đề “${topic}”.`;
+        setSaveStatus(status, `Đã thêm chủ đề “${topic}”.`, true);
       } catch (error) {
+        status.classList.remove("is-success", "is-error");
         dialogStatus.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
       }
     }
@@ -1915,7 +1952,7 @@
         const saved = JSON.parse(window.localStorage.getItem(PERSONAL_MATERIALS_KEY) || "[]");
         return Array.isArray(saved) ? saved.filter((item) => item && typeof item.id === "string" && typeof item.source === "string") : [];
       } catch (error) {
-        document.querySelector("#personal-status").textContent = "Không thể đọc tài liệu đã lưu trong trình duyệt này.";
+        setSaveStatus(document.querySelector("#personal-status"), "Không thể đọc tài liệu đã lưu trong trình duyệt này.");
         return [];
       }
     }
@@ -1923,11 +1960,11 @@
     function saveMaterialDraft(draft, status, title, topic = industrySelect.selectedOptions[0]?.textContent || DEFAULT_PERSONAL_TOPIC) {
       status.hidden = false;
       if (!draft.source.trim()) {
-        status.textContent = "Hãy thêm văn bản nguồn trước khi lưu.";
+        setSaveStatus(status, "Hãy thêm văn bản nguồn trước khi lưu.");
         return;
       }
       if (Object.values(draft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
-        status.textContent = "Một ô có quá nhiều nội dung để lưu. Hãy rút ngắn văn bản rồi thử lại.";
+        setSaveStatus(status, "Một ô có quá nhiều nội dung để lưu. Hãy rút ngắn văn bản rồi thử lại.");
         return;
       }
 
@@ -1949,29 +1986,27 @@
           materials.unshift(entry);
           personalDraftsByTopic.set(topic, { ...draft });
           window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
-          status.textContent = `Đã lưu bản nháp cho chủ đề “${topic}”.`;
+          setSaveStatus(status, `Đã lưu bản nháp cho chủ đề “${topic}”.`, true);
         } else {
           materials.unshift(entry);
           window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
           personalDraftTopic = topic;
-          status.textContent = "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.";
+          setSaveStatus(status, "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.", true);
         }
       } catch (error) {
-        status.textContent = "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.";
+        setSaveStatus(status, "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.");
       }
     }
 
     function saveCurrentTranslation() {
       const status = document.querySelector("#translation-save-status");
-      status.hidden = false;
-      status.textContent = "";
       if (!answerText.value.trim()) {
-        status.textContent = "Hãy viết bản dịch trước khi lưu.";
+        setSaveStatus(status, "Hãy viết bản dịch trước khi lưu.");
         return;
       }
       if (activeTranslationMode === "personal") {
         if (!industrySelect.value) {
-          document.querySelector("#personal-status").textContent = "Hãy thêm hoặc chọn chủ đề trước khi lưu nội dung.";
+          setSaveStatus(document.querySelector("#personal-status"), "Hãy thêm hoặc chọn chủ đề trước khi lưu nội dung.");
           return;
         }
         capturePersonalDraft();
@@ -2076,11 +2111,10 @@
         flushEditHistory(sourceText);
         const saved = capturePersonalDraft();
         invalidateTranslationCheck();
-        status.textContent = saved
-          ? `Đã nhập ${wordCount(content)} từ từ tệp ${file.name} và tự lưu theo chủ đề.`
-          : `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}, nhưng chưa tự lưu được bản nháp.`;
+        if (saved) setSaveStatus(status, `Đã nhập ${wordCount(content)} từ từ tệp ${file.name} và tự lưu theo chủ đề.`, true);
+        else setSaveStatus(status, `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}, nhưng chưa tự lưu được bản nháp.`);
       } catch (error) {
-        status.textContent = error.message || "Không thể đọc tệp trên thiết bị này.";
+        setSaveStatus(status, error.message || "Không thể đọc tệp trên thiết bị này.");
       } finally {
         event.target.value = "";
       }
