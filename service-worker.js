@@ -1,7 +1,8 @@
-const CACHE_NAME = "interslation-shell-v2";
+const CACHE_NAME = "interslation-shell-v3";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./auth.js",
   "./manifest.webmanifest",
   "./favicon.svg",
   "./icons/icon-192.png",
