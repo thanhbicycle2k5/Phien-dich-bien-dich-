@@ -152,6 +152,7 @@
       const message = data.message || data.msg || data.error_description || data.error || fallback;
       const error = new Error(message);
       error.status = response.status;
+      error.code = data.code;
       throw error;
     }
     return data;
@@ -268,16 +269,37 @@
   }
 
   async function saveCloudProgress(userId, progress, media) {
-    const response = await supabaseFetch(`/rest/v1/${TABLE}?on_conflict=user_id`, {
+    const row = {
+      user_id: userId,
+      payload: { version: 1, progress, media },
+      updated_at: new Date().toISOString()
+    };
+    const updateExisting = async () => {
+      const response = await supabaseFetch(
+        `/rest/v1/${TABLE}?user_id=eq.${encodeURIComponent(userId)}&select=user_id`,
+        {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Prefer: "return=representation" },
+          body: JSON.stringify(row)
+        }
+      );
+      const updatedRows = await readResponse(response, "Không thể cập nhật tiến trình trên Supabase.");
+      return Array.isArray(updatedRows) && updatedRows.length > 0;
+    };
+
+    if (await updateExisting()) return;
+
+    const response = await supabaseFetch(`/rest/v1/${TABLE}`, {
       method: "POST",
-      headers: { "Content-Type": "application/json", Prefer: "resolution=merge-duplicates,return=minimal" },
-      body: JSON.stringify([{
-        user_id: userId,
-        payload: { version: 1, progress, media },
-        updated_at: new Date().toISOString()
-      }])
+      headers: { "Content-Type": "application/json", Prefer: "return=minimal" },
+      body: JSON.stringify(row)
     });
-    await readResponse(response, "Không thể lưu tiến trình vào Supabase.");
+    try {
+      await readResponse(response, "Không thể lưu tiến trình vào Supabase.");
+    } catch (error) {
+      if (error.status !== 409 && error.code !== "23505") throw error;
+      if (!(await updateExisting())) throw error;
+    }
   }
 
   async function uploadMedia(userId, mediaId, field, blob) {
