@@ -2,13 +2,16 @@
   const SESSION_KEY = "interslation-supabase-session-v1";
   const dialog = document.querySelector("#auth-dialog");
   const message = document.querySelector("#auth-message");
+  const emailLink = document.querySelector("#auth-email-link");
   const identity = document.querySelector("#auth-identity");
   const openButton = document.querySelector("#auth-open");
   const signoutButton = document.querySelector("#auth-signout");
   let session = null;
-  function setMessage(text, isError = false) {
+  function setMessage(text, isError = false, inboxUrl = "") {
     message.textContent = text;
     message.classList.toggle("is-error", isError);
+    emailLink.hidden = !inboxUrl;
+    emailLink.href = inboxUrl || "#";
   }
 
   function setView(view) {
@@ -157,6 +160,23 @@
     return url.toString();
   }
 
+  function emailInboxUrl(email) {
+    const domain = email.split("@").at(-1)?.toLowerCase();
+    const inboxUrls = {
+      "gmail.com": "https://mail.google.com/",
+      "googlemail.com": "https://mail.google.com/",
+      "outlook.com": "https://outlook.live.com/mail/",
+      "hotmail.com": "https://outlook.live.com/mail/",
+      "live.com": "https://outlook.live.com/mail/",
+      "yahoo.com": "https://mail.yahoo.com/",
+      "icloud.com": "https://www.icloud.com/mail/",
+      "me.com": "https://www.icloud.com/mail/",
+      "proton.me": "https://mail.proton.me/",
+      "protonmail.com": "https://mail.proton.me/"
+    };
+    return inboxUrls[domain] || "";
+  }
+
   function openDialog() {
     if (!dialog.open) dialog.showModal();
     if (window.location.protocol === "file:") {
@@ -232,7 +252,11 @@
         saveSession(data);
         setMessage("Tạo tài khoản và đăng nhập thành công.");
       } else {
-        setMessage("Tài khoản đã được tạo. Hãy mở email xác nhận để hoàn tất đăng ký.");
+        setMessage(
+          "Tài khoản đã được tạo. Hãy mở email xác nhận; sau khi xác nhận, bạn sẽ được đưa về ứng dụng.",
+          false,
+          emailInboxUrl(values.email.trim())
+        );
       }
       form.reset();
     } catch (error) {
