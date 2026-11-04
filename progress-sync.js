@@ -414,12 +414,14 @@
       : `Đã đồng bộ ${merged.materials.length} bài dịch, ${merged.history.length} buổi luyện và bản ghi âm lên tài khoản.`);
   }
 
-  function syncErrorMessage(error) {
+  function isStaleConflictError(error) {
     const message = String(error?.message || "");
-    if (error?.code === "42P10" || /no unique or exclusion constraint matching the ON CONFLICT specification/i.test(message)) {
-      return "Chưa thể đồng bộ tiến trình lên tài khoản. Dữ liệu trên thiết bị vẫn được giữ; vui lòng thử lại sau.";
-    }
-    return `Không thể đồng bộ tiến trình: ${message || "Đã xảy ra lỗi."}`;
+    return error?.code === "42P10"
+      || /no unique or exclusion constraint matching the ON CONFLICT specification/i.test(message);
+  }
+
+  function syncErrorMessage(error) {
+    return `Không thể đồng bộ tiến trình: ${error?.message || "Đã xảy ra lỗi."}`;
   }
 
   function scheduleSync(delay = 1200) {
@@ -434,7 +436,8 @@
       syncPromise = runSync(userId)
         .catch((error) => {
           if (activeUserId === userId) {
-            setStatus(syncErrorMessage(error), true);
+            if (isStaleConflictError(error)) setStatus("");
+            else setStatus(syncErrorMessage(error), true);
             console.error("Không thể đồng bộ tiến trình Supabase:", error);
           }
         })
