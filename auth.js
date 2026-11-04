@@ -167,10 +167,17 @@
     if (!dialog.open) dialog.showModal();
     if (window.location.protocol === "file:") {
       setMessage("Để kết nối Supabase, hãy chạy python3 server.py rồi mở http://localhost:8000.", true);
-    } else if (!window.localStorage.getItem(CONFIG_KEY)) {
-      document.querySelector("#auth-config").open = true;
-      setMessage("Cấu hình Supabase trước khi đăng nhập hoặc tạo tài khoản.");
     }
+  }
+
+  function showAuthError(error, fallback) {
+    const text = error.message || fallback;
+    if (text.includes("Cấu hình Supabase") || text.includes("Project URL")) {
+      document.querySelector("#auth-config").open = true;
+      setMessage(`${text} Chỉ cần cấu hình một lần trên thiết bị này.`, true);
+      return;
+    }
+    setMessage(text, true);
   }
 
   function setFormBusy(form, busy) {
@@ -178,6 +185,20 @@
       button.disabled = busy;
     });
   }
+
+  document.querySelectorAll(".auth-password-toggle").forEach((button) => {
+    button.addEventListener("click", () => {
+      const input = button.parentElement.querySelector("input");
+      const isVisible = input.type === "text";
+      input.type = isVisible ? "password" : "text";
+      const label = input.id === "auth-public-key"
+        ? (isVisible ? "Hiện key" : "Ẩn key")
+        : (isVisible ? "Hiện mật khẩu" : "Ẩn mật khẩu");
+      button.setAttribute("aria-label", label);
+      button.setAttribute("title", label);
+      button.setAttribute("aria-pressed", String(!isVisible));
+    });
+  });
 
   function formValues(form) {
     return Object.fromEntries(new FormData(form).entries());
@@ -201,7 +222,7 @@
       setMessage("Đăng nhập thành công.");
       form.reset();
     } catch (error) {
-      setMessage(error.message || "Không thể đăng nhập.", true);
+      showAuthError(error, "Không thể đăng nhập.");
     } finally {
       setFormBusy(form, false);
     }
@@ -229,7 +250,7 @@
       }
       form.reset();
     } catch (error) {
-      setMessage(error.message || "Không thể tạo tài khoản.", true);
+      showAuthError(error, "Không thể tạo tài khoản.");
     } finally {
       setFormBusy(form, false);
     }
@@ -248,7 +269,7 @@
       setMessage("Nếu email có tài khoản, liên kết đặt lại mật khẩu sẽ được gửi tới hộp thư.");
       form.reset();
     } catch (error) {
-      setMessage(error.message || "Không thể gửi email đặt lại mật khẩu.", true);
+      showAuthError(error, "Không thể gửi email đặt lại mật khẩu.");
     } finally {
       setFormBusy(form, false);
     }

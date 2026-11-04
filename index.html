@@ -267,6 +267,11 @@
     .auth-form[hidden] { display: none; }
     .auth-field { display: grid; gap: 5px; }
     .auth-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); }
+    .auth-password-control { position: relative; }
+    .auth-password-control .auth-input { padding-right: 44px; }
+    .auth-password-toggle { position: absolute; top: 50%; right: 4px; display: grid; width: 34px; height: 34px; place-items: center; padding: 0; transform: translateY(-50%); border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; }
+    .auth-password-toggle:hover { background: var(--soft-blue); color: var(--blue-dark); }
+    .auth-password-toggle svg { width: 19px; height: 19px; }
     .auth-message { min-height: 18px; margin: 0; color: var(--muted); font-size: 12px; }
     .auth-message.is-error { color: #9a3412; }
     .auth-config { padding-top: 12px; border-top: 1px solid var(--line); }
@@ -745,7 +750,12 @@
                 <input class="auth-input" type="email" name="email" autocomplete="email" required>
               </label>
               <label class="auth-field">Mật khẩu
-                <input class="auth-input" type="password" name="password" autocomplete="current-password" required>
+                <span class="auth-password-control">
+                  <input class="auth-input" type="password" name="password" autocomplete="current-password" required>
+                  <button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" title="Hiện mật khẩu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </span>
               </label>
               <button class="primary-button" type="submit">Đăng nhập</button>
             </form>
@@ -754,10 +764,20 @@
                 <input class="auth-input" type="email" name="email" autocomplete="email" required>
               </label>
               <label class="auth-field">Mật khẩu (ít nhất 6 ký tự)
-                <input class="auth-input" type="password" name="password" autocomplete="new-password" minlength="6" required>
+                <span class="auth-password-control">
+                  <input class="auth-input" type="password" name="password" autocomplete="new-password" minlength="6" required>
+                  <button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" title="Hiện mật khẩu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </span>
               </label>
               <label class="auth-field">Nhập lại mật khẩu
-                <input class="auth-input" type="password" name="confirm-password" autocomplete="new-password" minlength="6" required>
+                <span class="auth-password-control">
+                  <input class="auth-input" type="password" name="confirm-password" autocomplete="new-password" minlength="6" required>
+                  <button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" title="Hiện mật khẩu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </span>
               </label>
               <button class="primary-button" type="submit">Tạo tài khoản</button>
             </form>
@@ -769,10 +789,20 @@
             </form>
             <form class="auth-form" id="auth-recovery-form" data-auth-form="recovery" hidden>
               <label class="auth-field">Mật khẩu mới (ít nhất 6 ký tự)
-                <input class="auth-input" type="password" name="password" autocomplete="new-password" minlength="6" required>
+                <span class="auth-password-control">
+                  <input class="auth-input" type="password" name="password" autocomplete="new-password" minlength="6" required>
+                  <button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" title="Hiện mật khẩu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </span>
               </label>
               <label class="auth-field">Nhập lại mật khẩu mới
-                <input class="auth-input" type="password" name="confirm-password" autocomplete="new-password" minlength="6" required>
+                <span class="auth-password-control">
+                  <input class="auth-input" type="password" name="confirm-password" autocomplete="new-password" minlength="6" required>
+                  <button class="auth-password-toggle" type="button" aria-label="Hiện mật khẩu" aria-pressed="false" title="Hiện mật khẩu">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                  </button>
+                </span>
               </label>
               <button class="primary-button" type="submit">Lưu mật khẩu mới</button>
             </form>
@@ -783,7 +813,12 @@
                   <input class="auth-input" id="auth-project-url" type="url" autocomplete="url" placeholder="https://your-project.supabase.co">
                 </label>
                 <label class="auth-field">Publishable key hoặc anon public key
-                  <input class="auth-input" id="auth-public-key" type="password" autocomplete="off" spellcheck="false">
+                  <span class="auth-password-control">
+                    <input class="auth-input" id="auth-public-key" type="password" autocomplete="off" spellcheck="false">
+                    <button class="auth-password-toggle" type="button" aria-label="Hiện key" aria-pressed="false" title="Hiện key">
+                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
+                    </button>
+                  </span>
                 </label>
                 <p>Chỉ dùng public/publishable key của Supabase. Không nhập service_role key. Cấu hình được lưu trên thiết bị này.</p>
                 <div class="auth-actions">
