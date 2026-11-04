@@ -45,6 +45,7 @@ class AppHandler(BaseHTTPRequestHandler):
         files = {
             "/": ("index.html", "text/html; charset=utf-8"),
             "/index.html": ("index.html", "text/html; charset=utf-8"),
+            "/supabase-config.js": ("supabase-config.js", "text/javascript; charset=utf-8"),
             "/auth.js": ("auth.js", "text/javascript; charset=utf-8"),
             "/progress-sync.js": ("progress-sync.js", "text/javascript; charset=utf-8"),
             "/favicon.svg": ("favicon.svg", "image/svg+xml"),

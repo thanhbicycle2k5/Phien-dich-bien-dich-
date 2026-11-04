@@ -1,7 +1,8 @@
-const CACHE_NAME = "interslation-shell-v4";
+const CACHE_NAME = "interslation-shell-v5";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./supabase-config.js",
   "./auth.js",
   "./progress-sync.js",
   "./manifest.webmanifest",

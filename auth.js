@@ -1,13 +1,10 @@
 (() => {
-  const CONFIG_KEY = "interslation-supabase-config-v1";
   const SESSION_KEY = "interslation-supabase-session-v1";
   const dialog = document.querySelector("#auth-dialog");
   const message = document.querySelector("#auth-message");
   const identity = document.querySelector("#auth-identity");
   const openButton = document.querySelector("#auth-open");
   const signoutButton = document.querySelector("#auth-signout");
-  const projectUrlInput = document.querySelector("#auth-project-url");
-  const publicKeyInput = document.querySelector("#auth-public-key");
   let session = null;
   function setMessage(text, isError = false) {
     message.textContent = text;
@@ -29,14 +26,9 @@
   }
 
   function readConfig() {
-    let config;
-    try {
-      config = JSON.parse(window.localStorage.getItem(CONFIG_KEY) || "null");
-    } catch (error) {
-      throw new Error("Không thể đọc cấu hình Supabase đã lưu trên thiết bị.");
-    }
-    if (!config || typeof config.url !== "string" || typeof config.key !== "string") {
-      throw new Error("Hãy mở mục Cấu hình Supabase và nhập Project URL cùng public key.");
+    const config = window.interslationSupabaseConfig;
+    if (!config || typeof config.url !== "string" || typeof config.key !== "string" || !config.key.trim()) {
+      throw new Error("Ứng dụng chưa được cấu hình kết nối Supabase.");
     }
 
     let url;
@@ -51,17 +43,6 @@
       throw new Error("Hãy kiểm tra Project URL và public key Supabase.");
     }
 
-    const tokenParts = config.key.split(".");
-    if (tokenParts.length === 3) {
-      try {
-        const claims = JSON.parse(window.atob(tokenParts[1].replace(/-/g, "+").replace(/_/g, "/")));
-        if (claims.role === "service_role") {
-          throw new Error("Không được dùng service_role key trong trình duyệt. Hãy dùng anon public key.");
-        }
-      } catch (error) {
-        if (error.message.includes("service_role")) throw error;
-      }
-    }
     return { url: url.toString().replace(/\/+$/, ""), key: config.key.trim() };
   }
 
@@ -171,13 +152,7 @@
   }
 
   function showAuthError(error, fallback) {
-    const text = error.message || fallback;
-    if (text.includes("Cấu hình Supabase") || text.includes("Project URL")) {
-      document.querySelector("#auth-config").open = true;
-      setMessage(`${text} Chỉ cần cấu hình một lần trên thiết bị này.`, true);
-      return;
-    }
-    setMessage(text, true);
+    setMessage(error.message || fallback, true);
   }
 
   function setFormBusy(form, busy) {
@@ -191,9 +166,7 @@
       const input = button.parentElement.querySelector("input");
       const isVisible = input.type === "text";
       input.type = isVisible ? "password" : "text";
-      const label = input.id === "auth-public-key"
-        ? (isVisible ? "Hiện key" : "Ẩn key")
-        : (isVisible ? "Hiện mật khẩu" : "Ẩn mật khẩu");
+      const label = isVisible ? "Hiện mật khẩu" : "Ẩn mật khẩu";
       button.setAttribute("aria-label", label);
       button.setAttribute("title", label);
       button.setAttribute("aria-pressed", String(!isVisible));
@@ -305,34 +278,6 @@
     }
   });
 
-  document.querySelector("#auth-save-config").addEventListener("click", () => {
-    const config = { url: projectUrlInput.value.trim(), key: publicKeyInput.value.trim() };
-    try {
-      window.localStorage.setItem(CONFIG_KEY, JSON.stringify(config));
-      readConfig();
-      setMessage("Đã lưu cấu hình Supabase trên thiết bị này.");
-    } catch (error) {
-      try {
-        window.localStorage.removeItem(CONFIG_KEY);
-      } catch (storageError) {
-        setMessage("Không thể lưu cấu hình trên thiết bị này.", true);
-        return;
-      }
-      setMessage(error.message || "Cấu hình Supabase không hợp lệ.", true);
-    }
-  });
-
-  document.querySelector("#auth-clear-config").addEventListener("click", () => {
-    try {
-      window.localStorage.removeItem(CONFIG_KEY);
-      projectUrlInput.value = "";
-      publicKeyInput.value = "";
-      setMessage("Đã xóa cấu hình Supabase.");
-    } catch (error) {
-      setMessage("Không thể xóa cấu hình Supabase.", true);
-    }
-  });
-
   openButton.addEventListener("click", openDialog);
   document.querySelector("#auth-close").addEventListener("click", () => dialog.close());
   dialog.addEventListener("click", (event) => {
@@ -437,13 +382,6 @@
     return true;
   }
 
-  try {
-    const config = JSON.parse(window.localStorage.getItem(CONFIG_KEY) || "null");
-    projectUrlInput.value = config?.url || "";
-    publicKeyInput.value = config?.key || "";
-  } catch (error) {
-    setMessage("Không thể đọc cấu hình Supabase trên thiết bị này.", true);
-  }
   renderIdentity();
   handleAuthCallback().then((hasCallback) => {
     if (!hasCallback) return restoreSession();

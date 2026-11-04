@@ -1,6 +1,5 @@
 (() => {
   const SESSION_KEY = "interslation-supabase-session-v1";
-  const CONFIG_KEY = "interslation-supabase-config-v1";
   const LOCAL_OWNER_KEY = "interslation-progress-owner-v1";
   const HISTORY_KEY = "lingua-lab-practice-history-v1";
   const MATERIALS_KEY = "lingua-lab-personal-materials-v1";
@@ -35,8 +34,8 @@
   }
 
   function getConfig() {
-    const config = JSON.parse(window.localStorage.getItem(CONFIG_KEY) || "null");
-    if (!config?.url || !config?.key) throw new Error("Thiếu cấu hình Supabase để đồng bộ dữ liệu.");
+    const config = window.interslationSupabaseConfig;
+    if (!config?.url || !config?.key) throw new Error("Ứng dụng chưa được cấu hình kết nối Supabase.");
     return { url: config.url.replace(/\/+$/, ""), key: config.key };
   }
 

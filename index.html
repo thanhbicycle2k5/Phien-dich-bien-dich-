@@ -274,11 +274,6 @@
     .auth-password-toggle svg { width: 19px; height: 19px; }
     .auth-message { min-height: 18px; margin: 0; color: var(--muted); font-size: 12px; }
     .auth-message.is-error { color: #9a3412; }
-    .auth-config { padding-top: 12px; border-top: 1px solid var(--line); }
-    .auth-config summary { color: var(--blue-dark); cursor: pointer; font-size: 12px; font-weight: 700; }
-    .auth-config-fields { display: grid; gap: 10px; padding-top: 12px; }
-    .auth-config-fields p { margin: 0; color: var(--muted); font-size: 11px; }
-    .auth-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .topic-dialog-body { display: grid; gap: 14px; padding: 18px 20px 20px; }
     .topic-dialog-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
     .topic-dialog-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; }
@@ -806,27 +801,6 @@
               </label>
               <button class="primary-button" type="submit">Lưu mật khẩu mới</button>
             </form>
-            <details class="auth-config" id="auth-config">
-              <summary>Cấu hình Supabase</summary>
-              <div class="auth-config-fields">
-                <label class="auth-field">Project URL
-                  <input class="auth-input" id="auth-project-url" type="url" autocomplete="url" placeholder="https://your-project.supabase.co">
-                </label>
-                <label class="auth-field">Publishable key hoặc anon public key
-                  <span class="auth-password-control">
-                    <input class="auth-input" id="auth-public-key" type="password" autocomplete="off" spellcheck="false">
-                    <button class="auth-password-toggle" type="button" aria-label="Hiện key" aria-pressed="false" title="Hiện key">
-                      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M2 12s3.6-7 10-7 10 7 10 7-3.6 7-10 7-10-7-10-7Z"/><circle cx="12" cy="12" r="3"/></svg>
-                    </button>
-                  </span>
-                </label>
-                <p>Chỉ dùng public/publishable key của Supabase. Không nhập service_role key. Cấu hình được lưu trên thiết bị này.</p>
-                <div class="auth-actions">
-                  <button class="quiet-button" id="auth-clear-config" type="button">Xóa cấu hình</button>
-                  <button class="primary-button" id="auth-save-config" type="button">Lưu cấu hình</button>
-                </div>
-              </div>
-            </details>
           </div>
         </dialog>
 
@@ -4100,6 +4074,8 @@
       });
     }
   </script>
+  <script src="./supabase-config.js"></script>
+  <script src="./supabase-config.js"></script>
   <script src="./auth.js"></script>
   <script src="./progress-sync.js"></script>
 </body>
