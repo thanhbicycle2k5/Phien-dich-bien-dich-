@@ -65,7 +65,7 @@
     return { url: url.toString().replace(/\/+$/, ""), key: config.key.trim() };
   }
 
-  function saveSession(response) {
+  function saveSession(response, announce = true) {
     if (!response || typeof response.access_token !== "string" || typeof response.refresh_token !== "string") {
       throw new Error("Supabase không trả về phiên đăng nhập hợp lệ.");
     }
@@ -82,6 +82,14 @@
       throw new Error("Không thể lưu phiên đăng nhập trên thiết bị này.");
     }
     renderIdentity();
+    if (announce) announceSession();
+  }
+
+  function announceSession() {
+    if (!session?.user?.id) return;
+    window.dispatchEvent(new CustomEvent("interslation:auth-change", {
+      detail: { userId: session.user.id, accessToken: session.access_token, signedIn: true }
+    }));
   }
 
   function clearSession() {
@@ -92,7 +100,14 @@
       throw new Error("Không thể xóa phiên đăng nhập trên thiết bị này.");
     }
     renderIdentity();
+    window.dispatchEvent(new CustomEvent("interslation:auth-change", { detail: { signedIn: false } }));
   }
+
+  window.interslationAuth = {
+    updateSession(response) {
+      saveSession(response, false);
+    }
+  };
 
   function renderIdentity() {
     const email = session?.user?.email;
@@ -344,6 +359,7 @@
         saveSession({ ...session, user });
       } else {
         renderIdentity();
+        announceSession();
       }
     } catch (error) {
       if (error.status === 400 || error.status === 401) {

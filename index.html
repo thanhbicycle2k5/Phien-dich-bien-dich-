@@ -256,6 +256,9 @@
     .auth-dialog { width: min(460px, calc(100% - 32px)); max-width: none; max-height: min(90vh, 760px); padding: 0; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); box-shadow: 0 24px 70px rgba(23, 43, 77, .24); }
     .account-tools { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
     .account-identity { max-width: min(38vw, 280px); overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
+    .progress-sync-status { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); background: #f8fbff; color: var(--muted); font-size: 12px; }
+    .progress-sync-status[hidden] { display: none; }
+    .progress-sync-status.is-error { background: #fff7ed; color: #9a3412; }
     .auth-body { display: grid; gap: 14px; padding: 18px 20px 20px; }
     .auth-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .auth-switch button { min-height: 34px; padding: 4px 7px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
@@ -537,6 +540,7 @@
       .brand-note { display: none; }
       .account-tools { gap: 5px; }
       .account-identity { display: none; }
+      .progress-sync-status { padding: 7px 10px; font-size: 11px; }
       #auth-open, #auth-signout { min-height: 34px; padding: 0 8px; font-size: 11px; }
       main { padding-top: 16px; }
       .app-sidebar { grid-template-columns: 1fr; }
@@ -596,6 +600,7 @@
         <button class="quiet-button" id="auth-signout" type="button" hidden>Đăng xuất</button>
       </div>
     </header>
+    <p class="progress-sync-status" id="progress-sync-status" role="status" aria-live="polite" hidden></p>
 
     <main class="app-layout">
       <aside class="app-sidebar">
@@ -1160,12 +1165,27 @@
     const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
     const PERSONAL_TOPICS_KEY = "lingua-lab-personal-topics-v1";
     const DEFAULT_PERSONAL_TOPIC = "Chưa phân loại";
+    const HISTORY_TOMBSTONES_KEY = "interslation-deleted-history-v1";
     const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
     const MAX_EDIT_HISTORY = 100;
     const EDIT_HISTORY_DELAY = 500;
     const PERSONAL_DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
+    function notifyProgressChanged() {
+      window.dispatchEvent(new Event("interslation:progress-changed"));
+    }
+
+    function markHistoryDeleted(entries) {
+      const deleted = JSON.parse(window.localStorage.getItem(HISTORY_TOMBSTONES_KEY) || "[]");
+      const newTombstones = entries.map((entry) => ({
+        id: entry.storageId || entry.date,
+        deletedAt: Date.now()
+      }));
+      const merged = new Map([...deleted, ...newTombstones].map((item) => [item.id, item]));
+      window.localStorage.setItem(HISTORY_TOMBSTONES_KEY, JSON.stringify([...merged.values()]));
+    }
+
     const industrySelect = document.querySelector("#industry-select");
     const exerciseSelect = document.querySelector("#exercise-select");
     const contentSelectorField = document.querySelector("#content-selector-field");
@@ -1260,7 +1280,10 @@
       return new Promise((resolve, reject) => {
         const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
         transaction.objectStore(PRACTICE_MEDIA_STORE).put(record);
-        transaction.oncomplete = () => resolve();
+        transaction.oncomplete = () => {
+          notifyProgressChanged();
+          resolve();
+        };
         transaction.onerror = () => reject(transaction.error || new Error("Không thể lưu media."));
         transaction.onabort = () => reject(transaction.error || new Error("Lưu media đã bị hủy."));
       });
@@ -1272,7 +1295,10 @@
       return new Promise((resolve, reject) => {
         const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
         transaction.objectStore(PRACTICE_MEDIA_STORE).delete(id);
-        transaction.oncomplete = () => resolve();
+        transaction.oncomplete = () => {
+          notifyProgressChanged();
+          resolve();
+        };
         transaction.onerror = () => reject(transaction.error || new Error("Không thể xóa media."));
       });
     }
@@ -1282,7 +1308,10 @@
       await new Promise((resolve, reject) => {
         const transaction = database.transaction(PRACTICE_MEDIA_STORE, "readwrite");
         transaction.objectStore(PRACTICE_MEDIA_STORE).clear();
-        transaction.oncomplete = () => resolve();
+        transaction.oncomplete = () => {
+          notifyProgressChanged();
+          resolve();
+        };
         transaction.onerror = () => reject(transaction.error || new Error("Không thể xóa các tệp đã lưu."));
       });
       practiceMediaObjectUrls.forEach((url) => URL.revokeObjectURL(url));
@@ -1304,10 +1333,12 @@
         const store = transaction.objectStore(PRACTICE_MEDIA_STORE);
         const request = store.getAll();
         const loadedRecords = [];
+        let removedExpiredRecords = false;
         request.onsuccess = () => {
           for (const record of request.result) {
             if (record.expiresAt <= Date.now()) {
               store.delete(record.id);
+              removedExpiredRecords = true;
             } else {
               loadedRecords.push(record);
             }
@@ -1331,6 +1362,7 @@
               practiceMediaObjectUrls.add(record.voiceUrl);
             }
           });
+          if (removedExpiredRecords) notifyProgressChanged();
           resolve(loadedRecords);
         };
         transaction.onerror = () => reject(transaction.error || new Error("Không thể đọc media đã lưu."));
@@ -1623,6 +1655,7 @@
       try {
         savedDrafts[personalDraftTopic] = { ...personalDraft };
         window.localStorage.setItem(PERSONAL_DRAFTS_KEY, JSON.stringify(savedDrafts));
+        notifyProgressChanged();
         setSaveStatus(document.querySelector("#personal-status"), `Đã tự lưu bản nháp cho chủ đề “${personalDraftTopic}”.`, true);
         return true;
       } catch (error) {
@@ -1789,6 +1822,7 @@
       try {
         const topics = [...readPersonalTopics(), topic];
         window.localStorage.setItem(PERSONAL_TOPICS_KEY, JSON.stringify(topics));
+        notifyProgressChanged();
         personalDraftTopic = topic;
         populateTopics(topic);
         loadPersonalTopicDraft(topic);
@@ -2317,10 +2351,12 @@
           materials.unshift(entry);
           personalDraftsByTopic.set(topic, { ...draft });
           window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
+          notifyProgressChanged();
           setSaveStatus(status, `Đã lưu bản nháp cho chủ đề “${topic}”.`, true);
         } else {
           materials.unshift(entry);
           window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
+          notifyProgressChanged();
           personalDraftTopic = topic;
           setSaveStatus(status, "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.", true);
         }
@@ -3432,7 +3468,10 @@
           const expiresAt = Number(entry.expiresAt) || Date.parse(entry.date) + PRACTICE_MEDIA_RETENTION_MS;
           return Number.isFinite(expiresAt) && expiresAt > Date.now();
         });
-        if (validEntries.length !== saved.length) window.localStorage.setItem(HISTORY_KEY, JSON.stringify(validEntries));
+        if (validEntries.length !== saved.length) {
+          window.localStorage.setItem(HISTORY_KEY, JSON.stringify(validEntries));
+          notifyProgressChanged();
+        }
         return validEntries;
       } catch (error) {
         document.querySelector("#history-message").textContent = "Không thể đọc lịch sử trên trình duyệt này.";
@@ -3644,7 +3683,9 @@
         const entries = readPracticeHistory();
         if (index < 0 || index >= entries.length) return;
         const [removedEntry] = entries.splice(index, 1);
+        markHistoryDeleted([removedEntry]);
         window.localStorage.setItem(HISTORY_KEY, JSON.stringify(entries));
+        notifyProgressChanged();
         if (removedEntry.storageId) {
           await deletePracticeMedia(removedEntry.storageId);
           const media = storedPracticeMedia.get(removedEntry.storageId);
@@ -3741,6 +3782,7 @@
         entries.unshift(entry);
         const retainedEntries = entries.slice(0, MAX_HISTORY_ITEMS);
         window.localStorage.setItem(HISTORY_KEY, JSON.stringify(retainedEntries));
+        notifyProgressChanged();
         historyCommitted = true;
         storedPracticeMedia.set(storageId, storedRecord);
         const retainedIds = new Set(retainedEntries.map((savedEntry) => savedEntry.storageId).filter(Boolean));
@@ -3953,7 +3995,9 @@
     document.querySelector("#clear-history").addEventListener("click", async () => {
       if (!window.confirm("Xóa toàn bộ lịch sử luyện tập trên trình duyệt này?")) return;
       try {
+        markHistoryDeleted(readPracticeHistory());
         window.localStorage.removeItem(HISTORY_KEY);
+        notifyProgressChanged();
         await clearStoredPracticeMedia();
         document.querySelector("#history-message").textContent = "Đã xóa lịch sử luyện tập.";
         document.querySelector("#media-mix-panel").hidden = true;
@@ -3987,6 +4031,21 @@
     }
 
     window.addEventListener("pagehide", releaseMediaResources);
+    window.addEventListener("interslation:progress-restored", async () => {
+      const selectedTopic = industrySelect.value;
+      populateTopics(selectedTopic);
+      if (activeTranslationMode === "personal" && industrySelect.value) {
+        loadPersonalTopicDraft(industrySelect.value);
+      }
+      try {
+        await loadStoredPracticeMedia();
+        readPracticeHistory();
+        renderPracticeHistory();
+        schedulePracticeMediaExpiry();
+      } catch (error) {
+        document.querySelector("#history-message").textContent = `Không thể mở media đã đồng bộ: ${error.message}`;
+      }
+    });
     loadDeepLKey();
     populateTopics(exerciseGroups[0].id);
     populateExercises();
@@ -4007,5 +4066,6 @@
     }
   </script>
   <script src="./auth.js"></script>
+  <script src="./progress-sync.js"></script>
 </body>
 </html>

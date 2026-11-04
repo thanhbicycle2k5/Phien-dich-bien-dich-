@@ -46,6 +46,7 @@ class AppHandler(BaseHTTPRequestHandler):
             "/": ("index.html", "text/html; charset=utf-8"),
             "/index.html": ("index.html", "text/html; charset=utf-8"),
             "/auth.js": ("auth.js", "text/javascript; charset=utf-8"),
+            "/progress-sync.js": ("progress-sync.js", "text/javascript; charset=utf-8"),
             "/favicon.svg": ("favicon.svg", "image/svg+xml"),
             "/manifest.webmanifest": ("manifest.webmanifest", "application/manifest+json; charset=utf-8"),
             "/service-worker.js": ("service-worker.js", "text/javascript; charset=utf-8"),
