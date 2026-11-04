@@ -112,15 +112,28 @@
 
   async function requestAuth(path, options = {}) {
     const config = readConfig();
-    const response = await fetch(`${config.url}/auth/v1/${path}`, {
-      method: options.method || "POST",
-      headers: {
-        apikey: config.key,
-        Authorization: "Bearer " + (options.token || config.key),
-        "Content-Type": "application/json"
-      },
-      body: options.body === undefined ? undefined : JSON.stringify(options.body)
-    });
+    const controller = new AbortController();
+    const timeoutId = window.setTimeout(() => controller.abort(), 15000);
+    let response;
+    try {
+      response = await fetch(`${config.url}/auth/v1/${path}`, {
+        method: options.method || "POST",
+        headers: {
+          apikey: config.key,
+          Authorization: "Bearer " + (options.token || config.key),
+          "Content-Type": "application/json"
+        },
+        body: options.body === undefined ? undefined : JSON.stringify(options.body),
+        signal: controller.signal
+      });
+    } catch (error) {
+      if (error.name === "AbortError") {
+        throw new Error("Supabase phản hồi quá lâu. Hãy kiểm tra kết nối mạng rồi thử lại.");
+      }
+      throw new Error("Không kết nối được Supabase. Hãy kiểm tra mạng và thử lại.");
+    } finally {
+      window.clearTimeout(timeoutId);
+    }
     const responseText = await response.text();
     let data = {};
     if (responseText) {
