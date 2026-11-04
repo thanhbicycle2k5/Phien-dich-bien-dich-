@@ -4,6 +4,9 @@ create table if not exists public.interslation_user_progress (
   updated_at timestamptz not null default now()
 );
 
+create unique index if not exists interslation_user_progress_user_id_uidx
+  on public.interslation_user_progress (user_id);
+
 alter table public.interslation_user_progress enable row level security;
 
 drop policy if exists "Users can manage their own Interslation progress"
