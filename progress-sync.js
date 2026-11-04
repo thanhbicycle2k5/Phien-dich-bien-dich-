@@ -384,7 +384,7 @@
   async function runSync(userId) {
     const session = getSession();
     if (session.user.id !== userId) return;
-    setStatus("Đang gộp và đồng bộ tiến trình tài khoản...");
+    setStatus("");
     const localOwner = window.localStorage.getItem(LOCAL_OWNER_KEY);
     const switchingAccount = Boolean(localOwner && localOwner !== userId);
     const [cloud, local, localMedia] = await Promise.all([
@@ -409,9 +409,7 @@
       applyingRemoteData = false;
     }
     window.dispatchEvent(new Event("interslation:progress-restored"));
-    setStatus(switchingAccount
-      ? "Đã chuyển tiến trình trên thiết bị sang tài khoản này; dữ liệu tài khoản trước vẫn được giữ nguyên."
-      : `Đã đồng bộ ${merged.materials.length} bài dịch, ${merged.history.length} buổi luyện và bản ghi âm lên tài khoản.`);
+    setStatus("");
   }
 
   function isStaleConflictError(error) {
