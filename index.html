@@ -1276,14 +1276,14 @@
                 <a class="quiet-button" id="download-speech-recording" download hidden>Tải bản ghi</a>
               </div>
               <p class="speech-recording-status" id="speech-recording-status" role="status" aria-live="polite"></p>
-              <button class="quiet-button" id="play-practice-preview-mix" type="button" hidden>Nghe nguồn và bản dịch kết hợp</button>
+              <button class="quiet-button" id="play-practice-preview-mix" type="button" hidden>Nghe nguồn &amp; bản dịch đồng bộ</button>
               <label class="field-label" id="speech-source-preview-label" for="speech-source-preview" hidden>Nghe lại nguồn gốc</label>
               <audio id="speech-source-preview" controls preload="metadata" hidden></audio>
               <p class="speech-recording-status" id="speech-source-preview-status" role="status" aria-live="polite" hidden></p>
             </div>
             <section class="media-mix-panel" id="media-mix-panel" aria-labelledby="media-mix-heading" hidden>
-              <h3 id="media-mix-heading">Nghe nguồn và bản dịch song song</h3>
-              <button class="quiet-button" id="toggle-media-mix" type="button">Phát đồng thời</button>
+              <h3 id="media-mix-heading">Nghe nguồn và bản dịch đồng bộ</h3>
+              <button class="quiet-button" id="toggle-media-mix" type="button">Phát đồng bộ</button>
               <label class="media-mix-control">
                 <span>Âm lượng nguồn</span>
                 <input id="source-volume" type="range" min="0" max="1" step="0.01" value="0.7">
@@ -1544,13 +1544,11 @@
     let speechRecordingStopResolve = null;
     let speechSessionActive = false;
     let speechRecognitionRestartTimer = null;
-    let sourceAudioRecorder = null;
-    let sourceAudioStream = null;
-    let sourceAudioChunks = [];
-    let sourceAudioBlob = null;
-    let sourcePreviewUrl = "";
-    let sourceAudioStopPromise = Promise.resolve(null);
-    let sourceAudioStopResolve = null;
+    let speechRecordingStartedAt = 0;
+    let practiceSourceTimeline = [];
+    let currentPracticeSourceSegment = null;
+    let activePracticeMediaMix = null;
+    let practiceMediaMixFrame = 0;
     let localPracticeMediaFile = null;
     let activePracticeMode = "parallel";
     let consecutivePhase = "idle";
@@ -1565,6 +1563,7 @@
     const restartingSpeechSessions = new Set();
     let youtubePlayer = null;
     let youtubeApiLoading = false;
+    let pendingPracticeMixVideoId = "";
     let localPracticeMediaUrl = "";
     let activePracticeSource = "";
     let pendingYouTubePlayback = false;
@@ -1723,9 +1722,46 @@
     }
 
     function pausePracticeMedia() {
+      closePracticeSourceSegment();
       document.querySelector("#local-audio-player").pause();
       document.querySelector("#local-video-player").pause();
       if (activePracticeSource === "youtube") youtubePlayer?.pauseVideo?.();
+    }
+
+    function getPracticeRecordingOffset() {
+      return speechRecordingStartedAt
+        ? Math.max(0, (performance.now() - speechRecordingStartedAt) / 1000)
+        : 0;
+    }
+
+    function getPracticeSourceTime() {
+      if (activePracticeSource === "local") {
+        const player = document.querySelector("#local-audio-player").hidden
+          ? document.querySelector("#local-video-player")
+          : document.querySelector("#local-audio-player");
+        return Number(player.currentTime) || 0;
+      }
+      return Number(youtubePlayer?.getCurrentTime?.()) || 0;
+    }
+
+    function openPracticeSourceSegment() {
+      if (!speechRecordingStartedAt || currentPracticeSourceSegment || !["local", "youtube"].includes(activePracticeSource)) return;
+      currentPracticeSourceSegment = {
+        start: getPracticeRecordingOffset(),
+        sourceTime: getPracticeSourceTime(),
+        playbackRate: activePracticeSource === "local"
+          ? Number(document.querySelector("#media-playback-rate").value) || 1
+          : Number(youtubePlayer?.getPlaybackRate?.()) || 1
+      };
+    }
+
+    function closePracticeSourceSegment() {
+      if (!currentPracticeSourceSegment) return;
+      const end = getPracticeRecordingOffset();
+      if (end > currentPracticeSourceSegment.start) {
+        practiceSourceTimeline.push({ ...currentPracticeSourceSegment, end });
+      }
+      currentPracticeSourceSegment = null;
     }
 
     function getMaterialTopic(material) {
@@ -2975,26 +3011,32 @@
       document.querySelector("#start-listening").disabled = true;
       speechSessionActive = true;
       updatePracticeModeControls();
-      startTimer();
-      startPracticeMedia();
-      sourceAudioBlob = null;
-      await startSourceAudioCapture();
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       const recordingId = speechRecordingId;
+      practiceSourceTimeline = [];
+      currentPracticeSourceSegment = null;
       if (canRecordAudio) {
         document.querySelector("#speech-recording-preview").hidden = false;
         updateSourcePlaybackPreview();
         recordingStatus.textContent = "Đang xin quyền micro để tạo bản ghi nghe lại...";
         const captureStarted = await startSpeechAudioCapture();
-        if (captureStarted && speechRecordingId === recordingId) startPracticeMedia();
+        if (speechRecordingId === recordingId && captureStarted) {
+          startTimer();
+          startPracticeMedia();
+        }
       } else {
         recordingStatus.textContent = "Trình duyệt này chưa hỗ trợ ghi âm. Bạn vẫn có thể dùng tính năng chép lời nếu được hỗ trợ.";
+        startTimer();
+        startPracticeMedia();
       }
       if (speechRecordingId !== recordingId) return;
+      if (SpeechRecognition && timerStartedAt === null) {
+        startTimer();
+        startPracticeMedia();
+      }
 
       if (!SpeechRecognition) {
         if (canRecordAudio && speechAudioRecorder?.state === "recording") {
-          startPracticeMedia();
           setListening(true, "Đang ghi âm. Trình duyệt chưa hỗ trợ tự tạo bản chép lời.");
         } else {
           speechSessionActive = false;
@@ -3076,15 +3118,10 @@
       }
       consecutivePhase = "starting";
       updatePracticeModeControls();
-      document.querySelector("#speech-status").textContent = "Đang chuẩn bị quyền ghi âm và nguồn...";
-      sourceAudioBlob = null;
-      startPracticeMedia();
-      await startSourceAudioCapture();
-      if (consecutivePhase !== "starting") {
-        await stopSourceAudioCapture();
-        return;
-      }
+      document.querySelector("#speech-status").textContent = "Đang chuẩn bị micro...";
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      practiceSourceTimeline = [];
+      currentPracticeSourceSegment = null;
       const recordingStatus = document.querySelector("#speech-recording-status");
       recordingStatus.textContent = "Đang chuẩn bị bản ghi phần dịch...";
       document.querySelector("#speech-recording-preview").hidden = false;
@@ -3095,7 +3132,6 @@
           if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(speechRecordingId);
           stopSpeechAudioCapture();
         }
-        await stopSourceAudioCapture();
         if (consecutivePhase === "starting") {
           consecutivePhase = "idle";
           updatePracticeModeControls();
@@ -3106,6 +3142,7 @@
       speechSessionActive = true;
       consecutivePhase = "listening";
       startTimer();
+      startPracticeMedia();
       updatePracticeModeControls();
       document.querySelector("#speech-status").textContent = "Đang nghe. Giọng bạn chưa được ghi âm trong lượt này.";
     }
@@ -3184,11 +3221,10 @@
       stopCurrentSpeechRecognition();
       speechSessionActive = false;
       consecutivePhase = "finished";
-      stopSpeechAudioCapture();
-      const sourceRecording = await stopSourceAudioCapture();
-      updateSourcePlaybackPreview(sourceRecording);
       pausePracticeMedia();
       pauseTimer();
+      stopSpeechAudioCapture();
+      updateSourcePlaybackPreview();
       setListening(false, "Đã kết thúc. Có thể lưu buổi luyện hoặc nghe hai bản ghi song song.");
       updatePracticeModeControls();
     }
@@ -3257,68 +3293,6 @@
       }
     }
 
-    async function startSourceAudioCapture() {
-      if (sourceAudioStopResolve) await sourceAudioStopPromise;
-      if (activePracticeSource !== "youtube") {
-        sourceAudioBlob = null;
-        return false;
-      }
-      if (sourceAudioRecorder?.state === "recording") return false;
-      sourceAudioBlob = null;
-      if (!navigator.mediaDevices?.getDisplayMedia || typeof MediaRecorder === "undefined") {
-        document.querySelector("#youtube-status").textContent =
-          "Trình duyệt không hỗ trợ thu âm tab. Buổi luyện vẫn tiếp tục và link YouTube sẽ được lưu.";
-        return false;
-      }
-
-      let displayStream;
-      try {
-        document.querySelector("#youtube-status").textContent =
-          "Trong hộp thoại chia sẻ, chọn tab video và bật “Chia sẻ âm thanh tab” để lưu được tiếng nguồn.";
-        displayStream = await navigator.mediaDevices.getDisplayMedia({ video: true, audio: true });
-        const audioTracks = displayStream.getAudioTracks();
-        displayStream.getVideoTracks().forEach((track) => track.stop());
-        if (!audioTracks.length) {
-          displayStream.getTracks().forEach((track) => track.stop());
-          document.querySelector("#youtube-status").textContent =
-            "Chưa bật chia sẻ âm thanh tab. Link YouTube vẫn được lưu; để nghe lại nguồn, hãy bật chia sẻ âm thanh tab.";
-          return false;
-        }
-
-        sourceAudioStream = new MediaStream(audioTracks);
-        sourceAudioChunks = [];
-        sourceAudioBlob = null;
-        const recorder = new MediaRecorder(sourceAudioStream);
-        sourceAudioRecorder = recorder;
-        sourceAudioStopPromise = new Promise((resolve) => {
-          sourceAudioStopResolve = resolve;
-        });
-        recorder.addEventListener("dataavailable", (event) => {
-          if (event.data.size > 0) sourceAudioChunks.push(event.data);
-        });
-        recorder.addEventListener("stop", () => {
-          sourceAudioBlob = sourceAudioChunks.length
-            ? new Blob(sourceAudioChunks, { type: recorder.mimeType || "audio/webm" })
-            : null;
-          sourceAudioStream?.getTracks().forEach((track) => track.stop());
-          sourceAudioStream = null;
-          sourceAudioStopResolve?.(sourceAudioBlob);
-          sourceAudioStopResolve = null;
-        });
-        recorder.addEventListener("error", () => {
-          document.querySelector("#youtube-status").textContent = "Không thể ghi âm âm thanh tab YouTube.";
-        });
-        recorder.start(1000);
-        return true;
-      } catch (error) {
-        displayStream?.getTracks().forEach((track) => track.stop());
-        sourceAudioStream = null;
-        document.querySelector("#youtube-status").textContent =
-          "Không có quyền chia sẻ âm thanh tab. Link YouTube vẫn được lưu; hãy cấp quyền nếu muốn nghe lại nguồn.";
-        return false;
-      }
-    }
-
     function clearSourcePlaybackPreview() {
       const player = document.querySelector("#speech-source-preview");
       player.pause();
@@ -3327,37 +3301,25 @@
       player.hidden = true;
       document.querySelector("#speech-source-preview-label").hidden = true;
       document.querySelector("#speech-source-preview-status").hidden = true;
-      if (sourcePreviewUrl) {
-        URL.revokeObjectURL(sourcePreviewUrl);
-        sourcePreviewUrl = "";
-      }
       document.querySelector("#play-practice-preview-mix").hidden = true;
     }
 
     function updatePracticePreviewMixButton() {
       const sourceAvailable = activePracticeSource === "local"
         ? Boolean(localPracticeMediaUrl)
-        : Boolean(sourcePreviewUrl);
+        : activePracticeSource === "youtube" && Boolean(getYouTubeVideoId(youtubeUrlInput.value));
       const voiceAvailable = Boolean(speechRecordingsById.get(speechRecordingId)?.url);
       document.querySelector("#play-practice-preview-mix").hidden = !sourceAvailable || !voiceAvailable;
     }
 
-    function updateSourcePlaybackPreview(capturedSourceBlob = sourceAudioBlob) {
+    function updateSourcePlaybackPreview() {
       const player = document.querySelector("#speech-source-preview");
       const label = document.querySelector("#speech-source-preview-label");
       const status = document.querySelector("#speech-source-preview-status");
-      if (sourcePreviewUrl) {
-        URL.revokeObjectURL(sourcePreviewUrl);
-        sourcePreviewUrl = "";
-      }
 
       if (activePracticeSource === "local" && localPracticeMediaUrl) {
         player.src = localPracticeMediaUrl;
         label.textContent = `Nghe lại nguồn gốc${localPracticeMediaFile?.name ? `: ${localPracticeMediaFile.name}` : ""}`;
-      } else if (activePracticeSource === "youtube" && capturedSourceBlob?.size) {
-        sourcePreviewUrl = URL.createObjectURL(capturedSourceBlob);
-        player.src = sourcePreviewUrl;
-        label.textContent = "Nghe lại âm thanh YouTube đã thu";
       } else {
         player.pause();
         player.removeAttribute("src");
@@ -3367,9 +3329,7 @@
         status.hidden = activePracticeSource !== "youtube";
         status.textContent = activePracticeSource !== "youtube"
           ? ""
-          : sourceAudioRecorder?.state === "recording"
-            ? "Đang thu âm nguồn YouTube; phần nghe lại nguồn sẽ sẵn sàng khi kết thúc."
-            : "Chưa có bản ghi âm thanh nguồn YouTube. Lần sau, hãy bật chia sẻ âm thanh tab khi bắt đầu buổi luyện.";
+          : "Âm thanh nguồn YouTube được phát lại từ video và đồng bộ theo các mốc bắt đầu, tạm dừng, tiếp tục và kết thúc.";
         updatePracticePreviewMixButton();
         return;
       }
@@ -3378,14 +3338,6 @@
       label.hidden = false;
       status.hidden = true;
       updatePracticePreviewMixButton();
-    }
-
-    async function stopSourceAudioCapture() {
-      if (sourceAudioRecorder?.state === "recording") {
-        sourceAudioRecorder.stop();
-        return sourceAudioStopPromise;
-      }
-      return sourceAudioBlob;
     }
 
     async function startSpeechAudioCapture({ muted = false } = {}) {
@@ -3449,6 +3401,8 @@
           if (event.data.size > 0) chunks.push(event.data);
         });
         recorder.addEventListener("stop", () => {
+          closePracticeSourceSegment();
+          speechRecordingStartedAt = 0;
           stream.getTracks().forEach((track) => track.stop());
           normalizedStream.stream.getTracks().forEach((track) => track.stop());
           if (speechAudioContext === audioContext) speechAudioContext = null;
@@ -3476,7 +3430,7 @@
             downloadLink.textContent = `Tải file .${extension}`;
             downloadLink.hidden = false;
             document.querySelector("#speech-recording-preview").hidden = false;
-            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng nghe lại hoặc tải xuống. Âm lượng đã được khuếch đại và giới hạn đỉnh; bản ghi được giữ tạm trong phiên trang này.";
+            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng. Bấm phát bản ghi hoặc “Nghe nguồn & bản dịch đồng bộ” để nghe cùng nguồn theo đúng mốc luyện tập.";
             updatePracticePreviewMixButton();
             renderPracticeHistory();
             speechRecordingStopResolve?.(recording);
@@ -3490,6 +3444,7 @@
           document.querySelector("#speech-recording-status").textContent = "Không thể tạo bản ghi. Hãy kiểm tra quyền truy cập micro.";
         });
         recorder.start();
+        speechRecordingStartedAt = performance.now();
         return true;
       } catch (error) {
         stream?.getTracks().forEach((track) => track.stop());
@@ -3598,7 +3553,12 @@
         events: {
           onReady: (event) => {
             document.querySelector("#youtube-status").textContent = "Video đã tải. Bấm “Bắt đầu nói” để phát video và tự động tính thời gian. Nếu bị giật, thử chọn chất lượng 360p trong cài đặt YouTube.";
-            if (pendingYouTubePlayback) {
+            if (pendingPracticeMixVideoId) {
+              const videoId = pendingPracticeMixVideoId;
+              pendingPracticeMixVideoId = "";
+              pendingYouTubePlayback = false;
+              event.target.loadVideoById(videoId, 0);
+            } else if (pendingYouTubePlayback) {
               pendingYouTubePlayback = false;
               event.target.playVideo();
             }
@@ -3606,12 +3566,23 @@
           },
           onStateChange: (event) => {
             if (event.data === window.YT.PlayerState.PLAYING) {
-              updateYouTubePlaybackRates();
-              document.querySelector("#youtube-status").textContent = "Video đang phát. Đồng hồ được tính tự động từ lúc bắt đầu nói.";
+              if (!activePracticeMediaMix) updateYouTubePlaybackRates();
+              if (speechSessionActive && activePracticeSource === "youtube") openPracticeSourceSegment();
+              if (!activePracticeMediaMix) {
+                document.querySelector("#youtube-status").textContent = "Video đang phát. Đồng hồ được tính tự động từ lúc bắt đầu nói.";
+              }
+            } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
+              closePracticeSourceSegment();
             }
           },
           onError: () => {
             pendingYouTubePlayback = false;
+            pendingPracticeMixVideoId = "";
+            if (activePracticeMediaMix) {
+              stopPracticeMediaMix();
+              document.querySelector("#history-message").textContent = "Không thể phát video YouTube để đồng bộ bản dịch.";
+              return;
+            }
             pauseTimer();
             document.querySelector("#youtube-status").textContent = "Không thể phát video này. Hãy kiểm tra link hoặc quyền nhúng của video.";
           }
@@ -3760,10 +3731,10 @@
     }
 
     function releaseMediaResources() {
+      pausePracticeMedia();
+      stopPracticeMediaMix(true);
       if (speechAudioRecorder?.state === "recording") speechAudioRecorder.stop();
       speechAudioStream?.getTracks().forEach((track) => track.stop());
-      if (sourceAudioRecorder?.state === "recording") sourceAudioRecorder.stop();
-      sourceAudioStream?.getTracks().forEach((track) => track.stop());
       if (speechAudioContext && speechAudioContext.state !== "closed") speechAudioContext.close();
       speechRecordingUrls.forEach((url) => URL.revokeObjectURL(url));
       speechRecordingUrls.clear();
@@ -3815,6 +3786,7 @@
 
     function restartPractice() {
       const currentRecordingId = speechRecordingId;
+      pausePracticeMedia();
       speechSessionActive = false;
       window.clearTimeout(speechRecognitionRestartTimer);
       speechRecognitionRestartTimer = null;
@@ -3836,7 +3808,9 @@
         recognition = null;
       }
       stopSpeechAudioCapture();
-      stopSourceAudioCapture();
+      speechRecordingStartedAt = 0;
+      practiceSourceTimeline = [];
+      currentPracticeSourceSegment = null;
       speechRecordingId = "";
       clearSourcePlaybackPreview();
 
@@ -3863,7 +3837,6 @@
       transcript.textContent = "";
       updateCounts();
       resetTimer();
-      pausePracticeMedia();
       ["#local-audio-player", "#local-video-player"].forEach((selector) => {
         const player = document.querySelector(selector);
         if (player.src) player.currentTime = 0;
@@ -3901,69 +3874,214 @@
         document.querySelector("#history-message").textContent = "Không tìm thấy tệp đính kèm hoặc tệp đã hết hạn.";
         return;
       }
-      if (!media.sourceUrl && !media.sourceRecordingUrl) {
+      const youtubeUrl = media.sourceUrlText || "";
+      const sourceType = media.sourceUrl
+        ? "local"
+        : media.sourceRecordingUrl
+          ? "recorded"
+          : media.sourceType === "youtube" && getYouTubeVideoId(youtubeUrl)
+            ? "youtube"
+            : "";
+      if (!sourceType) {
         document.querySelector("#history-message").textContent =
-          "Chưa có âm thanh nguồn để phát cùng bản dịch. Với YouTube, hãy chia sẻ âm thanh tab khi bắt đầu buổi luyện.";
+          "Không tìm thấy nguồn để phát cùng bản dịch. Tệp nguồn có thể đã hết hạn.";
         return;
       }
       if (!media.voiceUrl) {
         document.querySelector("#history-message").textContent = "Buổi luyện này chưa có bản ghi giọng người dùng.";
         return;
       }
-      startPracticeMediaMix(media.sourceUrl || media.sourceRecordingUrl, media.voiceUrl);
+      startPracticeMediaMix({
+        sourceType,
+        sourceUrl: media.sourceUrl || media.sourceRecordingUrl || "",
+        youtubeUrl,
+        voiceUrl: media.voiceUrl,
+        timeline: Array.isArray(media.sourceTimeline) ? media.sourceTimeline : []
+      });
     }
 
-    function startPracticeMediaMix(sourceUrl, voiceUrl) {
+    function stopPracticeMediaMix(clear = false) {
+      if (practiceMediaMixFrame) cancelAnimationFrame(practiceMediaMixFrame);
+      practiceMediaMixFrame = 0;
+      if (activePracticeMediaMix) {
+        if (activePracticeMediaMix.sourceType === "youtube") {
+          pendingPracticeMixVideoId = "";
+          pendingYouTubePlayback = false;
+        }
+        activePracticeMediaMix.isPlaying = false;
+        activePracticeMediaMix.waitingForSource = false;
+        activePracticeMediaMix.currentSegment = null;
+      }
+      if (clear) activePracticeMediaMix = null;
+      document.querySelector("#mix-source-audio").pause();
+      document.querySelector("#mix-voice-audio").pause();
+      if (youtubePlayer?.pauseVideo) youtubePlayer.pauseVideo();
+      document.querySelector("#toggle-media-mix").textContent = "Phát đồng bộ";
+    }
+
+    function syncPracticeMediaMix() {
+      const mix = activePracticeMediaMix;
+      if (!mix || !mix.isPlaying) return;
+      const voiceAudio = document.querySelector("#mix-voice-audio");
+      if (voiceAudio.ended) {
+        stopPracticeMediaMix();
+        return;
+      }
+
+      const elapsed = voiceAudio.currentTime;
+      const segments = mix.timeline.length
+        ? mix.timeline
+        : [{ start: 0, end: Number.POSITIVE_INFINITY, sourceTime: 0, playbackRate: 1 }];
+      const segment = segments.find((item) => elapsed >= item.start && elapsed < item.end);
+      if (mix.sourceType === "youtube") {
+        if (!youtubePlayer?.getCurrentTime || !youtubePlayer?.playVideo || !segment) {
+          if (mix.currentSegment || (!segment && youtubePlayer?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING)) {
+            youtubePlayer?.pauseVideo?.();
+          }
+        } else {
+          const targetTime = segment.sourceTime + (elapsed - segment.start) * segment.playbackRate;
+          const sourceTime = youtubePlayer.getCurrentTime();
+          youtubePlayer.setVolume?.(Math.round(Number(document.querySelector("#source-volume").value) * 100));
+          if (mix.currentSegment !== segment || Math.abs(sourceTime - targetTime) > 0.65) {
+            youtubePlayer.seekTo(targetTime, true);
+          }
+          if (youtubePlayer.getPlayerState?.() !== window.YT.PlayerState.PLAYING) {
+            youtubePlayer.playVideo();
+          }
+          if (youtubePlayer.getPlaybackRate?.() !== segment.playbackRate) {
+            youtubePlayer.setPlaybackRate?.(segment.playbackRate);
+          }
+        }
+      } else {
+        const sourceAudio = document.querySelector("#mix-source-audio");
+        sourceAudio.volume = Number(document.querySelector("#source-volume").value);
+        if (!segment || sourceAudio.readyState < 1) {
+          sourceAudio.pause();
+        } else {
+          const targetTime = segment.sourceTime + (elapsed - segment.start) * segment.playbackRate;
+          sourceAudio.playbackRate = segment.playbackRate;
+          if (mix.currentSegment !== segment || Math.abs(sourceAudio.currentTime - targetTime) > 0.35) {
+            sourceAudio.currentTime = Math.max(0, targetTime);
+          }
+          if (sourceAudio.paused) {
+            sourceAudio.play().catch(() => {
+              document.querySelector("#history-message").textContent = "Không thể phát âm thanh nguồn trên thiết bị này.";
+              stopPracticeMediaMix(true);
+            });
+          }
+        }
+      }
+      mix.currentSegment = segment || null;
+      practiceMediaMixFrame = requestAnimationFrame(syncPracticeMediaMix);
+    }
+
+    function startPracticeMediaMix({ sourceType, sourceUrl, youtubeUrl = "", voiceUrl, timeline = [] }) {
       const sourceAudio = document.querySelector("#mix-source-audio");
       const voiceAudio = document.querySelector("#mix-voice-audio");
-      sourceAudio.pause();
-      voiceAudio.pause();
-      sourceAudio.src = sourceUrl;
+      stopPracticeMediaMix(true);
+      sourceAudio.removeAttribute("src");
+      sourceAudio.load();
+      if (sourceType !== "youtube") sourceAudio.src = sourceUrl;
       voiceAudio.src = voiceUrl;
       sourceAudio.currentTime = 0;
       voiceAudio.currentTime = 0;
       sourceAudio.volume = Number(document.querySelector("#source-volume").value);
       voiceAudio.volume = Number(document.querySelector("#voice-volume").value);
+      activePracticeMediaMix = {
+        sourceType,
+        timeline: (Array.isArray(timeline) ? timeline : [])
+          .filter((segment) => segment &&
+            Number.isFinite(segment.start) && segment.start >= 0 &&
+            Number.isFinite(segment.end) && segment.end > segment.start &&
+            Number.isFinite(segment.sourceTime) && segment.sourceTime >= 0 &&
+            Number.isFinite(segment.playbackRate) && segment.playbackRate > 0)
+          .sort((first, second) => first.start - second.start),
+        isPlaying: false,
+        waitingForSource: false,
+        currentSegment: null
+      };
+      if (sourceType === "youtube") {
+        const videoId = getYouTubeVideoId(youtubeUrl);
+        if (!videoId) {
+          activePracticeMediaMix = null;
+          document.querySelector("#history-message").textContent = "Link YouTube không còn hợp lệ.";
+          return;
+        }
+        youtubeUrlInput.value = youtubeUrl;
+        activePracticeMediaMix.waitingForSource = true;
+        pendingYouTubePlayback = false;
+        if (youtubePlayer?.loadVideoById) {
+          loadYouTubeVideo();
+          youtubePlayer.loadVideoById(videoId, 0);
+        } else {
+          pendingPracticeMixVideoId = videoId;
+          loadYouTubeVideo();
+        }
+      }
       document.querySelector("#media-mix-panel").hidden = false;
       toggleSavedMediaMix();
     }
 
     function playPracticePreviewMix() {
-      const sourceUrl = activePracticeSource === "local" ? localPracticeMediaUrl : sourcePreviewUrl;
       const voiceUrl = speechRecordingsById.get(speechRecordingId)?.url;
-      if (!sourceUrl || !voiceUrl) {
+      const sourceType = activePracticeSource;
+      const youtubeUrl = sourceType === "youtube" ? youtubeUrlInput.value : "";
+      const sourceUrl = sourceType === "local" ? localPracticeMediaUrl : "";
+      if ((!sourceUrl && !(sourceType === "youtube" && getYouTubeVideoId(youtubeUrl))) || !voiceUrl) {
         document.querySelector("#speech-recording-status").textContent =
           "Chưa có đủ bản ghi nguồn và bản dịch để phát kết hợp.";
         return;
       }
-      startPracticeMediaMix(sourceUrl, voiceUrl);
+      startPracticeMediaMix({ sourceType, sourceUrl, youtubeUrl, voiceUrl, timeline: practiceSourceTimeline });
     }
 
     function setPracticeMediaVolume(kind, value) {
       const volume = Number(value);
-      const audio = document.querySelector(kind === "source" ? "#mix-source-audio" : "#mix-voice-audio");
-      audio.volume = volume;
+      if (kind === "source" && activePracticeMediaMix?.sourceType === "youtube") {
+        youtubePlayer?.setVolume?.(Math.round(volume * 100));
+      } else {
+        const audio = document.querySelector(kind === "source" ? "#mix-source-audio" : "#mix-voice-audio");
+        audio.volume = volume;
+      }
       document.querySelector(kind === "source" ? "#source-volume-value" : "#voice-volume-value").textContent =
         `${Math.round(volume * 100)}%`;
     }
 
     function toggleSavedMediaMix() {
-      const sourceAudio = document.querySelector("#mix-source-audio");
       const voiceAudio = document.querySelector("#mix-voice-audio");
-      if (!sourceAudio.paused || !voiceAudio.paused) {
-        sourceAudio.pause();
-        voiceAudio.pause();
-        document.querySelector("#toggle-media-mix").textContent = "Phát đồng thời";
+      if (activePracticeMediaMix?.isPlaying) {
+        stopPracticeMediaMix();
         return;
       }
-      sourceAudio.volume = Number(document.querySelector("#source-volume").value);
       voiceAudio.volume = Number(document.querySelector("#voice-volume").value);
-      Promise.all([sourceAudio.play(), voiceAudio.play()]).then(() => {
-        document.querySelector("#toggle-media-mix").textContent = "Dừng phát đồng thời";
+      if (activePracticeMediaMix?.sourceType !== "youtube") {
+        document.querySelector("#mix-source-audio").volume = Number(document.querySelector("#source-volume").value);
+      }
+      if (activePracticeMediaMix?.sourceType === "youtube") {
+        if (activePracticeMediaMix.waitingForSource ||
+            youtubePlayer?.getPlayerState?.() !== window.YT?.PlayerState?.PLAYING) {
+          activePracticeMediaMix.waitingForSource = true;
+          youtubePlayer?.playVideo?.();
+        }
+        beginPracticeMediaMixClock();
+        return;
+      }
+      beginPracticeMediaMixClock();
+    }
+
+    function beginPracticeMediaMixClock() {
+      const voiceAudio = document.querySelector("#mix-voice-audio");
+      if (!activePracticeMediaMix || activePracticeMediaMix.isPlaying) return;
+      voiceAudio.play().then(() => {
+        if (!activePracticeMediaMix) return;
+        activePracticeMediaMix.isPlaying = true;
+        activePracticeMediaMix.waitingForSource = false;
+        activePracticeMediaMix.currentSegment = null;
+        document.querySelector("#toggle-media-mix").textContent = "Dừng phát";
+        syncPracticeMediaMix();
       }).catch(() => {
-        sourceAudio.pause();
-        voiceAudio.pause();
-        const message = "Không thể phát đồng thời hai tệp. Hãy thử bấm phát lại hoặc tải từng tệp xuống.";
+        stopPracticeMediaMix();
+        const message = "Không thể phát bản ghi. Hãy thử bấm phát lại hoặc kiểm tra tệp âm thanh.";
         document.querySelector("#history-message").textContent = message;
         document.querySelector("#speech-recording-status").textContent = message;
       });
@@ -4096,11 +4214,11 @@
             actions.prepend(voiceDownload);
           }
 
-          if ((storedMedia.sourceUrl || storedMedia.sourceRecordingUrl) && storedMedia.voiceUrl) {
+          if ((storedMedia.sourceUrl || storedMedia.sourceRecordingUrl || storedMedia.sourceType === "youtube" && storedMedia.sourceUrlText) && storedMedia.voiceUrl) {
             const mixButton = document.createElement("button");
             mixButton.className = "quiet-button";
             mixButton.type = "button";
-            mixButton.textContent = "Phát đồng thời";
+            mixButton.textContent = "Nghe nguồn & bản dịch đồng bộ";
             mixButton.addEventListener("click", () => playSavedPracticeMedia(entry.storageId));
             item.append(mixButton);
           }
@@ -4162,8 +4280,8 @@
         if (speechAudioRecorder?.state === "recording") speechAudioRecorder.stop();
         let voiceBlob = await recordingFinalized;
         voiceBlob ||= speechRecordingsById.get(speechRecordingId)?.blob || null;
-        const sourceRecordingBlob = await stopSourceAudioCapture();
-        updateSourcePlaybackPreview(sourceRecordingBlob);
+        const sourceRecordingBlob = null;
+        updateSourcePlaybackPreview();
         setListening(false, "Đã dừng ghi âm. Đang lưu buổi luyện...");
         updatePracticeModeControls();
         const sourceBlob = localPracticeMediaFile || null;
@@ -4184,6 +4302,7 @@
           sourceUrlText: activePracticeSource === "youtube" ? youtubeUrlInput.value.trim() : "",
           sourceBlob,
           sourceRecordingBlob,
+          sourceTimeline: practiceSourceTimeline.map((segment) => ({ ...segment })),
           voiceBlob,
           voiceMimeType: voiceBlob?.type || "audio/webm"
         };
@@ -4346,6 +4465,14 @@
     });
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
     document.querySelector("#play-practice-preview-mix").addEventListener("click", playPracticePreviewMix);
+    document.querySelector("#speech-recorded-audio").addEventListener("play", (event) => {
+      const sourceAvailable = activePracticeSource === "local"
+        ? Boolean(localPracticeMediaUrl)
+        : activePracticeSource === "youtube" && Boolean(getYouTubeVideoId(youtubeUrlInput.value));
+      if (!sourceAvailable || !speechRecordingsById.get(speechRecordingId)?.url) return;
+      event.currentTarget.pause();
+      playPracticePreviewMix();
+    });
     document.querySelector("#toggle-media-mix").addEventListener("click", toggleSavedMediaMix);
     document.querySelector("#source-volume").addEventListener("input", (event) => {
       setPracticeMediaVolume("source", event.currentTarget.value);
@@ -4353,14 +4480,8 @@
     document.querySelector("#voice-volume").addEventListener("input", (event) => {
       setPracticeMediaVolume("voice", event.currentTarget.value);
     });
-    document.querySelector("#mix-source-audio").addEventListener("ended", () => {
-      document.querySelector("#mix-voice-audio").pause();
-      document.querySelector("#toggle-media-mix").textContent = "Phát đồng thời";
-    });
-    document.querySelector("#mix-voice-audio").addEventListener("ended", () => {
-      document.querySelector("#mix-source-audio").pause();
-      document.querySelector("#toggle-media-mix").textContent = "Phát đồng thời";
-    });
+    document.querySelector("#mix-source-audio").addEventListener("ended", stopPracticeMediaMix);
+    document.querySelector("#mix-voice-audio").addEventListener("ended", stopPracticeMediaMix);
     document.querySelector("#practice-mode").addEventListener("change", (event) => {
       setPracticeMode(event.currentTarget.value);
     });
@@ -4371,6 +4492,11 @@
       ["loadedmetadata", "durationchange", "timeupdate", "seeked"].forEach((eventName) => {
         player.addEventListener(eventName, () => updateLocalMediaSeek(player));
       });
+      player.addEventListener("playing", () => {
+        if (speechSessionActive && activePracticeSource === "local") openPracticeSourceSegment();
+      });
+      player.addEventListener("pause", closePracticeSourceSegment);
+      player.addEventListener("ended", closePracticeSourceSegment);
       player.addEventListener("error", () => {
         document.querySelector("#local-media-status").textContent =
           "Không phát được tệp này. Hãy kiểm tra định dạng hoặc thử mở tệp bằng trình duyệt Chrome/Edge.";
@@ -4469,16 +4595,15 @@
       if (activePracticeMode === "consecutive") handleConsecutivePracticeAction();
       else startListening();
     });
-    document.querySelector("#stop-listening").addEventListener("click", async () => {
+    document.querySelector("#stop-listening").addEventListener("click", () => {
       speechSessionActive = false;
       window.clearTimeout(speechRecognitionRestartTimer);
       speechRecognitionRestartTimer = null;
       if (recognition) recognition.stop();
-      stopSpeechAudioCapture();
-      const sourceRecording = await stopSourceAudioCapture();
-      updateSourcePlaybackPreview(sourceRecording);
-      pauseTimer();
       pausePracticeMedia();
+      pauseTimer();
+      stopSpeechAudioCapture();
+      updateSourcePlaybackPreview();
       setListening(false, "Đã dừng ghi âm. Bản ghi có thể nghe lại bên dưới.");
     });
     document.querySelector("#restart-practice").addEventListener("click", () => {

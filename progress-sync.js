@@ -359,6 +359,7 @@
         sourceType: cloud.sourceType,
         sourceName: cloud.sourceName,
         sourceUrlText: cloud.sourceUrlText,
+        sourceTimeline: Array.isArray(cloud.sourceTimeline) ? cloud.sourceTimeline : [],
         voiceMimeType: cloud.voiceMimeType
       };
       const blobs = [
@@ -379,6 +380,9 @@
         sourceType: record.sourceType || cloud?.sourceType || "",
         sourceName: record.sourceName || cloud?.sourceName || "",
         sourceUrlText: record.sourceUrlText || cloud?.sourceUrlText || "",
+        sourceTimeline: Array.isArray(record.sourceTimeline)
+          ? record.sourceTimeline
+          : Array.isArray(cloud?.sourceTimeline) ? cloud.sourceTimeline : [],
         voiceMimeType: record.voiceMimeType || cloud?.voiceMimeType || "audio/webm",
         objects: refs
       });
