@@ -12,6 +12,7 @@
     message.classList.toggle("is-error", isError);
     emailLink.hidden = !inboxUrl;
     emailLink.href = inboxUrl || "#";
+    emailLink.textContent = inboxUrl === "https://mail.google.com/" ? "Mở Gmail" : "Mở hộp thư";
   }
 
   function setView(view) {
@@ -276,7 +277,11 @@
       await requestAuth(`recover?redirect_to=${encodeURIComponent(redirectUrl())}`, {
         body: { email: values.email.trim() }
       });
-      setMessage("Nếu email có tài khoản, liên kết đặt lại mật khẩu sẽ được gửi tới hộp thư.");
+      setMessage(
+        "Nếu email có tài khoản, liên kết đặt lại mật khẩu sẽ được gửi tới hộp thư.",
+        false,
+        emailInboxUrl(values.email.trim())
+      );
       form.reset();
     } catch (error) {
       showAuthError(error, "Không thể gửi email đặt lại mật khẩu.");
