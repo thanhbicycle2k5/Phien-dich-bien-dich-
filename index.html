@@ -525,58 +525,97 @@
     }
 
     :root {
-      --paper: #f5f7fb;
-      --ink: #17233c;
-      --muted: #64748b;
-      --line: #e2e8f0;
-      --blue: #3563e9;
-      --blue-dark: #244bc5;
-      --accent: #5278ed;
-      --soft-blue: #f2f6ff;
-      --soft-accent: #e8efff;
-      --card-shadow: 0 12px 34px rgba(27, 47, 86, .055);
+      color-scheme: light;
+      --paper: #f8fafc;
+      --ink: #18181b;
+      --muted: #71717a;
+      --line: #e4e4e7;
+      --blue: #4f46e5;
+      --blue-dark: #4338ca;
+      --accent: #6366f1;
+      --white: #ffffff;
+      --soft-blue: #f4f4f5;
+      --soft-accent: #eef2ff;
+      --card-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px rgba(15, 23, 42, .035);
+      --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
 
-    body { background: var(--paper); }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --paper: #09090b;
+      --ink: #f4f4f5;
+      --muted: #a1a1aa;
+      --line: #27272a;
+      --blue: #818cf8;
+      --blue-dark: #a5b4fc;
+      --accent: #a5b4fc;
+      --white: #18181b;
+      --soft-blue: #202024;
+      --soft-accent: #272a3b;
+      --card-shadow: 0 1px 2px rgba(0, 0, 0, .24), 0 12px 32px rgba(0, 0, 0, .12);
+    }
+
+    body { background: var(--paper); background-image: none; }
     .shell { width: min(1480px, calc(100% - 64px)); }
-    .topbar { min-height: 72px; border-bottom-color: #e8edf5; }
+    .topbar { min-height: 72px; border-bottom-color: var(--line); }
     .brand { gap: 11px; }
-    .brand-mark { width: 42px; height: 42px; border-radius: 13px; font-size: 15px; font-weight: 800; letter-spacing: -.5px; box-shadow: 0 5px 12px rgba(53, 99, 233, .2); }
+    .brand-mark { width: 42px; height: 42px; border-radius: 13px; background: #4f46e5; font-size: 15px; font-weight: 800; letter-spacing: -.5px; box-shadow: 0 5px 12px rgba(79, 70, 229, .2); }
     .brand-name { font-size: 18px; letter-spacing: -.35px; }
     .brand-note { display: block; margin: 3px 0 0; font-size: 11px; }
     .account-tools { gap: 8px; }
     .account-identity { max-width: 220px; }
+    .theme-toggle { width: 38px; min-width: 38px; padding: 0; }
+    .theme-icon { width: 17px; height: 17px; }
+    .theme-icon-light, :root[data-theme="dark"] .theme-icon-dark { display: none; }
+    :root[data-theme="dark"] .theme-icon-light { display: block; }
     main { padding-top: 26px; }
-    .app-layout { grid-template-columns: minmax(230px, 260px) minmax(0, 1fr); gap: 24px; }
-    .app-sidebar { top: 20px; gap: 14px; }
-    .intro, .quick-guide, .workspace { border-color: #e5eaf2; border-radius: 16px; box-shadow: var(--card-shadow); }
+    .app-layout { grid-template-columns: minmax(230px, 260px) minmax(0, 1fr); gap: 24px; transition: grid-template-columns .2s ease; }
+    .app-layout.is-sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
+    .app-sidebar { top: 20px; gap: 14px; min-width: 0; }
+    .intro, .quick-guide, .workspace, .sidebar-navigation { border: 1px solid var(--line); border-radius: 14px; background: var(--white); box-shadow: var(--card-shadow); }
     .intro { padding: 20px; }
     h1 { font-size: 31px; font-weight: 700; letter-spacing: -.8px; }
     .mode-tagline { font-size: 15px; }
     .intro-copy { font-size: 13px; line-height: 1.65; }
-    .mode-tabs { padding: 5px; border-color: #e5eaf2; border-radius: 12px; background: #fff; box-shadow: var(--card-shadow); }
-    .mode-tab { border-radius: 9px; transition: background .2s ease, color .2s ease, transform .2s ease; }
-    .mode-tab[aria-selected="true"] { box-shadow: 0 4px 10px rgba(53, 99, 233, .2); }
-    .quick-guide { padding: 17px; background: #fff; }
-    .workspace { overflow: hidden; box-shadow: var(--card-shadow); }
+    .sidebar-navigation { display: grid; gap: 7px; padding: 11px; }
+    .sidebar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 5px 5px; }
+    .sidebar-section-label { color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
+    .sidebar-collapse { display: grid; width: 29px; height: 29px; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; transition: background .2s ease, color .2s ease; }
+    .sidebar-collapse:hover { background: var(--soft-blue); color: var(--ink); }
+    .sidebar-collapse svg { width: 17px; height: 17px; transition: transform .2s ease; }
+    .app-layout.is-sidebar-collapsed .sidebar-collapse svg { transform: rotate(180deg); }
+    .mode-tabs { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 0; padding: 0; border: 0; background: transparent; }
+    .mode-tab { display: flex; width: 100%; min-height: 39px; align-items: center; justify-content: flex-start; gap: 11px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 600; text-align: left; transition: background .2s ease, color .2s ease, transform .2s ease; }
+    .mode-tab svg { width: 17px; height: 17px; flex: 0 0 17px; }
+    .mode-tab:hover { transform: translateX(1px); background: var(--soft-blue); color: var(--ink); }
+    .mode-tab[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
+    .history-nav { margin-top: 1px; }
+    .quick-guide { padding: 17px; background: var(--white); }
+    .workspace { overflow: hidden; }
     .workspace-head { padding: 18px 22px; }
     .workspace-title { font-size: 17px; letter-spacing: -.2px; }
     .workspace-caption { font-size: 12px; }
     .translation-settings > .selector-row { padding: 17px 22px; }
     .exercise-select, .language-select, .youtube-input, .practice-mode-control select, .media-speed-control select,
-    .auth-input, .topic-dialog-input { border-color: #dce4ef; border-radius: 9px; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
-    select:hover, .youtube-input:hover, .auth-input:hover { border-color: #b7c8e3; }
+    .auth-input, .topic-dialog-input { border-color: var(--line); border-radius: 9px; background-color: var(--white); color: var(--ink); transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+    select:hover, .youtube-input:hover, .auth-input:hover { border-color: #a5b4fc; }
     .translation-pane { padding: 24px; }
-    .translation-pane + .translation-pane { border-left-color: #e8edf5; }
-    .text-area, .transcript { border-color: #e2e8f0; border-radius: 12px; background: #fbfcff; }
-    .text-area:focus, .youtube-input:focus, .auth-input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(53, 99, 233, .1); outline: none; }
-    .tool-button, .primary-button, .quiet-button { border-radius: 9px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
+    .translation-pane + .translation-pane { border-left-color: var(--line); }
+    .text-area, .transcript { border-color: var(--line); border-radius: 11px; background: color-mix(in srgb, var(--white) 70%, var(--paper)); color: var(--ink); }
+    .text-area:focus, .youtube-input:focus, .auth-input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 16%, transparent); outline: none; }
+    .tool-button, .primary-button, .quiet-button { border-radius: 8px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
     .tool-button:hover, .quiet-button:hover, .primary-button:hover:not(:disabled) { transform: translateY(-1px); }
-    .primary-button { box-shadow: 0 4px 10px rgba(53, 99, 233, .15); }
+    .primary-button { border-color: #4f46e5; background: #4f46e5; box-shadow: 0 4px 10px rgba(79, 70, 229, .15); }
+    .primary-button:hover:not(:disabled) { border-color: #4338ca; background: #4338ca; }
     .primary-button:active:not(:disabled), .quiet-button:active:not(:disabled) { transform: translateY(0); }
+    .translation-button-group { align-items: center; }
+    #check-answer { min-height: 44px; padding: 0 18px; font-size: 13px; }
+    #check-answer.is-loading { cursor: progress; }
+    .loading-spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
+    @keyframes spin { to { transform: rotate(360deg); } }
     .interpret-body { grid-template-columns: minmax(300px, .82fr) minmax(0, 1.18fr); gap: 18px; padding: 20px; }
     .interpret-source-column { display: grid; align-content: start; gap: 14px; }
-    .youtube-practice, .practice-controls-panel { margin: 0; padding: 17px; border: 1px solid #e5eaf2; border-radius: 14px; background: #fff; box-shadow: 0 5px 18px rgba(27, 47, 86, .035); }
+    .youtube-practice, .practice-controls-panel { margin: 0; padding: 17px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); box-shadow: var(--card-shadow); }
     .youtube-heading { margin-bottom: 12px; font-size: 14px; }
     .youtube-input-row { align-items: end; }
     .youtube-input { min-height: 42px; }
@@ -587,52 +626,105 @@
     .practice-mode-control select { width: 100%; }
     .language-control { width: 100%; }
     .language-select { min-height: 42px; }
-    .practice-status { margin: 0; padding: 9px 11px; border-radius: 9px; background: #f7f9fd; }
+    .practice-status { margin: 0; padding: 9px 11px; border-radius: 8px; background: var(--soft-blue); }
     .practice-controls { align-items: center; margin-top: 0; padding-top: 2px; }
-    #start-listening { min-height: 43px; padding: 0 17px; background: linear-gradient(135deg, #3e6cf0, #2854d8); box-shadow: 0 7px 16px rgba(53, 99, 233, .24); }
-    .mic-state { padding: 7px 11px; border: 1px solid #e5eaf2; border-radius: 999px; background: #fff; }
+    #start-listening { min-height: 43px; padding: 0 17px; background: #4f46e5; box-shadow: 0 7px 16px rgba(79, 70, 229, .2); }
+    .mic-state { padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); }
     .mic-state.is-listening { color: #b42318; background: #fff5f4; border-color: #ffdad5; }
     .mic-state.is-listening .mic-indicator { background: #e5484d; }
-    .interpret-session { min-width: 0; padding: 18px; border: 1px solid #e5eaf2; border-radius: 14px; background: #fff; box-shadow: 0 5px 18px rgba(27, 47, 86, .035); }
+    .interpret-session { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); box-shadow: var(--card-shadow); }
     .interpret-toolbar { margin-bottom: 11px; }
     .interpret-toolbar .score-note { color: var(--ink); font-size: 14px; font-weight: 700; }
     .transcript { min-height: 450px; padding: 20px; font-size: 16px; line-height: 1.85; }
     .transcript-foot { justify-content: space-between; margin-top: 9px; }
-    .transcript-foot::before { content: "Bản chép lời trực tiếp"; color: #94a3b8; }
-    .history { margin-top: 8px; padding-top: 12px; border-top-color: #e9edf4; }
+    .transcript-foot::before { content: "Bản chép lời trực tiếp"; color: var(--muted); }
+    .history { margin-top: 8px; padding-top: 12px; border-top-color: var(--line); }
     .history summary { padding: 7px 0 11px; }
     .history-list { gap: 9px; }
-    .history-item { padding: 13px; border-color: #e5eaf2; border-radius: 12px; background: #fff; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
-    .history-item:hover { transform: translateY(-1px); border-color: #cbd8ef; box-shadow: 0 6px 16px rgba(27, 47, 86, .06); }
+    .history-item { padding: 13px; border-color: var(--line); border-radius: 11px; background: var(--white); transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .history-item:hover { transform: translateY(-1px); border-color: #c7d2fe; box-shadow: var(--card-shadow); }
     .history-card-head { display: flex; align-items: center; gap: 11px; min-width: 0; }
-    .history-source-icon { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 11px; background: #eff4ff; color: var(--blue); font-size: 16px; font-weight: 800; }
+    .history-source-icon { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 10px; background: var(--soft-accent); color: var(--blue); font-size: 16px; font-weight: 800; }
     .history-source-icon.is-youtube { background: #fff0ef; color: #d92d20; }
     .history-card-main { flex: 1; min-width: 0; }
     .history-source-title { display: block; overflow: hidden; margin-bottom: 4px; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
     .history-meta { display: flex; flex-wrap: wrap; gap: 4px 9px; margin: 0; color: var(--muted); font-size: 10px; }
     .history-actions { display: flex; flex: 0 0 auto; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
     .history-actions .quiet-button { min-height: 31px; padding: 0 9px; font-size: 10px; }
-    .history-transcript { display: -webkit-box; overflow: hidden; margin: 10px 0 0; color: #526179; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    .history-transcript { display: -webkit-box; overflow: hidden; margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
     .history-item audio { width: 100%; max-width: 360px; height: 34px; margin-top: 9px; }
     .history-item > .history-message { margin: 8px 0 0; }
-    .history-empty { padding: 18px; border: 1px dashed #d8e0ec; border-radius: 12px; text-align: center; }
-    .sync-toast { position: fixed; z-index: 20; top: 18px; right: 20px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 11px; width: min(440px, calc(100vw - 32px)); padding: 15px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; box-shadow: 0 16px 42px rgba(28, 38, 57, .16); animation: arrive .22s ease-out both; }
+    .history-empty { padding: 18px; border: 1px dashed var(--line); border-radius: 11px; text-align: center; }
+    .ocr-status { margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.5; }
+    .ocr-status.is-error { color: #b42318; }
+    .sync-toast { position: fixed; z-index: 20; top: 18px; right: 20px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 11px; width: min(440px, calc(100vw - 32px)); padding: 15px; border: 1px solid #fed7aa; border-radius: 12px; background: var(--white); box-shadow: 0 16px 42px rgba(28, 38, 57, .16); animation: arrive .22s ease-out both; }
     .sync-toast[hidden] { display: none; }
     .sync-toast-icon { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #fff7ed; color: #c2410c; font-size: 13px; font-weight: 800; }
     .progress-sync-status { margin: 0; padding: 2px 0 0; color: #7c2d12; font-size: 12px; line-height: 1.55; }
     .progress-sync-status.is-error { background: transparent; color: #7c2d12; }
-    .sync-toast-dismiss { display: grid; width: 27px; height: 27px; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #8a94a6; cursor: pointer; font-size: 21px; line-height: 1; transition: background .2s ease, color .2s ease; }
-    .sync-toast-dismiss:hover { background: #f1f5f9; color: var(--ink); }
+    .sync-toast-dismiss { display: grid; width: 27px; height: 27px; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 21px; line-height: 1; transition: background .2s ease, color .2s ease; }
+    .sync-toast-dismiss:hover { background: var(--soft-blue); color: var(--ink); }
     .page-foot { padding: 0 4px; }
+    .app-layout.is-sidebar-collapsed .app-sidebar > :not(.sidebar-navigation) { display: none; }
+    .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
+    .app-layout.is-sidebar-collapsed .sidebar-heading { justify-content: center; padding: 0 0 5px; }
+    .app-layout.is-sidebar-collapsed .sidebar-section-label, .app-layout.is-sidebar-collapsed .mode-tab span { display: none; }
+    .app-layout.is-sidebar-collapsed .mode-tab { justify-content: center; padding: 0; }
+    .app-layout.is-sidebar-collapsed .mode-tab svg { width: 19px; height: 19px; }
+
+    :root[data-theme="dark"] body { color: var(--ink); }
+    :root[data-theme="dark"] .intro, :root[data-theme="dark"] .quick-guide, :root[data-theme="dark"] .workspace,
+    :root[data-theme="dark"] .sidebar-navigation, :root[data-theme="dark"] .youtube-practice,
+    :root[data-theme="dark"] .practice-controls-panel, :root[data-theme="dark"] .interpret-session,
+    :root[data-theme="dark"] .history-item, :root[data-theme="dark"] .deepl-settings,
+    :root[data-theme="dark"] .topic-dialog, :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
+    :root[data-theme="dark"] .text-area, :root[data-theme="dark"] .transcript, :root[data-theme="dark"] .practice-status,
+    :root[data-theme="dark"] .source-switch, :root[data-theme="dark"] .reference-editor,
+    :root[data-theme="dark"] .deepl-guide, :root[data-theme="dark"] .media-mix-panel,
+    :root[data-theme="dark"] .speech-recording-preview, :root[data-theme="dark"] .term-item,
+    :root[data-theme="dark"] .auth-switch, :root[data-theme="dark"] .deepl-key-input,
+    :root[data-theme="dark"] .keyword-input, :root[data-theme="dark"] .topic-dialog-input { background: #202024; color: var(--ink); }
+    :root[data-theme="dark"] .mode-tab[aria-selected="true"], :root[data-theme="dark"] .soft-blue,
+    :root[data-theme="dark"] .history-source-icon { background: #272a3b; color: #c7d2fe; }
+    :root[data-theme="dark"] .history-source-icon.is-youtube { background: #3a2325; color: #fda4af; }
+    :root[data-theme="dark"] .field-label, :root[data-theme="dark"] .history-message,
+    :root[data-theme="dark"] .score-note, :root[data-theme="dark"] .context-note,
+    :root[data-theme="dark"] .deepl-status, :root[data-theme="dark"] .auth-message { color: var(--muted); }
+    :root[data-theme="dark"] .primary-button { border-color: #6366f1; background: #6366f1; color: #fff; }
+    :root[data-theme="dark"] .primary-button:hover:not(:disabled) { border-color: #818cf8; background: #818cf8; }
+    :root[data-theme="dark"] .quiet-button, :root[data-theme="dark"] .tool-button,
+    :root[data-theme="dark"] .exercise-select, :root[data-theme="dark"] .language-select,
+    :root[data-theme="dark"] .youtube-input, :root[data-theme="dark"] .auth-input,
+    :root[data-theme="dark"] .practice-mode-control select, :root[data-theme="dark"] .media-speed-control select { background-color: #18181b; color: var(--ink); border-color: var(--line); }
+    :root[data-theme="dark"] .deepl-settings-head, :root[data-theme="dark"] .translation-pane + .translation-pane,
+    :root[data-theme="dark"] .history { border-color: var(--line); }
+    :root[data-theme="dark"] .source-switch button[aria-pressed="true"],
+    :root[data-theme="dark"] .auth-switch button[aria-pressed="true"] { background: #30303a; color: #c7d2fe; }
+    :root[data-theme="dark"] .deepl-guide ol, :root[data-theme="dark"] .deepl-guide-note,
+    :root[data-theme="dark"] .quick-guide p, :root[data-theme="dark"] .quick-guide ol,
+    :root[data-theme="dark"] .page-foot, :root[data-theme="dark"] .local-label { color: var(--muted); }
+    :root[data-theme="dark"] .feedback, :root[data-theme="dark"] .feedback.is-low { background: #202024; color: var(--ink); }
+    :root[data-theme="dark"] .save-status.is-success, :root[data-theme="dark"] .personal-status.is-success { background: #14251c; color: #86efac; }
+    :root[data-theme="dark"] .save-status.is-error, :root[data-theme="dark"] .personal-status.is-error { background: #2b2118; color: #fdba74; }
+    :root[data-theme="dark"] .sync-toast { border-color: #713f12; }
+    :root[data-theme="dark"] .ocr-status.is-error { color: #fda4af; }
 
     [hidden] { display: none !important; }
 
     @media (max-width: 1050px) {
-      .app-layout { grid-template-columns: 1fr; }
-      .app-sidebar { position: static; grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); align-items: stretch; }
-      .intro { grid-row: span 2; }
-      .mode-tabs { align-self: start; }
-      .quick-guide { align-self: start; }
+      .app-layout, .app-layout.is-sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
+      .app-sidebar { position: static; grid-template-columns: minmax(0, 1fr); }
+      .app-sidebar > .intro, .app-sidebar > .quick-guide { display: none; }
+      .sidebar-navigation { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
+      .sidebar-heading { padding: 0; }
+      .mode-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .history-nav { width: auto; margin: 0; }
+      .app-layout.is-sidebar-collapsed .app-sidebar > :not(.sidebar-navigation) { display: none; }
+      .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
+      .app-layout.is-sidebar-collapsed .sidebar-section-label { display: none; }
+      .app-layout.is-sidebar-collapsed .mode-tab span { display: inline; }
+      .app-layout.is-sidebar-collapsed .mode-tab { justify-content: center; padding: 0 10px; }
+      .app-layout.is-sidebar-collapsed .sidebar-collapse { transform: rotate(180deg); }
       .interpret-body { grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); }
     }
 
@@ -645,49 +737,52 @@
       .sync-toast { top: 10px; right: 10px; }
       #auth-open, #auth-signout { min-height: 34px; padding: 0 8px; font-size: 11px; }
       main { padding-top: 16px; }
-      .app-sidebar { grid-template-columns: 1fr; }
-      .intro { display: none; }
-      .quick-guide { display: none; }
-      .intro-copy { max-width: 420px; }
+      .sidebar-navigation { grid-template-columns: minmax(0, 1fr); gap: 5px; padding: 8px; }
+      .sidebar-heading { display: none; }
+      .mode-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .mode-tab { justify-content: center; padding: 0 8px; }
+      .history-nav { width: 100%; }
       .translation-grid { grid-template-columns: 1fr; }
       .translation-pane { padding: 18px; }
+      .translation-pane .pane-top { align-items: center; flex-wrap: wrap; }
+      .translation-pane .pane-tools { gap: 3px; margin-left: auto; }
+      .translation-pane .pane-tools .tool-button { width: 32px; min-width: 32px; min-height: 32px; }
       .translation-pane + .translation-pane { border-top: 1px solid var(--line); border-left: 0; }
       .workspace-head { padding: 12px 16px; }
       .translation-settings > .selector-row { padding: 12px 16px; }
-      .selector-row { width: 100%; }
+      .selector-row, .selector-row label { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
-      .content-select-row { width: 100%; }
-      .content-select-row select { min-width: 0; flex: 1; }
-      .topic-select-row { width: 100%; }
-      .topic-select-row select { min-width: 0; flex: 1; }
+      .content-select-row, .topic-select-row { width: 100%; }
+      .content-select-row select, .topic-select-row select { min-width: 0; flex: 1; }
       .workspace-head { align-items: stretch; flex-direction: column; }
       .selector-row { justify-content: flex-start; }
-      .selector-row label { flex: 1 1 135px; }
-      .selector-row select { width: 100%; max-width: none; }
       .personal-controls select, .file-control input { width: 100%; max-width: none; }
       .workspace-actions { align-items: start; flex-direction: column; padding: 14px 18px; }
-      .feedback { margin-right: 18px; margin-left: 18px; }
-      .answer-breakdown { margin-right: 18px; margin-left: 18px; }
-      .reference-editor { margin-right: 18px; margin-left: 18px; }
+      .feedback, .answer-breakdown, .reference-editor { margin-right: 18px; margin-left: 18px; }
       .deepl-key-row { align-items: stretch; flex-direction: column; }
       .term-list { grid-template-columns: 1fr; }
-      .interpret-body { grid-template-columns: 1fr; gap: 0; padding: 18px; }
+      .interpret-body { grid-template-columns: 1fr; gap: 14px; padding: 14px; }
       .interpret-toolbar { align-items: start; flex-direction: column; }
       .language-control { width: 100%; }
       .interpret-actions, .page-foot { align-items: start; flex-direction: column; }
-      .transcript { min-height: 240px; }
+      .transcript { min-height: 290px; }
       .timer-tools { width: 100%; }
       .history-meta { flex-direction: column; gap: 2px; }
       .youtube-input-row { align-items: stretch; flex-direction: column; }
       .transcript-tool-list { left: 0; right: auto; }
-      .mode-tab { padding: 0 13px; }
-      .interpret-body { grid-template-columns: 1fr; gap: 14px; padding: 14px; }
-      .interpret-session { padding: 15px; }
-      .transcript { min-height: 290px; }
       .history-card-head { align-items: flex-start; }
       .history-actions { flex-direction: column; align-items: stretch; }
       .history-actions .quiet-button { white-space: nowrap; }
+      .app-layout.is-sidebar-collapsed .mode-tab span { display: inline; }
+      .account-tools { flex-shrink: 0; }
+      .brand { min-width: 0; gap: 8px; }
+      .brand-name { font-size: 16px; }
+      #auth-open, #auth-signout { max-width: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; }
     }
   </style>
 </head>
@@ -702,6 +797,10 @@
       </div>
       <div class="account-tools">
         <span class="account-identity" id="auth-identity" aria-live="polite">Không gian luyện tập của bạn</span>
+        <button class="quiet-button theme-toggle" id="theme-toggle" type="button" aria-label="Bật giao diện tối" aria-pressed="false" title="Chuyển giao diện sáng/tối">
+          <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg>
+          <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
+        </button>
         <button class="quiet-button" id="auth-open" type="button">Đăng nhập / Đăng ký</button>
         <button class="quiet-button" id="auth-signout" type="button" hidden>Đăng xuất</button>
       </div>
@@ -723,10 +822,28 @@
           <p class="intro-copy">Luyện phiên dịch và biên dịch miễn phí, trực tiếp trên thiết bị của bạn.</p>
         </section>
 
-        <nav class="mode-tabs" role="tablist" aria-label="Chọn bài luyện tập">
-          <button class="mode-tab" id="tab-translate" type="button" role="tab" aria-selected="true" aria-controls="translate-panel">Biên dịch</button>
-          <button class="mode-tab" id="tab-interpret" type="button" role="tab" aria-selected="false" aria-controls="interpret-panel">Phiên dịch</button>
-        </nav>
+        <section class="sidebar-navigation" aria-label="Điều hướng workspace">
+          <div class="sidebar-heading">
+            <span class="sidebar-section-label">Workspace</span>
+            <button class="sidebar-collapse" id="toggle-sidebar" type="button" aria-label="Thu gọn thanh điều hướng" aria-expanded="true" title="Thu gọn thanh điều hướng">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 8l-4 4 4 4"/></svg>
+            </button>
+          </div>
+          <nav class="mode-tabs" role="tablist" aria-label="Chọn bài luyện tập">
+            <button class="mode-tab" id="tab-translate" type="button" role="tab" aria-selected="true" aria-controls="translate-panel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h10M9 3v2m4 0c-.5 4-3 7-7 9m1-6c1 2 3 4 6 5"/><path d="m14 19 3.5-9 3.5 9m-5.8-3h4.6"/></svg>
+              <span>Biên dịch</span>
+            </button>
+            <button class="mode-tab" id="tab-interpret" type="button" role="tab" aria-selected="false" aria-controls="interpret-panel">
+              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a3 3 0 0 0-3 3v5a3 3 0 0 0 6 0V6a3 3 0 0 0-3-3Z"/><path d="M5 10v1a7 7 0 0 0 14 0v-1m-7 8v3m-4 0h8"/></svg>
+              <span>Phiên dịch</span>
+            </button>
+          </nav>
+          <button class="mode-tab history-nav" id="nav-history" type="button" aria-controls="history-panel">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5m4-1v5l3 2"/></svg>
+            <span>Lịch sử</span>
+          </button>
+        </section>
 
         <section class="quick-guide" aria-labelledby="quick-guide-title">
           <h2 id="quick-guide-title">Bắt đầu nhanh</h2>
@@ -920,6 +1037,16 @@
             <div class="pane-top">
               <label class="field-label" id="source-label" for="source-text">Văn bản gốc <span id="source-language">EN</span></label>
               <div class="pane-tools">
+                <button class="tool-button history-button" id="copy-source" type="button" title="Sao chép văn bản gốc" aria-label="Sao chép văn bản gốc">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+                </button>
+                <button class="tool-button history-button" id="quick-import-source" type="button" title="Tải tài liệu .txt hoặc .docx" aria-label="Tải tài liệu .txt hoặc .docx">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 15V3m-4 4 4-4 4 4"/><path d="M5 13v6a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-6"/></svg>
+                </button>
+                <button class="tool-button history-button" id="ocr-image-button" type="button" title="Nhận dạng chữ từ ảnh trên thiết bị; lần đầu cần tải mô hình" aria-label="Nhận dạng chữ từ ảnh">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 7h3l1.5-2h7L17 7h3a1 1 0 0 1 1 1v10a1 1 0 0 1-1 1H4a1 1 0 0 1-1-1V8a1 1 0 0 1 1-1Z"/><circle cx="12" cy="13" r="3.5"/></svg>
+                </button>
+                <input id="ocr-image-input" type="file" accept="image/*" capture="environment" hidden>
                 <button class="tool-button history-button" id="undo-source" type="button" title="Hoàn tác văn bản gốc" aria-label="Hoàn tác văn bản gốc">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/></svg>
                 </button>
@@ -931,12 +1058,16 @@
             </div>
             <textarea class="text-area" id="source-text" readonly spellcheck="false"></textarea>
             <div class="pane-foot"><span id="source-help">Đọc kỹ sắc thái và ngữ cảnh</span><span id="source-count">0 từ</span></div>
+            <p class="ocr-status" id="ocr-status" role="status" aria-live="polite" hidden></p>
           </section>
 
           <section class="translation-pane" aria-labelledby="answer-label">
             <div class="pane-top">
               <label class="field-label" id="answer-label" for="answer-text">Bản dịch của bạn <span id="target-language">VI</span></label>
               <div class="pane-tools">
+                <button class="tool-button history-button" id="copy-answer" type="button" title="Sao chép bản dịch" aria-label="Sao chép bản dịch">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
+                </button>
                 <button class="tool-button history-button" id="undo-answer" type="button" title="Hoàn tác bản dịch" aria-label="Hoàn tác bản dịch">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 14 4 9l5-5"/><path d="M4 9h9a7 7 0 0 1 0 14h-2"/></svg>
                 </button>
@@ -1316,6 +1447,7 @@
     const deeplApiKeyInput = document.querySelector("#deepl-api-key");
     const youtubeUrlInput = document.querySelector("#youtube-url");
     const localMediaInput = document.querySelector("#local-media-file");
+    const ocrImageInput = document.querySelector("#ocr-image-input");
     const feedback = document.querySelector("#translation-feedback");
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
@@ -1334,6 +1466,9 @@
     const personalDraftsByTopic = new Map();
     const translationEditHistories = new WeakMap();
     let personalDirection = "VI_EN";
+    let ocrLibraryPromise = null;
+    let ocrWorkerPromise = null;
+    let lastOcrProgress = "";
     let speechAudioRecorder = null;
     let speechAudioStream = null;
     let speechAudioContext = null;
@@ -2280,7 +2415,9 @@
       }
       const button = document.querySelector("#check-answer");
       button.disabled = true;
-      button.textContent = "Đang kiểm tra...";
+      button.classList.add("is-loading");
+      button.setAttribute("aria-busy", "true");
+      button.innerHTML = '<span class="loading-spinner" aria-hidden="true"></span> Đang kiểm tra...';
       showTranslationFeedback("Đang kiểm tra bản dịch", "Đang lấy gợi ý DeepL để đối chiếu với bản dịch của bạn...");
       try {
         const [sourceLanguage, targetLanguage] = personalDirection.split("_");
@@ -2299,6 +2436,8 @@
         setDeepLStatus(message, true);
       } finally {
         button.disabled = false;
+        button.classList.remove("is-loading");
+        button.removeAttribute("aria-busy");
         updateCheckButtonLabel();
       }
     }
@@ -2604,6 +2743,98 @@
         setSaveStatus(status, error.message || "Không thể đọc tệp trên thiết bị này.");
       } finally {
         event.target.value = "";
+      }
+    }
+
+    function setOcrStatus(message, isError = false) {
+      const status = document.querySelector("#ocr-status");
+      status.textContent = message;
+      status.classList.toggle("is-error", isError);
+      status.hidden = !message;
+    }
+
+    function loadOcrLibrary() {
+      if (window.Tesseract?.createWorker) return Promise.resolve();
+      if (!ocrLibraryPromise) {
+        ocrLibraryPromise = new Promise((resolve, reject) => {
+          const script = document.createElement("script");
+          script.src = "https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js";
+          script.integrity = "sha384-GJqSu7vueQ9qN0E9yLPb3Wtpd7OrgK8KmYzC8T1IysG1bcvxvIO4qtYR/D3A991F";
+          script.crossOrigin = "anonymous";
+          script.referrerPolicy = "no-referrer";
+          script.async = true;
+          script.onload = () => {
+            if (window.Tesseract?.createWorker) resolve();
+            else reject(new Error("Không thể khởi tạo thư viện OCR trên thiết bị này."));
+          };
+          script.onerror = () => reject(new Error("Không tải được thư viện OCR. Hãy kiểm tra kết nối Internet rồi thử lại."));
+          document.head.append(script);
+        }).catch((error) => {
+          ocrLibraryPromise = null;
+          throw error;
+        });
+      }
+      return ocrLibraryPromise;
+    }
+
+    async function getOcrWorker() {
+      if (!ocrWorkerPromise) {
+        ocrWorkerPromise = loadOcrLibrary()
+          .then(() => window.Tesseract.createWorker("vie+eng", 1, {
+            logger: ({ status, progress }) => {
+              const statusLabels = {
+                "loading tesseract core": "Đang tải bộ máy OCR...",
+                "loading language traineddata": "Đang tải mô hình tiếng Việt và tiếng Anh...",
+                "initializing tesseract": "Đang khởi tạo OCR...",
+                "initializing api": "Đang khởi tạo OCR...",
+                "recognizing text": "Đang nhận dạng chữ..."
+              };
+              const percentage = Number.isFinite(progress) ? ` ${Math.round(progress * 10) * 10}%` : "";
+              const nextMessage = `${statusLabels[status] || "Đang chuẩn bị OCR..."}${percentage}`;
+              if (nextMessage !== lastOcrProgress) {
+                lastOcrProgress = nextMessage;
+                setOcrStatus(nextMessage);
+              }
+            }
+          }))
+          .catch((error) => {
+            ocrWorkerPromise = null;
+            throw error;
+          });
+      }
+      return ocrWorkerPromise;
+    }
+
+    async function recognizeImageFile(event) {
+      const file = event.currentTarget.files[0];
+      if (!file) return;
+      const button = document.querySelector("#ocr-image-button");
+      try {
+        if (!file.type.startsWith("image/")) throw new Error("Hãy chọn một tệp hình ảnh.");
+        if (file.size > 20 * 1024 * 1024) throw new Error("Ảnh vượt quá giới hạn 20 MB.");
+        if (!window.Worker || !window.WebAssembly) throw new Error("Trình duyệt này chưa hỗ trợ OCR trên thiết bị. Hãy thử Chrome, Edge hoặc Firefox mới nhất.");
+        if (sourceText.value.trim() && !window.confirm("OCR sẽ thay thế văn bản nguồn hiện tại. Bạn có muốn tiếp tục không?")) return;
+        button.disabled = true;
+        button.setAttribute("aria-busy", "true");
+        lastOcrProgress = "";
+        setOcrStatus("Đang chuẩn bị OCR tiếng Việt và tiếng Anh trên thiết bị. Lần đầu sẽ tải thư viện và mô hình.");
+        const worker = await getOcrWorker();
+        const { data } = await worker.recognize(file);
+        const recognizedText = data.text.trim();
+        if (!recognizedText) throw new Error("Không tìm thấy chữ trong ảnh. Hãy thử ảnh rõ nét, đủ sáng và chụp thẳng hơn.");
+        setTranslationMode("personal");
+        sourceText.value = recognizedText;
+        flushEditHistory(sourceText);
+        recordEditHistoryInput(sourceText);
+        flushEditHistory(sourceText);
+        handlePersonalInput();
+        setOcrStatus(`Đã nhận dạng ${wordCount(recognizedText)} từ. Ảnh được xử lý ngay trên thiết bị, không gửi đến API OCR.`);
+      } catch (error) {
+        setOcrStatus(error.message || "Không thể nhận dạng chữ từ ảnh.", true);
+      } finally {
+        button.disabled = false;
+        button.removeAttribute("aria-busy");
+        ocrImageInput.value = "";
       }
     }
 
@@ -4110,6 +4341,48 @@
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
+    document.querySelector("#toggle-sidebar").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      const expanded = button.getAttribute("aria-expanded") !== "false";
+      document.querySelector(".app-layout").classList.toggle("is-sidebar-collapsed", expanded);
+      button.setAttribute("aria-expanded", String(!expanded));
+      button.setAttribute("aria-label", expanded ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng");
+      button.title = expanded ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng";
+    });
+    document.querySelector("#nav-history").addEventListener("click", () => {
+      setMode("interpret");
+      const historyPanel = document.querySelector("#history-panel");
+      historyPanel.open = true;
+      historyPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    });
+    document.querySelector("#theme-toggle").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      const dark = document.documentElement.dataset.theme !== "dark";
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      button.setAttribute("aria-pressed", String(dark));
+      button.setAttribute("aria-label", dark ? "Bật giao diện sáng" : "Bật giao diện tối");
+    });
+    document.querySelector("#quick-import-source").addEventListener("click", () => {
+      setTranslationMode("personal");
+      document.querySelector("#source-file").click();
+    });
+    document.querySelector("#ocr-image-button").addEventListener("click", () => ocrImageInput.click());
+    ocrImageInput.addEventListener("change", recognizeImageFile);
+    async function copyTranslationText(text, label) {
+      const status = document.querySelector("#translation-save-status");
+      if (!text.trim()) {
+        setSaveStatus(status, `Chưa có ${label.toLocaleLowerCase()} để sao chép.`);
+        return;
+      }
+      try {
+        await navigator.clipboard.writeText(text);
+        setSaveStatus(status, `Đã sao chép ${label.toLocaleLowerCase()}.`, true);
+      } catch (error) {
+        setSaveStatus(status, `Không thể sao chép ${label.toLocaleLowerCase()}. Hãy chọn và sao chép văn bản thủ công.`);
+      }
+    }
+    document.querySelector("#copy-source").addEventListener("click", () => copyTranslationText(sourceText.value, "văn bản gốc"));
+    document.querySelector("#copy-answer").addEventListener("click", () => copyTranslationText(answerText.value, "bản dịch"));
     document.querySelector("#start-listening").addEventListener("click", () => {
       if (activePracticeMode === "consecutive") handleConsecutivePracticeAction();
       else startListening();
