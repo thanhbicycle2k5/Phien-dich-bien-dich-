@@ -419,6 +419,9 @@
   }
 
   function syncErrorMessage(error) {
+    if (/index row size \d+ exceeds btree version \d+ maximum \d+ for index "interslation_user_progress_pkey"/i.test(String(error?.message || ""))) {
+      return "Cấu hình bảng đồng bộ Supabase chưa đúng. Hãy chạy lại supabase/schema.sql trong SQL Editor để sửa khóa chính.";
+    }
     return `Không thể đồng bộ tiến trình: ${error?.message || "Đã xảy ra lỗi."}`;
   }
 

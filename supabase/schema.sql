@@ -4,6 +4,38 @@ create table if not exists public.interslation_user_progress (
   updated_at timestamptz not null default now()
 );
 
+do $$
+declare
+  primary_key_name text;
+  primary_key_columns text[];
+begin
+  select constraint_info.conname, array_agg(attribute_info.attname::text order by key_column.ordinality)
+  into primary_key_name, primary_key_columns
+  from pg_constraint as constraint_info
+  cross join lateral unnest(constraint_info.conkey) with ordinality as key_column(attnum, ordinality)
+  join pg_attribute as attribute_info
+    on attribute_info.attrelid = constraint_info.conrelid
+    and attribute_info.attnum = key_column.attnum
+  where constraint_info.conrelid = 'public.interslation_user_progress'::regclass
+    and constraint_info.contype = 'p'
+  group by constraint_info.conname;
+
+  if primary_key_name is not null
+    and primary_key_columns is distinct from array['user_id']::text[] then
+    execute format(
+      'alter table public.interslation_user_progress drop constraint %I',
+      primary_key_name
+    );
+    primary_key_name := null;
+  end if;
+
+  if primary_key_name is null then
+    alter table public.interslation_user_progress
+      add constraint interslation_user_progress_pkey primary key (user_id);
+  end if;
+end
+$$;
+
 alter table public.interslation_user_progress enable row level security;
 
 drop policy if exists "Users can manage their own Interslation progress"
