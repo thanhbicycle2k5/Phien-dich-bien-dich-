@@ -556,8 +556,8 @@
     }
 
     body { background: var(--paper); background-image: none; }
-    .shell { width: min(1480px, calc(100% - 64px)); }
-    .topbar { min-height: 72px; border-bottom-color: var(--line); }
+    .shell { width: 100%; }
+    .topbar { position: sticky; z-index: 15; top: 0; min-height: 72px; padding: 0 32px; border-bottom-color: var(--line); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(14px); }
     .brand { gap: 11px; }
     .brand-mark { width: 42px; height: 42px; border-radius: 13px; background: #4f46e5; font-size: 15px; font-weight: 800; letter-spacing: -.5px; box-shadow: 0 5px 12px rgba(79, 70, 229, .2); }
     .brand-name { font-size: 18px; letter-spacing: -.35px; }
@@ -568,10 +568,15 @@
     .theme-icon { width: 17px; height: 17px; }
     .theme-icon-light, :root[data-theme="dark"] .theme-icon-dark { display: none; }
     :root[data-theme="dark"] .theme-icon-light { display: block; }
-    main { padding-top: 26px; }
-    .app-layout { grid-template-columns: minmax(230px, 260px) minmax(0, 1fr); gap: 24px; transition: grid-template-columns .2s ease; }
-    .app-layout.is-sidebar-collapsed { grid-template-columns: 76px minmax(0, 1fr); }
-    .app-sidebar { top: 20px; gap: 14px; min-width: 0; }
+    main { height: calc(100vh - 72px); height: calc(100dvh - 72px); min-height: 0; padding: 20px 24px 24px; }
+    .app-layout { width: min(1680px, 100%); height: 100%; grid-template-columns: 248px minmax(0, 1fr) 320px; gap: 22px; margin: 0 auto; transition: grid-template-columns .2s ease; }
+    .app-layout.is-sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr) 320px; }
+    .app-sidebar, .app-history-sidebar { position: sticky; top: 92px; align-self: start; height: 100%; min-width: 0; }
+    .app-sidebar { display: grid; grid-template-rows: minmax(0, 1fr); }
+    .sidebar-content { display: grid; align-content: start; gap: 14px; min-height: 0; overflow-y: auto; padding: 1px 2px 12px 1px; scrollbar-width: thin; }
+    .app-history-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); }
+    .history-sidebar-card { min-width: 0; min-height: 0; overflow-y: auto; padding: 14px; border: 1px solid var(--line); border-radius: 14px; background: var(--white); box-shadow: var(--card-shadow); scrollbar-width: thin; }
+    .app-workspace { min-width: 0; height: 100%; overflow-y: auto; padding: 1px 3px 20px 1px; scrollbar-width: thin; }
     .intro, .quick-guide, .workspace, .sidebar-navigation { border: 1px solid var(--line); border-radius: 14px; background: var(--white); box-shadow: var(--card-shadow); }
     .intro { padding: 20px; }
     h1 { font-size: 31px; font-weight: 700; letter-spacing: -.8px; }
@@ -580,16 +585,24 @@
     .sidebar-navigation { display: grid; gap: 7px; padding: 11px; }
     .sidebar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 2px 5px 5px; }
     .sidebar-section-label { color: var(--muted); font-size: 10px; font-weight: 750; letter-spacing: 1px; text-transform: uppercase; }
-    .sidebar-collapse { display: grid; width: 29px; height: 29px; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; transition: background .2s ease, color .2s ease; }
-    .sidebar-collapse:hover { background: var(--soft-blue); color: var(--ink); }
+    .sidebar-collapse { position: absolute; z-index: 3; top: 50%; right: -15px; display: grid; width: 30px; height: 42px; place-items: center; padding: 0; transform: translateY(-50%); border: 1px solid var(--line); border-radius: 0 10px 10px 0; background: var(--white); color: var(--muted); box-shadow: 4px 2px 10px rgba(15, 23, 42, .08); cursor: pointer; transition: background .2s ease, color .2s ease, width .2s ease; }
+    .sidebar-collapse:hover { width: 35px; background: var(--soft-accent); color: var(--blue-dark); }
     .sidebar-collapse svg { width: 17px; height: 17px; transition: transform .2s ease; }
+    .app-layout.is-sidebar-collapsed .sidebar-collapse { right: -15px; border-radius: 0 10px 10px 0; }
     .app-layout.is-sidebar-collapsed .sidebar-collapse svg { transform: rotate(180deg); }
     .mode-tabs { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 0; padding: 0; border: 0; background: transparent; }
     .mode-tab { display: flex; width: 100%; min-height: 39px; align-items: center; justify-content: flex-start; gap: 11px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 600; text-align: left; transition: background .2s ease, color .2s ease, transform .2s ease; }
     .mode-tab svg { width: 17px; height: 17px; flex: 0 0 17px; }
     .mode-tab:hover { transform: translateX(1px); background: var(--soft-blue); color: var(--ink); }
     .mode-tab[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
-    .history-nav { margin-top: 1px; }
+    .history-sidebar-collapse { position: absolute; z-index: 3; top: 50%; left: -15px; display: grid; width: 30px; height: 42px; place-items: center; padding: 0; transform: translateY(-50%); border: 1px solid var(--line); border-radius: 10px 0 0 10px; background: var(--white); color: var(--muted); box-shadow: -4px 2px 10px rgba(15, 23, 42, .08); cursor: pointer; transition: background .2s ease, color .2s ease, width .2s ease; }
+    .history-sidebar-collapse:hover { width: 35px; background: var(--soft-accent); color: var(--blue-dark); }
+    .history-sidebar-collapse svg { width: 17px; height: 17px; transition: transform .2s ease; }
+    .app-layout.is-history-collapsed .history-sidebar-collapse svg { transform: rotate(180deg); }
+    .history-sidebar-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 8px; font-size: 13px; font-weight: 700; }
+    .history-sidebar-card .history { margin-top: 0; border-top: 0; }
+    .history-sidebar-card .history summary { padding-top: 0; }
+    .history-sidebar-card .history-list { margin-bottom: 4px; }
     .quick-guide { padding: 17px; background: var(--white); }
     .workspace { overflow: hidden; }
     .workspace-head { padding: 18px 22px; }
@@ -665,12 +678,15 @@
     .sync-toast-dismiss { display: grid; width: 27px; height: 27px; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: var(--muted); cursor: pointer; font-size: 21px; line-height: 1; transition: background .2s ease, color .2s ease; }
     .sync-toast-dismiss:hover { background: var(--soft-blue); color: var(--ink); }
     .page-foot { padding: 0 4px; }
-    .app-layout.is-sidebar-collapsed .app-sidebar > :not(.sidebar-navigation) { display: none; }
-    .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
-    .app-layout.is-sidebar-collapsed .sidebar-heading { justify-content: center; padding: 0 0 5px; }
+    .app-layout.is-sidebar-collapsed .sidebar-content > :not(.sidebar-navigation) { display: none; }
+    .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px 4px; }
+    .app-layout.is-sidebar-collapsed .sidebar-heading { justify-content: center; padding: 2px 0 5px; }
     .app-layout.is-sidebar-collapsed .sidebar-section-label, .app-layout.is-sidebar-collapsed .mode-tab span { display: none; }
     .app-layout.is-sidebar-collapsed .mode-tab { justify-content: center; padding: 0; }
     .app-layout.is-sidebar-collapsed .mode-tab svg { width: 19px; height: 19px; }
+    .app-layout.is-history-collapsed { grid-template-columns: 248px minmax(0, 1fr) 64px; }
+    .app-layout.is-sidebar-collapsed.is-history-collapsed { grid-template-columns: 64px minmax(0, 1fr) 64px; }
+    .app-layout.is-history-collapsed .history-sidebar-card { display: none; }
 
     :root[data-theme="dark"] body { color: var(--ink); }
     :root[data-theme="dark"] .intro, :root[data-theme="dark"] .quick-guide, :root[data-theme="dark"] .workspace,
@@ -711,37 +727,48 @@
 
     [hidden] { display: none !important; }
 
-    @media (max-width: 1050px) {
-      .app-layout, .app-layout.is-sidebar-collapsed { grid-template-columns: minmax(0, 1fr); }
-      .app-sidebar { position: static; grid-template-columns: minmax(0, 1fr); }
-      .app-sidebar > .intro, .app-sidebar > .quick-guide { display: none; }
-      .sidebar-navigation { grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; }
-      .sidebar-heading { padding: 0; }
-      .mode-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
-      .history-nav { width: auto; margin: 0; }
-      .app-layout.is-sidebar-collapsed .app-sidebar > :not(.sidebar-navigation) { display: none; }
-      .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
-      .app-layout.is-sidebar-collapsed .sidebar-section-label { display: none; }
-      .app-layout.is-sidebar-collapsed .mode-tab span { display: inline; }
-      .app-layout.is-sidebar-collapsed .mode-tab { justify-content: center; padding: 0 10px; }
-      .app-layout.is-sidebar-collapsed .sidebar-collapse { transform: rotate(180deg); }
-      .interpret-body { grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); }
+    @media (max-width: 1100px) and (min-width: 781px) {
+      main { padding-right: 16px; padding-left: 16px; }
+      .app-layout { grid-template-columns: 200px minmax(0, 1fr) 260px; gap: 16px; }
+      .app-layout.is-sidebar-collapsed { grid-template-columns: 60px minmax(0, 1fr) 260px; }
+      .app-layout.is-history-collapsed { grid-template-columns: 200px minmax(0, 1fr) 60px; }
+      .app-layout.is-sidebar-collapsed.is-history-collapsed { grid-template-columns: 60px minmax(0, 1fr) 60px; }
+      .app-sidebar, .app-history-sidebar { height: 100%; }
+      .intro { padding: 15px; }
+      .history-sidebar-card { padding: 11px; }
+      .history-card-head { flex-wrap: wrap; }
+      .history-actions { flex-basis: 100%; justify-content: flex-start; padding-left: 49px; }
+      .history-actions .quiet-button { font-size: 9px; }
+      .interpret-body { grid-template-columns: minmax(0, 1fr); }
     }
 
-    @media (max-width: 700px) {
-      .shell { width: min(100% - 28px, 700px); }
-      .topbar { min-height: 64px; }
+    @media (max-width: 780px) {
+      .topbar { position: sticky; min-height: 64px; padding: 0 14px; }
       .brand-note { display: none; }
       .account-tools { gap: 5px; }
       .account-identity { display: none; }
       .sync-toast { top: 10px; right: 10px; }
       #auth-open, #auth-signout { min-height: 34px; padding: 0 8px; font-size: 11px; }
-      main { padding-top: 16px; }
+      main { height: auto; min-height: calc(100dvh - 64px); padding: 12px 12px 20px; }
+      .app-layout, .app-layout.is-sidebar-collapsed, .app-layout.is-history-collapsed,
+      .app-layout.is-sidebar-collapsed.is-history-collapsed { height: auto; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      .app-sidebar { position: static; height: auto; }
+      .sidebar-content { display: block; overflow: visible; padding: 0; }
+      .app-sidebar > .sidebar-collapse { display: none; }
+      .app-history-sidebar { position: relative; height: auto; }
+      .app-history-sidebar > .history-sidebar-collapse { display: none; }
+      .history-sidebar-card { max-height: 480px; }
+      .app-layout.is-history-collapsed .history-sidebar-card { display: block; }
+      .app-workspace { height: auto; overflow: visible; padding: 0; }
+      .sidebar-content > .intro, .sidebar-content > .quick-guide { display: none; }
+      .app-layout.is-sidebar-collapsed .sidebar-content > :not(.sidebar-navigation) { display: none; }
+      .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
+      .app-layout.is-sidebar-collapsed .mode-tab span { display: inline; }
+      .app-layout.is-sidebar-collapsed .mode-tab { justify-content: center; padding: 0 8px; }
       .sidebar-navigation { grid-template-columns: minmax(0, 1fr); gap: 5px; padding: 8px; }
       .sidebar-heading { display: none; }
       .mode-tabs { grid-template-columns: repeat(2, minmax(0, 1fr)); }
       .mode-tab { justify-content: center; padding: 0 8px; }
-      .history-nav { width: 100%; }
       .translation-grid { grid-template-columns: 1fr; }
       .translation-pane { padding: 18px; }
       .translation-pane .pane-top { align-items: center; flex-wrap: wrap; }
@@ -774,7 +801,6 @@
       .history-card-head { align-items: flex-start; }
       .history-actions { flex-direction: column; align-items: stretch; }
       .history-actions .quiet-button { white-space: nowrap; }
-      .app-layout.is-sidebar-collapsed .mode-tab span { display: inline; }
       .account-tools { flex-shrink: 0; }
       .brand { min-width: 0; gap: 8px; }
       .brand-name { font-size: 16px; }
@@ -813,22 +839,20 @@
 
     <main class="app-layout">
       <aside class="app-sidebar">
-        <section class="intro" aria-labelledby="page-title">
-          <div>
-            <p class="eyebrow">Phòng thực hành ngôn ngữ</p>
-            <h1>Interslation</h1>
-            <p class="mode-tagline" id="page-title">Đọc kỹ. Cân nhắc. Viết chuẩn xác.</p>
-          </div>
-          <p class="intro-copy">Luyện phiên dịch và biên dịch miễn phí, trực tiếp trên thiết bị của bạn.</p>
-        </section>
+        <div class="sidebar-content">
+          <section class="intro" aria-labelledby="page-title">
+            <div>
+              <p class="eyebrow">Phòng thực hành ngôn ngữ</p>
+              <h1>Interslation</h1>
+              <p class="mode-tagline" id="page-title">Đọc kỹ. Cân nhắc. Viết chuẩn xác.</p>
+            </div>
+            <p class="intro-copy">Luyện phiên dịch và biên dịch miễn phí, trực tiếp trên thiết bị của bạn.</p>
+          </section>
 
-        <section class="sidebar-navigation" aria-label="Điều hướng workspace">
-          <div class="sidebar-heading">
-            <span class="sidebar-section-label">Workspace</span>
-            <button class="sidebar-collapse" id="toggle-sidebar" type="button" aria-label="Thu gọn thanh điều hướng" aria-expanded="true" title="Thu gọn thanh điều hướng">
-              <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 8l-4 4 4 4"/></svg>
-            </button>
-          </div>
+          <section class="sidebar-navigation" aria-label="Điều hướng workspace">
+            <div class="sidebar-heading">
+              <span class="sidebar-section-label">Workspace</span>
+            </div>
           <nav class="mode-tabs" role="tablist" aria-label="Chọn bài luyện tập">
             <button class="mode-tab" id="tab-translate" type="button" role="tab" aria-selected="true" aria-controls="translate-panel">
               <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 5h10M9 3v2m4 0c-.5 4-3 7-7 9m1-6c1 2 3 4 6 5"/><path d="m14 19 3.5-9 3.5 9m-5.8-3h4.6"/></svg>
@@ -839,20 +863,20 @@
               <span>Phiên dịch</span>
             </button>
           </nav>
-          <button class="mode-tab history-nav" id="nav-history" type="button" aria-controls="history-panel">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5m4-1v5l3 2"/></svg>
-            <span>Lịch sử</span>
-          </button>
-        </section>
+          </section>
 
-        <section class="quick-guide" aria-labelledby="quick-guide-title">
-          <h2 id="quick-guide-title">Bắt đầu nhanh</h2>
-          <p id="quick-guide-description">Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn.</p>
-          <ol>
-            <li id="quick-guide-step-one">Chọn chủ đề và nội dung thứ bạn muốn luyện.</li>
-            <li id="quick-guide-step-two">Viết bản dịch rồi chọn “Kiểm tra &amp; Xem gợi ý”.</li>
-          </ol>
-        </section>
+          <section class="quick-guide" aria-labelledby="quick-guide-title">
+            <h2 id="quick-guide-title">Bắt đầu nhanh</h2>
+            <p id="quick-guide-description">Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn.</p>
+            <ol>
+              <li id="quick-guide-step-one">Chọn chủ đề và nội dung thứ bạn muốn luyện.</li>
+              <li id="quick-guide-step-two">Viết bản dịch rồi chọn “Kiểm tra &amp; Xem gợi ý”.</li>
+            </ol>
+          </section>
+        </div>
+        <button class="sidebar-collapse" id="toggle-sidebar" type="button" aria-label="Thu gọn thanh điều hướng" aria-expanded="true" title="Thu gọn thanh điều hướng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M9 5v14M15 8l-4 4 4 4"/></svg>
+        </button>
       </aside>
 
       <div class="app-workspace">
@@ -1203,14 +1227,6 @@
                   </details>
                 </div>
               </div>
-              <details class="history" id="history-panel">
-                <summary id="history-summary">Lịch sử luyện tập</summary>
-                <div class="history-tools">
-                  <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
-                  <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
-                </div>
-                <ul class="history-list" id="history-list"></ul>
-              </details>
               <p class="notice" id="speech-notice">Cho phép truy cập micro để bắt đầu luyện nói.</p>
             </section>
           </div>
@@ -1257,6 +1273,22 @@
         <span>Nhấn biểu tượng lưu để giữ lại bài làm</span>
       </footer>
       </div>
+      <aside class="app-history-sidebar" aria-label="Lịch sử luyện tập">
+        <button class="history-sidebar-collapse" id="toggle-history-sidebar" type="button" aria-label="Thu gọn cột lịch sử" aria-expanded="true" title="Thu gọn cột lịch sử">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5v14M9 8l4 4-4 4"/></svg>
+        </button>
+        <div class="history-sidebar-card">
+          <h2 class="history-sidebar-title">Lịch sử luyện tập</h2>
+          <details class="history" id="history-panel" open>
+            <summary id="history-summary">Các buổi đã lưu</summary>
+            <div class="history-tools">
+              <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
+              <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
+            </div>
+            <ul class="history-list" id="history-list"></ul>
+          </details>
+        </div>
+      </aside>
     </main>
   </div>
 
@@ -4349,11 +4381,13 @@
       button.setAttribute("aria-label", expanded ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng");
       button.title = expanded ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng";
     });
-    document.querySelector("#nav-history").addEventListener("click", () => {
-      setMode("interpret");
-      const historyPanel = document.querySelector("#history-panel");
-      historyPanel.open = true;
-      historyPanel.scrollIntoView({ behavior: "smooth", block: "center" });
+    document.querySelector("#toggle-history-sidebar").addEventListener("click", (event) => {
+      const button = event.currentTarget;
+      const expanded = button.getAttribute("aria-expanded") !== "false";
+      document.querySelector(".app-layout").classList.toggle("is-history-collapsed", expanded);
+      button.setAttribute("aria-expanded", String(!expanded));
+      button.setAttribute("aria-label", expanded ? "Mở rộng cột lịch sử" : "Thu gọn cột lịch sử");
+      button.title = expanded ? "Mở rộng cột lịch sử" : "Thu gọn cột lịch sử";
     });
     document.querySelector("#theme-toggle").addEventListener("click", (event) => {
       const button = event.currentTarget;
