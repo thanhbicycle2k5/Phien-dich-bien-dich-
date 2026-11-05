@@ -13,6 +13,7 @@
   const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
   const MAX_HISTORY = 30;
   const statusElement = document.querySelector("#progress-sync-status");
+  const toastElement = document.querySelector("#progress-sync-toast");
   let activeUserId = "";
   let syncTimer = null;
   let syncPromise = null;
@@ -22,8 +23,12 @@
   function setStatus(text, isError = false) {
     statusElement.textContent = text;
     statusElement.classList.toggle("is-error", isError);
-    statusElement.hidden = !text;
+    toastElement.hidden = !text;
   }
+
+  document.querySelector("#dismiss-sync-toast").addEventListener("click", () => {
+    toastElement.hidden = true;
+  });
 
   function getSession() {
     const session = JSON.parse(window.localStorage.getItem(SESSION_KEY) || "null");

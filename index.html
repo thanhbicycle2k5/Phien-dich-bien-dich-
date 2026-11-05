@@ -524,6 +524,107 @@
       font-size: 11px;
     }
 
+    :root {
+      --paper: #f5f7fb;
+      --ink: #17233c;
+      --muted: #64748b;
+      --line: #e2e8f0;
+      --blue: #3563e9;
+      --blue-dark: #244bc5;
+      --accent: #5278ed;
+      --soft-blue: #f2f6ff;
+      --soft-accent: #e8efff;
+      --card-shadow: 0 12px 34px rgba(27, 47, 86, .055);
+    }
+
+    body { background: var(--paper); }
+    .shell { width: min(1480px, calc(100% - 64px)); }
+    .topbar { min-height: 72px; border-bottom-color: #e8edf5; }
+    .brand { gap: 11px; }
+    .brand-mark { width: 42px; height: 42px; border-radius: 13px; font-size: 15px; font-weight: 800; letter-spacing: -.5px; box-shadow: 0 5px 12px rgba(53, 99, 233, .2); }
+    .brand-name { font-size: 18px; letter-spacing: -.35px; }
+    .brand-note { display: block; margin: 3px 0 0; font-size: 11px; }
+    .account-tools { gap: 8px; }
+    .account-identity { max-width: 220px; }
+    main { padding-top: 26px; }
+    .app-layout { grid-template-columns: minmax(230px, 260px) minmax(0, 1fr); gap: 24px; }
+    .app-sidebar { top: 20px; gap: 14px; }
+    .intro, .quick-guide, .workspace { border-color: #e5eaf2; border-radius: 16px; box-shadow: var(--card-shadow); }
+    .intro { padding: 20px; }
+    h1 { font-size: 31px; font-weight: 700; letter-spacing: -.8px; }
+    .mode-tagline { font-size: 15px; }
+    .intro-copy { font-size: 13px; line-height: 1.65; }
+    .mode-tabs { padding: 5px; border-color: #e5eaf2; border-radius: 12px; background: #fff; box-shadow: var(--card-shadow); }
+    .mode-tab { border-radius: 9px; transition: background .2s ease, color .2s ease, transform .2s ease; }
+    .mode-tab[aria-selected="true"] { box-shadow: 0 4px 10px rgba(53, 99, 233, .2); }
+    .quick-guide { padding: 17px; background: #fff; }
+    .workspace { overflow: hidden; box-shadow: var(--card-shadow); }
+    .workspace-head { padding: 18px 22px; }
+    .workspace-title { font-size: 17px; letter-spacing: -.2px; }
+    .workspace-caption { font-size: 12px; }
+    .translation-settings > .selector-row { padding: 17px 22px; }
+    .exercise-select, .language-select, .youtube-input, .practice-mode-control select, .media-speed-control select,
+    .auth-input, .topic-dialog-input { border-color: #dce4ef; border-radius: 9px; transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+    select:hover, .youtube-input:hover, .auth-input:hover { border-color: #b7c8e3; }
+    .translation-pane { padding: 24px; }
+    .translation-pane + .translation-pane { border-left-color: #e8edf5; }
+    .text-area, .transcript { border-color: #e2e8f0; border-radius: 12px; background: #fbfcff; }
+    .text-area:focus, .youtube-input:focus, .auth-input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px rgba(53, 99, 233, .1); outline: none; }
+    .tool-button, .primary-button, .quiet-button { border-radius: 9px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
+    .tool-button:hover, .quiet-button:hover, .primary-button:hover:not(:disabled) { transform: translateY(-1px); }
+    .primary-button { box-shadow: 0 4px 10px rgba(53, 99, 233, .15); }
+    .primary-button:active:not(:disabled), .quiet-button:active:not(:disabled) { transform: translateY(0); }
+    .interpret-body { grid-template-columns: minmax(300px, .82fr) minmax(0, 1.18fr); gap: 18px; padding: 20px; }
+    .interpret-source-column { display: grid; align-content: start; gap: 14px; }
+    .youtube-practice, .practice-controls-panel { margin: 0; padding: 17px; border: 1px solid #e5eaf2; border-radius: 14px; background: #fff; box-shadow: 0 5px 18px rgba(27, 47, 86, .035); }
+    .youtube-heading { margin-bottom: 12px; font-size: 14px; }
+    .youtube-input-row { align-items: end; }
+    .youtube-input { min-height: 42px; }
+    .local-media-source { margin-top: 13px; }
+    .local-media-input { max-width: 100%; }
+    .practice-controls-panel { display: grid; align-content: start; gap: 11px; }
+    .practice-mode-control { margin: 0; }
+    .practice-mode-control select { width: 100%; }
+    .language-control { width: 100%; }
+    .language-select { min-height: 42px; }
+    .practice-status { margin: 0; padding: 9px 11px; border-radius: 9px; background: #f7f9fd; }
+    .practice-controls { align-items: center; margin-top: 0; padding-top: 2px; }
+    #start-listening { min-height: 43px; padding: 0 17px; background: linear-gradient(135deg, #3e6cf0, #2854d8); box-shadow: 0 7px 16px rgba(53, 99, 233, .24); }
+    .mic-state { padding: 7px 11px; border: 1px solid #e5eaf2; border-radius: 999px; background: #fff; }
+    .mic-state.is-listening { color: #b42318; background: #fff5f4; border-color: #ffdad5; }
+    .mic-state.is-listening .mic-indicator { background: #e5484d; }
+    .interpret-session { min-width: 0; padding: 18px; border: 1px solid #e5eaf2; border-radius: 14px; background: #fff; box-shadow: 0 5px 18px rgba(27, 47, 86, .035); }
+    .interpret-toolbar { margin-bottom: 11px; }
+    .interpret-toolbar .score-note { color: var(--ink); font-size: 14px; font-weight: 700; }
+    .transcript { min-height: 450px; padding: 20px; font-size: 16px; line-height: 1.85; }
+    .transcript-foot { justify-content: space-between; margin-top: 9px; }
+    .transcript-foot::before { content: "Bản chép lời trực tiếp"; color: #94a3b8; }
+    .history { margin-top: 8px; padding-top: 12px; border-top-color: #e9edf4; }
+    .history summary { padding: 7px 0 11px; }
+    .history-list { gap: 9px; }
+    .history-item { padding: 13px; border-color: #e5eaf2; border-radius: 12px; background: #fff; transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .history-item:hover { transform: translateY(-1px); border-color: #cbd8ef; box-shadow: 0 6px 16px rgba(27, 47, 86, .06); }
+    .history-card-head { display: flex; align-items: center; gap: 11px; min-width: 0; }
+    .history-source-icon { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 11px; background: #eff4ff; color: var(--blue); font-size: 16px; font-weight: 800; }
+    .history-source-icon.is-youtube { background: #fff0ef; color: #d92d20; }
+    .history-card-main { flex: 1; min-width: 0; }
+    .history-source-title { display: block; overflow: hidden; margin-bottom: 4px; font-size: 12px; font-weight: 700; text-overflow: ellipsis; white-space: nowrap; }
+    .history-meta { display: flex; flex-wrap: wrap; gap: 4px 9px; margin: 0; color: var(--muted); font-size: 10px; }
+    .history-actions { display: flex; flex: 0 0 auto; align-items: center; flex-wrap: wrap; justify-content: flex-end; gap: 6px; }
+    .history-actions .quiet-button { min-height: 31px; padding: 0 9px; font-size: 10px; }
+    .history-transcript { display: -webkit-box; overflow: hidden; margin: 10px 0 0; color: #526179; font-size: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; -webkit-box-orient: vertical; -webkit-line-clamp: 3; }
+    .history-item audio { width: 100%; max-width: 360px; height: 34px; margin-top: 9px; }
+    .history-item > .history-message { margin: 8px 0 0; }
+    .history-empty { padding: 18px; border: 1px dashed #d8e0ec; border-radius: 12px; text-align: center; }
+    .sync-toast { position: fixed; z-index: 20; top: 18px; right: 20px; display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: start; gap: 11px; width: min(440px, calc(100vw - 32px)); padding: 15px; border: 1px solid #fed7aa; border-radius: 14px; background: #fff; box-shadow: 0 16px 42px rgba(28, 38, 57, .16); animation: arrive .22s ease-out both; }
+    .sync-toast[hidden] { display: none; }
+    .sync-toast-icon { display: grid; width: 25px; height: 25px; place-items: center; border-radius: 50%; background: #fff7ed; color: #c2410c; font-size: 13px; font-weight: 800; }
+    .progress-sync-status { margin: 0; padding: 2px 0 0; color: #7c2d12; font-size: 12px; line-height: 1.55; }
+    .progress-sync-status.is-error { background: transparent; color: #7c2d12; }
+    .sync-toast-dismiss { display: grid; width: 27px; height: 27px; place-items: center; padding: 0; border: 0; border-radius: 7px; background: transparent; color: #8a94a6; cursor: pointer; font-size: 21px; line-height: 1; transition: background .2s ease, color .2s ease; }
+    .sync-toast-dismiss:hover { background: #f1f5f9; color: var(--ink); }
+    .page-foot { padding: 0 4px; }
+
     [hidden] { display: none !important; }
 
     @media (max-width: 1050px) {
@@ -532,15 +633,16 @@
       .intro { grid-row: span 2; }
       .mode-tabs { align-self: start; }
       .quick-guide { align-self: start; }
+      .interpret-body { grid-template-columns: minmax(260px, .8fr) minmax(0, 1.2fr); }
     }
 
     @media (max-width: 700px) {
-      .shell { width: min(100% - 28px, 560px); }
+      .shell { width: min(100% - 28px, 700px); }
       .topbar { min-height: 64px; }
       .brand-note { display: none; }
       .account-tools { gap: 5px; }
       .account-identity { display: none; }
-      .progress-sync-status { padding: 7px 10px; font-size: 11px; }
+      .sync-toast { top: 10px; right: 10px; }
       #auth-open, #auth-signout { min-height: 34px; padding: 0 8px; font-size: 11px; }
       main { padding-top: 16px; }
       .app-sidebar { grid-template-columns: 1fr; }
@@ -580,6 +682,12 @@
       .youtube-input-row { align-items: stretch; flex-direction: column; }
       .transcript-tool-list { left: 0; right: auto; }
       .mode-tab { padding: 0 13px; }
+      .interpret-body { grid-template-columns: 1fr; gap: 14px; padding: 14px; }
+      .interpret-session { padding: 15px; }
+      .transcript { min-height: 290px; }
+      .history-card-head { align-items: flex-start; }
+      .history-actions { flex-direction: column; align-items: stretch; }
+      .history-actions .quiet-button { white-space: nowrap; }
     }
   </style>
 </head>
@@ -588,9 +696,7 @@
     <header class="topbar">
       <div class="brand" aria-label="Interslation">
         <span class="brand-mark" aria-hidden="true">
-          <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
-            <path d="M8 9V23M14 9H26M20 9V23" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/>
-          </svg>
+          <span>IT</span>
         </span>
         <span><span class="brand-name">Interslation</span><span class="brand-note">Phiên dịch, Biên dịch không hề khó</span></span>
       </div>
@@ -600,7 +706,11 @@
         <button class="quiet-button" id="auth-signout" type="button" hidden>Đăng xuất</button>
       </div>
     </header>
-    <p class="progress-sync-status" id="progress-sync-status" role="status" aria-live="polite" hidden></p>
+    <div class="sync-toast" id="progress-sync-toast" role="status" aria-live="polite" hidden>
+      <span class="sync-toast-icon" aria-hidden="true">!</span>
+      <p class="progress-sync-status" id="progress-sync-status"></p>
+      <button class="sync-toast-dismiss" id="dismiss-sync-toast" type="button" aria-label="Đóng thông báo">×</button>
+    </div>
 
     <main class="app-layout">
       <aside class="app-sidebar">
@@ -3579,23 +3689,39 @@
       entries.forEach((entry, index) => {
         const item = document.createElement("li");
         item.className = "history-item";
+        const cardHead = document.createElement("div");
+        cardHead.className = "history-card-head";
+        const sourceType = entry.sourceType || (entry.sourceUrlText ? "youtube" : "");
+        const sourceIcon = document.createElement("span");
+        const isYoutube = sourceType === "youtube" || Boolean(entry.sourceUrlText);
+        sourceIcon.className = `history-source-icon${isYoutube ? " is-youtube" : ""}`;
+        sourceIcon.setAttribute("aria-hidden", "true");
+        sourceIcon.textContent = isYoutube ? "▶" : sourceType === "file" || entry.sourceName ? "▣" : "◉";
+        const cardMain = document.createElement("div");
+        cardMain.className = "history-card-main";
+        const title = document.createElement("span");
+        title.className = "history-source-title";
+        title.textContent = entry.sourceName || entry.mediaName || (isYoutube ? "Video YouTube" : "Buổi phiên dịch");
         const metadata = document.createElement("div");
         metadata.className = "history-meta";
         const date = document.createElement("span");
         date.textContent = new Date(entry.date).toLocaleString("vi-VN");
-        const details = document.createElement("span");
-        details.textContent = entry.sourceName
-          ? `${entry.sourceName} · ${entry.mode === "consecutive" ? "Dịch nối tiếp" : "Dịch song song"} · ${entry.language || ""} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`
-          : entry.kind === "media"
-          ? `${entry.mediaName || "Bài nghe"} · ${entry.language || ""} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`
-          : `${entry.language || "Không rõ ngôn ngữ"} · ${formatDuration((Number(entry.durationSeconds) || 0) * 1000)}`;
+        const duration = document.createElement("span");
+        duration.textContent = formatDuration((Number(entry.durationSeconds) || 0) * 1000);
+        const mode = document.createElement("span");
+        mode.textContent = entry.mode === "consecutive" ? "Dịch nối tiếp" : entry.mode === "parallel" ? "Dịch song song" : entry.language || "Phiên dịch";
+        metadata.append(date, duration, mode);
+        const actions = document.createElement("div");
+        actions.className = "history-actions";
         const deleteButton = document.createElement("button");
         deleteButton.className = "quiet-button";
         deleteButton.type = "button";
         deleteButton.textContent = "Xóa";
         deleteButton.setAttribute("aria-label", `Xóa buổi luyện ngày ${date.textContent}`);
         deleteButton.addEventListener("click", () => deletePracticeHistoryEntry(index));
-        metadata.append(date, details, deleteButton);
+        actions.append(deleteButton);
+        cardMain.append(title, metadata);
+        cardHead.append(sourceIcon, cardMain, actions);
         const text = document.createElement("p");
         text.className = "history-transcript";
         text.textContent = entry.kind === "media"
@@ -3607,7 +3733,7 @@
               entry.keywords && `Từ khóa: ${entry.keywords}`
             ].filter(Boolean).join("\n") || "Chưa lưu transcript hoặc bản dịch."
           : entry.transcript || "Không có transcript được ghi nhận.";
-        item.append(metadata, text);
+        item.append(cardHead, text);
         const storedMedia = entry.storageId && storedPracticeMedia.get(entry.storageId);
         const recording = entry.recordingId && speechRecordingsById.get(entry.recordingId);
         if (recording && !storedMedia) {
@@ -3621,7 +3747,9 @@
           downloadLink.href = recording.url;
           downloadLink.download = `interslation-practice-${entry.date.replace(/[:.]/g, "-")}.${extension}`;
           downloadLink.textContent = "Tải bản ghi";
-          item.append(audioPlayer, downloadLink);
+          audioPlayer.setAttribute("aria-label", "Nghe bản ghi phiên dịch");
+          item.append(audioPlayer);
+          actions.prepend(downloadLink);
         }
         if (storedMedia) {
           const expiration = document.createElement("p");
@@ -3643,7 +3771,9 @@
               ? storedMedia.sourceName
               : `interslation-source-${entry.date.replace(/[:.]/g, "-")}.${sourceExtension}`;
             sourceDownload.textContent = "Tải nguồn";
-            item.append(sourceAudio, sourceDownload);
+            sourceAudio.setAttribute("aria-label", "Nghe nguồn luyện tập");
+            item.append(sourceAudio);
+            actions.prepend(sourceDownload);
           }
           if (storedMedia.sourceUrlText) {
             const sourceLink = document.createElement("a");
@@ -3665,7 +3795,9 @@
             const voiceExtension = storedMedia.voiceMimeType?.includes("mp4") ? "mp4" : storedMedia.voiceMimeType?.includes("ogg") ? "ogg" : "webm";
             voiceDownload.download = `interslation-translation-${entry.date.replace(/[:.]/g, "-")}.${voiceExtension}`;
             voiceDownload.textContent = "Tải bản dịch";
-            item.append(voiceAudio, voiceDownload);
+            voiceAudio.setAttribute("aria-label", "Nghe bản dịch");
+            item.append(voiceAudio);
+            actions.prepend(voiceDownload);
           }
 
           if ((storedMedia.sourceUrl || storedMedia.sourceRecordingUrl) && storedMedia.voiceUrl) {
