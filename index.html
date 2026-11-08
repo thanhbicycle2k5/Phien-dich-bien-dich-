@@ -219,6 +219,7 @@
     .content-select-row { display: flex; align-items: center; gap: 6px; }
     .content-select-row select { min-width: 180px; }
     .topic-name-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); }
+    .source-mode-field { min-width: 150px; display: grid; align-content: end; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
     .source-switch button[aria-pressed="true"] { background: var(--blue); color: var(--white); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
@@ -247,6 +248,14 @@
       color: var(--ink);
       box-shadow: 0 24px 70px rgba(23, 43, 77, .24);
     }
+    .topic-required-dialog { width: min(420px, calc(100% - 32px)); max-width: none; padding: 20px; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); box-shadow: 0 24px 70px rgba(23, 43, 77, .24); }
+    :root[data-theme="dark"] .topic-required-dialog { background: var(--white); color: var(--ink); }
+    .topic-required-dialog::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
+    .topic-required-title { margin: 0 0 6px; font-size: 17px; }
+    .topic-required-copy { margin: 0 0 15px; color: var(--muted); font-size: 13px; }
+    .topic-required-form { display: grid; gap: 12px; }
+    .topic-required-status { min-height: 18px; margin: 0; color: #9a3412; font-size: 12px; }
+    .topic-required-actions { display: flex; justify-content: flex-end; gap: 8px; }
 
     .deepl-settings::backdrop, .auth-dialog::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
     .auth-dialog { width: min(460px, calc(100% - 32px)); max-width: none; max-height: min(90vh, 760px); padding: 0; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); box-shadow: 0 24px 70px rgba(23, 43, 77, .24); }
@@ -806,6 +815,7 @@
       .workspace-head { padding: 12px 16px; }
       .translation-settings > .selector-row { padding: 12px 16px; }
       .selector-row, .selector-row label { width: 100%; }
+      .source-mode-field { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
       .content-select-row { width: 100%; }
@@ -935,13 +945,13 @@
 
         <div class="translation-settings" id="translation-settings">
         <div class="selector-row">
-          <label>
+          <div class="source-mode-field">
             <span class="field-label">Nguồn luyện tập</span>
             <span class="source-switch" role="group" aria-label="Nguồn luyện tập">
               <button id="personal-mode" type="button" aria-pressed="true">Tài liệu cá nhân</button>
               <button id="sample-mode" type="button" aria-pressed="false">Bài mẫu</button>
             </span>
-          </label>
+          </div>
           <label>
             <span class="field-label">Chủ đề</span>
             <input class="topic-name-input" id="translation-topic" type="text" list="translation-topics" maxlength="60" placeholder="Chọn hoặc nhập chủ đề" aria-label="Chủ đề" autocomplete="off">
@@ -968,6 +978,21 @@
           </label>
         </div>
         </div>
+
+        <dialog class="topic-required-dialog" id="topic-required-dialog" aria-labelledby="topic-required-title">
+          <h2 class="topic-required-title" id="topic-required-title">Nhập chủ đề trước khi luyện dịch</h2>
+          <p class="topic-required-copy">Hãy đặt tên chủ đề để lưu và tìm lại tài liệu của bạn.</p>
+          <form class="topic-required-form" id="topic-required-form">
+            <label class="file-control" for="required-topic-input">Chủ đề
+              <input class="topic-name-input" id="required-topic-input" type="text" list="translation-topics" maxlength="60" placeholder="Ví dụ: Du lịch, Công nghệ" autocomplete="off" required>
+            </label>
+            <p class="topic-required-status" id="topic-required-status" role="status" aria-live="polite"></p>
+            <div class="topic-required-actions">
+              <button class="quiet-button" id="topic-required-cancel" type="button">Để sau</button>
+              <button class="primary-button" type="submit">Lưu chủ đề và tiếp tục</button>
+            </div>
+          </form>
+        </dialog>
 
         <dialog class="deepl-settings" id="deepl-settings" aria-labelledby="deepl-settings-title">
           <div class="deepl-settings-head">
@@ -1835,7 +1860,7 @@
         suggestions.append(suggestion);
       });
       if (topics.some((topic) => topic.value === currentTopic)) industrySelect.value = currentTopic;
-      else if (activeTranslationMode === "personal") industrySelect.value = DEFAULT_PERSONAL_TOPIC;
+      else if (activeTranslationMode === "personal") industrySelect.value = "";
       else if (topics.length) industrySelect.value = topics[0].value;
       translationTopicInput.value = industrySelect.selectedOptions[0]?.textContent || "";
     }
@@ -2015,7 +2040,7 @@
       personalDraftsByTopic.set(personalDraftTopic, { ...personalDraft });
       const savedDrafts = readPersonalDrafts();
       if (!savedDrafts) return false;
-      if (Object.values(personalDraft).some((value) => value.length > MAX_PERSONAL_TEXT_LENGTH)) {
+      if (Object.values(personalDraft).some((value) => typeof value === "string" && value.length > MAX_PERSONAL_TEXT_LENGTH)) {
         setSaveStatus(document.querySelector("#personal-status"), "Bản nháp quá dài để tự lưu. Mỗi ô giới hạn 50.000 ký tự.");
         return false;
       }
@@ -2167,22 +2192,38 @@
       updateCounts();
     }
 
-    function addPersonalTopic(topicName = translationTopicInput.value) {
+    function addPersonalTopic(topicName = translationTopicInput.value, preserveCurrentDraft = false) {
       const topic = topicName.trim();
       const status = document.querySelector("#personal-status");
       if (!topic) {
-        return;
+        return false;
       }
       const existingTopics = [
+        DEFAULT_PERSONAL_TOPIC,
         ...readPersonalTopics(),
         ...readPersonalMaterials().map(getMaterialTopic)
       ];
-      if (existingTopics.some((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase())) {
-        const existingTopic = existingTopics.find((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase());
+      const existingTopic = existingTopics.find((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase());
+      if (existingTopic) {
         personalDraftTopic = existingTopic;
         populateTopics(existingTopic);
-        loadPersonalTopicDraft(existingTopic);
-        return;
+        if (preserveCurrentDraft) {
+          personalDraft = {
+            ...personalDraft,
+            source: sourceText.value,
+            answer: answerText.value,
+            reference: referenceAnswer.value,
+            keywords: personalKeywords.value,
+            direction: personalDirection,
+            referenceSource: "",
+            referenceDirection: "",
+            checkedResult: null
+          };
+          capturePersonalDraft();
+        } else {
+          loadPersonalTopicDraft(existingTopic);
+        }
+        return true;
       }
       try {
         const topics = [...readPersonalTopics(), topic];
@@ -2190,11 +2231,28 @@
         notifyProgressChanged();
         personalDraftTopic = topic;
         populateTopics(topic);
-        loadPersonalTopicDraft(topic);
+        if (preserveCurrentDraft) {
+          personalDraft = {
+            ...personalDraft,
+            source: sourceText.value,
+            answer: answerText.value,
+            reference: referenceAnswer.value,
+            keywords: personalKeywords.value,
+            direction: personalDirection,
+            referenceSource: "",
+            referenceDirection: "",
+            checkedResult: null
+          };
+          capturePersonalDraft();
+        } else {
+          loadPersonalTopicDraft(topic);
+        }
         setSaveStatus(status, `Đã thêm chủ đề “${topic}”.`, true);
+        return true;
       } catch (error) {
         status.classList.remove("is-success", "is-error");
         status.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
+        return false;
       }
     }
 
@@ -2778,7 +2836,20 @@
         : "");
     }
 
+    function showRequiredTopicDialog() {
+      const dialog = document.querySelector("#topic-required-dialog");
+      if (dialog.open) return;
+      document.querySelector("#required-topic-input").value = translationTopicInput.value.trim();
+      document.querySelector("#topic-required-status").textContent = "";
+      dialog.showModal();
+      document.querySelector("#required-topic-input").focus();
+    }
+
     function showTranslationTopicAlert() {
+      if (activeTranslationMode === "personal") {
+        showRequiredTopicDialog();
+        return;
+      }
       const settings = document.querySelector("#translation-settings");
       if (settings.hidden) {
         settings.hidden = false;
@@ -3012,7 +3083,10 @@
         const saved = capturePersonalDraft();
         invalidateTranslationCheck();
         if (saved) setSaveStatus(status, `Đã nhập ${wordCount(content)} từ từ tệp ${file.name} và tự lưu theo chủ đề.`, true);
-        else setSaveStatus(status, `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}, nhưng chưa tự lưu được bản nháp.`);
+        else {
+          setSaveStatus(status, `Đã nhập ${wordCount(content)} từ từ tệp ${file.name}, nhưng chưa tự lưu được bản nháp.`);
+          if (!getTranslationTopic()) showRequiredTopicDialog();
+        }
       } catch (error) {
         setSaveStatus(status, error.message || "Không thể đọc tệp trên thiết bị này.");
       } finally {
@@ -4572,17 +4646,16 @@
       if (!enteredTopic) return;
       document.querySelector("#translation-topic-toast").hidden = true;
       if (activeTranslationMode === "personal") {
+        const preserveUntitledContent = !industrySelect.value && Boolean(sourceText.value.trim() || answerText.value.trim());
         const existingTopic = [
           ...readPersonalTopics(),
           ...readPersonalMaterials().map(getMaterialTopic),
           DEFAULT_PERSONAL_TOPIC
         ].find((topic) => topic.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase());
         if (existingTopic) {
-          personalDraftTopic = existingTopic;
-          populateTopics(existingTopic);
-          loadPersonalTopicDraft(existingTopic);
+          addPersonalTopic(existingTopic, preserveUntitledContent);
         } else {
-          addPersonalTopic(enteredTopic);
+          addPersonalTopic(enteredTopic, preserveUntitledContent);
         }
         return;
       }
@@ -4604,6 +4677,26 @@
         sourceText.focus();
       }
     });
+    document.querySelector("#topic-required-form").addEventListener("submit", (event) => {
+      event.preventDefault();
+      const input = document.querySelector("#required-topic-input");
+      const topic = input.value.trim();
+      const status = document.querySelector("#topic-required-status");
+      if (!topic) {
+        status.textContent = "Hãy nhập tên chủ đề để tiếp tục.";
+        input.focus();
+        return;
+      }
+      if (addPersonalTopic(topic, true)) {
+        document.querySelector("#topic-required-dialog").close();
+      } else {
+        status.textContent = "Không thể lưu chủ đề. Hãy thử lại.";
+        input.focus();
+      }
+    });
+    document.querySelector("#topic-required-cancel").addEventListener("click", () => {
+      document.querySelector("#topic-required-dialog").close();
+    });
     document.querySelector("#dismiss-translation-topic-toast").addEventListener("click", () => {
       document.querySelector("#translation-topic-toast").hidden = true;
     });
@@ -4614,6 +4707,9 @@
       textarea.addEventListener("input", () => {
         recordEditHistoryInput(textarea);
         handlePersonalInput();
+        if (activeTranslationMode === "personal" && !getTranslationTopic() && textarea.value.trim()) {
+          showRequiredTopicDialog();
+        }
       });
       textarea.addEventListener("blur", () => flushEditHistory(textarea));
       textarea.addEventListener("keydown", (event) => {
