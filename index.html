@@ -3483,7 +3483,6 @@
       const labels = {
         idle: "Bắt đầu nghe",
         starting: "Đang chuẩn bị...",
-        ready: "Phát nguồn và bắt đầu nghe",
         listening: "Dừng và thực hiện dịch",
         countdown: "Chuẩn bị dịch...",
         translating: "Tiếp tục",
@@ -3519,58 +3518,61 @@
       }
       consecutivePhase = "starting";
       updatePracticeModeControls();
-      document.querySelector("#speech-status").textContent = "Đang chuẩn bị micro...";
+      document.querySelector("#speech-status").textContent = "Đang xin quyền micro; nguồn bắt đầu phát ngay.";
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
       practiceSourceTimeline = [];
       currentPracticeSourceSegment = null;
+      const sourcePlayback = startPracticeMedia();
       const recordingStatus = document.querySelector("#speech-recording-status");
       recordingStatus.textContent = "Đang chuẩn bị bản ghi phần dịch...";
       document.querySelector("#speech-recording-preview").hidden = false;
       updateSourcePlaybackPreview();
-      const captureStarted = await startSpeechAudioCapture({ muted: true });
-      if (!captureStarted || consecutivePhase !== "starting") {
+      const [sourceStarted, captureStarted] = await Promise.all([
+        Promise.resolve(sourcePlayback),
+        startSpeechAudioCapture({ muted: true })
+      ]);
+      if (consecutivePhase !== "starting") {
         if (captureStarted) {
-          if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(speechRecordingId);
+          discardedSpeechRecordings.add(speechRecordingId);
           stopSpeechAudioCapture();
         }
-        if (consecutivePhase === "starting") {
-          consecutivePhase = "idle";
-          updatePracticeModeControls();
-          document.querySelector("#speech-status").textContent = "Không thể mở micro để ghi phần dịch. Hãy kiểm tra quyền micro.";
+        pausePracticeMedia();
+        return;
+      }
+      if (!captureStarted || !sourceStarted) {
+        speechSessionActive = false;
+        if (captureStarted) {
+          discardedSpeechRecordings.add(speechRecordingId);
+          stopSpeechAudioCapture();
         }
+        pausePracticeMedia();
+        consecutivePhase = "idle";
+        updatePracticeModeControls();
+        document.querySelector("#speech-status").textContent = !captureStarted
+          ? "Không thể mở micro để ghi phần dịch. Hãy kiểm tra quyền micro."
+          : "Không thể phát nguồn. Hãy kiểm tra tệp hoặc link rồi thử lại.";
         return;
       }
       speechSessionActive = true;
-      consecutivePhase = "ready";
+      consecutivePhase = "listening";
+      startTimer();
+      if (activePracticeSource === "local") {
+        const player = document.querySelector("#local-audio-player").hidden
+          ? document.querySelector("#local-video-player")
+          : document.querySelector("#local-audio-player");
+        if (!player.paused && !player.ended) openPracticeSourceSegment();
+      } else if (activePracticeSource === "youtube" &&
+          youtubePlayer?.getPlayerState?.() === window.YT?.PlayerState?.PLAYING) {
+        openPracticeSourceSegment();
+      }
       updatePracticeModeControls();
       document.querySelector("#speech-status").textContent =
-        "Micro đã sẵn sàng. Bấm “Phát nguồn và bắt đầu nghe” để bắt đầu lượt nghe.";
-    }
-
-    function beginConsecutiveListening() {
-      if (consecutivePhase !== "ready") return;
-      const sourcePlayback = startPracticeMedia();
-      const beginListening = (started) => {
-        if (consecutivePhase !== "ready") return;
-        if (!started) {
-          document.querySelector("#speech-status").textContent =
-            "Không thể phát nguồn. Hãy kiểm tra tệp rồi bấm phát lại.";
-          return;
-        }
-        consecutivePhase = "listening";
-        startTimer();
-        updatePracticeModeControls();
-        document.querySelector("#speech-status").textContent =
-          "Đang nghe. Giọng bạn chưa được ghi âm trong lượt này.";
-      };
-      Promise.resolve(sourcePlayback).then(beginListening);
+        "Đang nghe. Bấm “Dừng và thực hiện dịch” khi muốn bắt đầu dịch.";
     }
 
     async function handleConsecutivePracticeAction() {
       if (consecutivePhase === "idle" || consecutivePhase === "finished") {
         await startConsecutivePractice();
-      } else if (consecutivePhase === "ready") {
-        beginConsecutiveListening();
       } else if (consecutivePhase === "listening") {
         await beginConsecutiveTranslation();
       } else if (consecutivePhase === "translating") {
@@ -3992,7 +3994,7 @@
             if (event.data === window.YT.PlayerState.PLAYING) {
               if (!activePracticeMediaMix) updateYouTubePlaybackRates();
               if (speechSessionActive && activePracticeSource === "youtube") openPracticeSourceSegment();
-              if (!activePracticeMediaMix) {
+              if (!activePracticeMediaMix && activePracticeMode !== "consecutive") {
                 document.querySelector("#youtube-status").textContent = "Video đang phát. Đồng hồ được tính tự động từ lúc bắt đầu nói.";
               }
             } else if (event.data === window.YT.PlayerState.PAUSED || event.data === window.YT.PlayerState.ENDED) {
