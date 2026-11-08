@@ -533,6 +533,8 @@
     .media-mix-panel { display: grid; gap: 10px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .media-mix-panel h3 { margin: 0; font: 700 13px var(--sans); }
     .media-mix-panel p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
+    .media-mix-speed-control { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
+    .media-mix-speed-control select { min-height: 32px; padding: 4px 28px 4px 8px; border: 1px solid var(--line); border-radius: 5px; background-color: var(--white); }
     .media-mix-control { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(100px, 2fr) auto; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
     .media-mix-control input[type="range"] { width: 100%; accent-color: var(--blue); }
     .consecutive-countdown { margin: 9px 0; color: var(--blue-dark); font-size: 22px; font-weight: 750; text-align: center; font-variant-numeric: tabular-nums; }
@@ -1326,6 +1328,16 @@
               <h3 id="media-mix-heading">Phát đồng bộ cả nguồn và bản ghi</h3>
               <p>Âm thanh nguồn phát ở lượt nghe; bản ghi của bạn phát ở lượt dịch.</p>
               <button class="primary-button" id="toggle-media-mix" type="button">Phát đồng bộ cả hai</button>
+              <p id="media-mix-status" role="status" aria-live="polite"></p>
+              <label class="media-mix-speed-control">
+                <span>Tốc độ nghe lại</span>
+                <select id="media-mix-playback-rate" aria-label="Tốc độ nghe lại">
+                  <option value="1">1×</option>
+                  <option value="1.25">1,25×</option>
+                  <option value="1.5">1,5×</option>
+                  <option value="2">2×</option>
+                </select>
+              </label>
               <label class="media-mix-control">
                 <span>Âm lượng nguồn</span>
                 <input id="source-volume" type="range" min="0" max="1" step="0.01" value="0.7">
@@ -1336,8 +1348,8 @@
                 <input id="voice-volume" type="range" min="0" max="1" step="0.01" value="1">
                 <output id="voice-volume-value">100%</output>
               </label>
-              <audio id="mix-source-audio" preload="metadata" hidden></audio>
-              <audio id="mix-voice-audio" preload="metadata" hidden></audio>
+              <audio id="mix-source-audio" preload="auto" hidden></audio>
+              <audio id="mix-voice-audio" preload="auto" hidden></audio>
             </section>
           </div>
         </div>
@@ -4312,6 +4324,7 @@
     function stopPracticeMediaMix(clear = false) {
       if (practiceMediaMixFrame) cancelAnimationFrame(practiceMediaMixFrame);
       practiceMediaMixFrame = 0;
+      const stoppedMix = activePracticeMediaMix;
       if (activePracticeMediaMix) {
         if (activePracticeMediaMix.sourceType === "youtube") {
           pendingPracticeMixVideoId = "";
@@ -4326,6 +4339,7 @@
       document.querySelector("#mix-voice-audio").pause();
       if (youtubePlayer?.pauseVideo) youtubePlayer.pauseVideo();
       document.querySelector("#toggle-media-mix").textContent = "Phát đồng bộ cả hai";
+      if (stoppedMix?.isPlaying) stoppedMix.statusTarget.textContent = "Đã dừng phát.";
     }
 
     function syncPracticeMediaMix() {
@@ -4338,6 +4352,13 @@
       }
 
       const elapsed = voiceAudio.currentTime;
+      const statusSecond = Math.floor(elapsed);
+      if (statusSecond !== mix.lastStatusSecond) {
+        mix.lastStatusSecond = statusSecond;
+        const duration = Number.isFinite(voiceAudio.duration) ? formatMediaTime(voiceAudio.duration) : "--:--";
+        mix.statusTarget.textContent =
+          `Đang phát đồng bộ ${formatMediaTime(elapsed)} / ${duration}.`;
+      }
       const segments = mix.timeline.length
         ? mix.timeline
         : [{ start: 0, end: Number.POSITIVE_INFINITY, sourceTime: 0, playbackRate: 1 }];
@@ -4349,6 +4370,7 @@
           }
         } else {
           const targetTime = segment.sourceTime + (elapsed - segment.start) * segment.playbackRate;
+          const targetPlaybackRate = segment.playbackRate * mix.playbackRate;
           const sourceTime = youtubePlayer.getCurrentTime();
           youtubePlayer.setVolume?.(Math.round(Number(document.querySelector("#source-volume").value) * 100));
           if (mix.currentSegment !== segment || Math.abs(sourceTime - targetTime) > 0.65) {
@@ -4357,17 +4379,33 @@
           if (youtubePlayer.getPlayerState?.() !== window.YT.PlayerState.PLAYING) {
             youtubePlayer.playVideo();
           }
-          if (youtubePlayer.getPlaybackRate?.() !== segment.playbackRate) {
-            youtubePlayer.setPlaybackRate?.(segment.playbackRate);
+          const availableRates = youtubePlayer.getAvailablePlaybackRates?.() || [];
+          if (availableRates.includes(targetPlaybackRate) &&
+              youtubePlayer.getPlaybackRate?.() !== targetPlaybackRate) {
+            youtubePlayer.setPlaybackRate?.(targetPlaybackRate);
+          } else if (!availableRates.includes(targetPlaybackRate) && mix.playbackRate !== 1) {
+            mix.statusTarget.textContent =
+              "Video YouTube không hỗ trợ tốc độ kết hợp này; hãy chọn 1× để đồng bộ chính xác.";
           }
         }
       } else {
         const sourceAudio = document.querySelector("#mix-source-audio");
         sourceAudio.volume = Number(document.querySelector("#source-volume").value);
-        if (sourceAudio.readyState < 1) {
+        if (sourceAudio.readyState < 2) {
+          if (!voiceAudio.paused) voiceAudio.pause();
+          mix.waitingForSource = true;
+          mix.statusTarget.textContent = "Đang tải âm thanh nguồn; bản ghi sẽ tiếp tục đồng bộ khi sẵn sàng.";
           mix.currentSegment = null;
           practiceMediaMixFrame = requestAnimationFrame(syncPracticeMediaMix);
           return;
+        }
+        if (mix.waitingForSource) {
+          mix.waitingForSource = false;
+          voiceAudio.play().catch(() => {
+            if (activePracticeMediaMix !== mix) return;
+            mix.statusTarget.textContent = "Không thể tiếp tục phát bản ghi. Hãy thử phát lại.";
+            stopPracticeMediaMix(true);
+          });
         }
         if (!segment) {
           sourceAudio.volume = 0;
@@ -4383,7 +4421,7 @@
         } else {
           const targetTime = segment.sourceTime + (elapsed - segment.start) * segment.playbackRate;
           sourceAudio.volume = Number(document.querySelector("#source-volume").value);
-          sourceAudio.playbackRate = segment.playbackRate;
+          sourceAudio.playbackRate = segment.playbackRate * mix.playbackRate;
           if (sourceAudio.ended) mix.sourcePlayRequested = false;
           if (mix.currentSegment !== segment || Math.abs(sourceAudio.currentTime - targetTime) > 0.35) {
             sourceAudio.currentTime = Math.max(0, targetTime);
@@ -4409,7 +4447,7 @@
       youtubeUrl = "",
       voiceUrl,
       timeline = [],
-      statusTarget = document.querySelector("#history-message")
+      statusTarget = document.querySelector("#media-mix-status")
     }) {
       const sourceAudio = document.querySelector("#mix-source-audio");
       const voiceAudio = document.querySelector("#mix-voice-audio");
@@ -4421,6 +4459,8 @@
         sourceAudio.load();
       }
       voiceAudio.src = voiceUrl;
+      const playbackRate = Number(document.querySelector("#media-mix-playback-rate").value) || 1;
+      voiceAudio.playbackRate = playbackRate;
       sourceAudio.currentTime = 0;
       voiceAudio.currentTime = 0;
       sourceAudio.volume = Number(document.querySelector("#source-volume").value);
@@ -4438,7 +4478,9 @@
         waitingForSource: false,
         currentSegment: null,
         sourcePlayRequested: false,
-        statusTarget
+        statusTarget,
+        playbackRate,
+        lastStatusSecond: -1
       };
       if (sourceType === "youtube") {
         const videoId = getYouTubeVideoId(youtubeUrl);
@@ -4459,6 +4501,7 @@
         }
       }
       document.querySelector("#media-mix-panel").hidden = false;
+      statusTarget.textContent = "Đang tải âm thanh nguồn và bản ghi...";
       toggleSavedMediaMix();
     }
 
@@ -4477,8 +4520,7 @@
         sourceUrl,
         youtubeUrl,
         voiceUrl,
-        timeline: practiceSourceTimeline,
-        statusTarget: document.querySelector("#speech-recording-status")
+        timeline: practiceSourceTimeline
       });
     }
 
@@ -4494,6 +4536,19 @@
       }
       document.querySelector(kind === "source" ? "#source-volume-value" : "#voice-volume-value").textContent =
         `${Math.round(volume * 100)}%`;
+    }
+
+    function setPracticeMediaMixPlaybackRate(value) {
+      const playbackRate = Number(value);
+      if (!Number.isFinite(playbackRate) || playbackRate <= 0) return;
+      const mix = activePracticeMediaMix;
+      if (!mix) return;
+      mix.playbackRate = playbackRate;
+      document.querySelector("#mix-voice-audio").playbackRate = playbackRate;
+      if (mix.sourceType !== "youtube" && mix.currentSegment) {
+        document.querySelector("#mix-source-audio").playbackRate =
+          mix.currentSegment.playbackRate * playbackRate;
+      }
     }
 
     function toggleSavedMediaMix() {
@@ -4522,6 +4577,9 @@
       const voiceAudio = document.querySelector("#mix-voice-audio");
       const mix = activePracticeMediaMix;
       if (!mix || mix.isPlaying) return;
+      mix.isPlaying = true;
+      document.querySelector("#toggle-media-mix").textContent = "Dừng phát cả hai";
+      mix.statusTarget.textContent = "Đang tải âm thanh nguồn và bản ghi...";
       if (mix.sourceType !== "youtube") {
         const sourceAudio = document.querySelector("#mix-source-audio");
         sourceAudio.volume = 0;
@@ -4535,10 +4593,8 @@
       }
       voiceAudio.play().then(() => {
         if (activePracticeMediaMix !== mix) return;
-        mix.isPlaying = true;
         mix.waitingForSource = false;
         mix.currentSegment = null;
-        document.querySelector("#toggle-media-mix").textContent = "Dừng phát cả hai";
         syncPracticeMediaMix();
       }).catch(() => {
         if (activePracticeMediaMix !== mix) return;
@@ -5020,6 +5076,9 @@
     });
     document.querySelector("#voice-volume").addEventListener("input", (event) => {
       setPracticeMediaVolume("voice", event.currentTarget.value);
+    });
+    document.querySelector("#media-mix-playback-rate").addEventListener("change", (event) => {
+      setPracticeMediaMixPlaybackRate(event.currentTarget.value);
     });
     document.querySelector("#mix-voice-audio").addEventListener("ended", stopPracticeMediaMix);
     document.querySelector("#practice-mode").addEventListener("change", (event) => {
