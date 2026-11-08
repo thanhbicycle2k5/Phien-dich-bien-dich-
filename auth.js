@@ -5,6 +5,10 @@
   const emailLink = document.querySelector("#auth-email-link");
   const identity = document.querySelector("#auth-identity");
   const openButton = document.querySelector("#auth-open");
+  const accountMenu = document.querySelector("#auth-account-menu");
+  const avatarButton = document.querySelector("#auth-avatar");
+  const avatarImage = document.querySelector("#auth-avatar-image");
+  const avatarInitials = document.querySelector("#auth-avatar-initials");
   const signoutButton = document.querySelector("#auth-signout");
   let session = null;
   function setMessage(text, isError = false, inboxUrl = "") {
@@ -95,10 +99,44 @@
   };
 
   function renderIdentity() {
-    const email = session?.user?.email;
+    const user = session?.user;
+    const email = user?.email;
     identity.textContent = email || "Không gian luyện tập của bạn";
     openButton.hidden = Boolean(email);
-    signoutButton.hidden = !email;
+    accountMenu.hidden = !email;
+    signoutButton.hidden = true;
+    avatarButton.setAttribute("aria-expanded", "false");
+    const name = user?.user_metadata?.full_name || user?.user_metadata?.name || email || "Tài khoản";
+    avatarButton.setAttribute("aria-label", `Tài khoản ${name}`);
+    avatarButton.title = `Tài khoản ${name}`;
+    avatarInitials.textContent = Array.from(String(name).trim())[0]?.toLocaleUpperCase() || "?";
+
+    const metadata = user?.user_metadata || {};
+    const identityData = Array.isArray(user?.identities)
+      ? user.identities.find((item) => item.identity_data?.avatar_url || item.identity_data?.picture)?.identity_data
+      : null;
+    const avatarUrl = metadata.avatar_url || metadata.picture || identityData?.avatar_url || identityData?.picture || "";
+    let safeAvatarUrl = "";
+    try {
+      const parsedAvatarUrl = new URL(avatarUrl);
+      if (parsedAvatarUrl.protocol === "https:") safeAvatarUrl = parsedAvatarUrl.href;
+    } catch (error) {
+      safeAvatarUrl = "";
+    }
+    avatarImage.hidden = true;
+    avatarInitials.hidden = false;
+    avatarImage.removeAttribute("src");
+    if (safeAvatarUrl) {
+      avatarImage.onload = () => {
+        avatarImage.hidden = false;
+        avatarInitials.hidden = true;
+      };
+      avatarImage.onerror = () => {
+        avatarImage.hidden = true;
+        avatarInitials.hidden = false;
+      };
+      avatarImage.src = safeAvatarUrl;
+    }
   }
 
   function authError(data, fallback) {
@@ -322,6 +360,23 @@
   });
 
   openButton.addEventListener("click", openDialog);
+  avatarButton.addEventListener("click", () => {
+    const expanded = avatarButton.getAttribute("aria-expanded") !== "true";
+    avatarButton.setAttribute("aria-expanded", String(expanded));
+    signoutButton.hidden = !expanded;
+  });
+  document.addEventListener("click", (event) => {
+    if (!accountMenu.contains(event.target)) {
+      avatarButton.setAttribute("aria-expanded", "false");
+      signoutButton.hidden = true;
+    }
+  });
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") {
+      avatarButton.setAttribute("aria-expanded", "false");
+      signoutButton.hidden = true;
+    }
+  });
   document.querySelector("#auth-close").addEventListener("click", () => dialog.close());
   dialog.addEventListener("click", (event) => {
     if (event.target === event.currentTarget) dialog.close();
