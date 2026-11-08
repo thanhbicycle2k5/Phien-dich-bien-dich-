@@ -218,14 +218,10 @@
     .selector-row select { max-width: 220px; }
     .content-select-row { display: flex; align-items: center; gap: 6px; }
     .content-select-row select { min-width: 180px; }
-    .topic-select-row { display: flex; align-items: center; gap: 6px; }
-    .topic-select-row select { min-width: 150px; }
     .topic-name-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); }
-    .selector-icon-button { width: 38px; min-width: 38px; padding: 0; color: var(--muted); }
-    .selector-icon-button svg { width: 17px; height: 17px; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
-    .source-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
+    .source-switch button[aria-pressed="true"] { background: var(--blue); color: var(--white); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
     .personal-controls { display: contents; }
     .file-control { display: grid; gap: 5px; color: var(--muted); font-size: 11px; }
     .direction-control { font-weight: 700; }
@@ -252,8 +248,7 @@
       box-shadow: 0 24px 70px rgba(23, 43, 77, .24);
     }
 
-    .deepl-settings::backdrop, .topic-dialog::backdrop, .auth-dialog::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
-    .topic-dialog { width: min(420px, calc(100% - 32px)); max-width: none; padding: 0; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); box-shadow: 0 24px 70px rgba(23, 43, 77, .24); }
+    .deepl-settings::backdrop, .auth-dialog::backdrop { background: rgba(15, 23, 42, .52); backdrop-filter: blur(2px); }
     .auth-dialog { width: min(460px, calc(100% - 32px)); max-width: none; max-height: min(90vh, 760px); padding: 0; overflow: auto; border: 1px solid var(--line); border-radius: 12px; background: var(--white); color: var(--ink); box-shadow: 0 24px 70px rgba(23, 43, 77, .24); }
     .account-tools { display: flex; align-items: center; justify-content: flex-end; gap: 10px; }
     .account-identity { max-width: min(38vw, 280px); overflow: hidden; color: var(--muted); font-size: 12px; text-overflow: ellipsis; white-space: nowrap; }
@@ -275,10 +270,6 @@
     .auth-password-toggle svg { width: 19px; height: 19px; }
     .auth-message { min-height: 18px; margin: 0; color: var(--muted); font-size: 12px; }
     .auth-message.is-error { color: #9a3412; }
-    .topic-dialog-body { display: grid; gap: 14px; padding: 18px 20px 20px; }
-    .topic-dialog-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); }
-    .topic-dialog-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; }
-    .topic-dialog-actions { display: flex; justify-content: flex-end; gap: 8px; }
     .deepl-settings-head { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 17px 20px; border-bottom: 1px solid var(--line); }
     .deepl-settings-title { margin: 0; font-size: 17px; }
     .deepl-modal-close { width: 34px; min-height: 34px; padding: 0; font-size: 20px; }
@@ -362,6 +353,9 @@
     .quiet-button.is-recording:hover { border-color: #b91c1c; background: #b91c1c; }
     .icon-button { width: 38px; min-width: 38px; padding: 0; }
     .icon-button svg { width: 18px; height: 18px; }
+    .save-translation-button { min-width: 88px; border-color: var(--blue); background: var(--soft-blue); color: var(--blue-dark); }
+    .save-translation-button:not(:disabled):hover { background: var(--soft-accent); }
+    .save-translation-button svg { width: 18px; height: 18px; }
     button:disabled { opacity: .48; cursor: not-allowed; }
 
     .workspace-actions {
@@ -612,9 +606,9 @@
     .history-sidebar-card .history { margin-top: 0; border-top: 0; }
     .history-sidebar-card .history summary { padding-top: 0; }
     .history-sidebar-card .history-list { margin-bottom: 4px; }
-    .history-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
-    .history-tab { min-height: 36px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
-    .history-tab[aria-selected="true"] { border-color: var(--blue); background: var(--soft-accent); color: var(--blue-dark); }
+    .history-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft-blue); }
+    .history-tab { min-height: 38px; padding: 6px 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .history-tab[aria-selected="true"] { border-color: var(--blue); background: var(--blue); color: var(--white); box-shadow: 0 2px 5px rgba(37, 99, 235, .2); }
     .translation-history-topic { display: block; margin: 0 0 5px; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
     .translation-history-answer { margin: 8px 0 0; color: var(--ink); }
     .quick-guide { padding: 20px; }
@@ -624,7 +618,7 @@
     .workspace-caption { font-size: 12px; }
     .translation-settings > .selector-row { padding: 17px 22px; }
     .exercise-select, .language-select, .youtube-input, .practice-mode-control select, .media-speed-control select,
-    .auth-input, .topic-dialog-input { border-color: var(--line); border-radius: 9px; background-color: var(--white); color: var(--ink); transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
+    .auth-input { border-color: var(--line); border-radius: 9px; background-color: var(--white); color: var(--ink); transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
     select:hover, .youtube-input:hover, .auth-input:hover { border-color: #a5b4fc; }
     .translation-grid { gap: 24px; align-items: stretch; padding: 24px; }
     .translation-pane {
@@ -718,14 +712,14 @@
     :root[data-theme="dark"] .sidebar-navigation, :root[data-theme="dark"] .youtube-practice,
     :root[data-theme="dark"] .practice-controls-panel, :root[data-theme="dark"] .interpret-session,
     :root[data-theme="dark"] .history-item, :root[data-theme="dark"] .deepl-settings,
-    :root[data-theme="dark"] .topic-dialog, :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
+    :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
     :root[data-theme="dark"] .topic-name-input { background: #202024; color: var(--ink); }
     :root[data-theme="dark"] .text-area, :root[data-theme="dark"] .transcript, :root[data-theme="dark"] .practice-status,
     :root[data-theme="dark"] .source-switch, :root[data-theme="dark"] .reference-editor,
     :root[data-theme="dark"] .deepl-guide, :root[data-theme="dark"] .media-mix-panel,
     :root[data-theme="dark"] .speech-recording-preview, :root[data-theme="dark"] .term-item,
     :root[data-theme="dark"] .auth-switch, :root[data-theme="dark"] .deepl-key-input,
-    :root[data-theme="dark"] .keyword-input, :root[data-theme="dark"] .topic-dialog-input { background: #202024; color: var(--ink); }
+    :root[data-theme="dark"] .keyword-input { background: #202024; color: var(--ink); }
     :root[data-theme="dark"] .mode-tab[aria-selected="true"], :root[data-theme="dark"] .soft-blue,
     :root[data-theme="dark"] .history-source-icon { background: #272a3b; color: #c7d2fe; }
     :root[data-theme="dark"] .history-source-icon.is-youtube { background: #3a2325; color: #fda4af; }
@@ -740,8 +734,9 @@
     :root[data-theme="dark"] .practice-mode-control select, :root[data-theme="dark"] .media-speed-control select { background-color: #18181b; color: var(--ink); border-color: var(--line); }
     :root[data-theme="dark"] .deepl-settings-head, :root[data-theme="dark"] .translation-pane + .translation-pane,
     :root[data-theme="dark"] .history { border-color: var(--line); }
-    :root[data-theme="dark"] .source-switch button[aria-pressed="true"],
+    :root[data-theme="dark"] .source-switch button[aria-pressed="true"] { background: #6366f1; color: #fff; }
     :root[data-theme="dark"] .auth-switch button[aria-pressed="true"] { background: #30303a; color: #c7d2fe; }
+    :root[data-theme="dark"] .save-translation-button { border-color: #818cf8; background: #272a3b; color: #c7d2fe; }
     :root[data-theme="dark"] .deepl-guide ol, :root[data-theme="dark"] .deepl-guide-note,
     :root[data-theme="dark"] .quick-guide p, :root[data-theme="dark"] .quick-guide ol,
     :root[data-theme="dark"] .page-foot, :root[data-theme="dark"] .local-label { color: var(--muted); }
@@ -813,8 +808,8 @@
       .selector-row, .selector-row label { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
-      .content-select-row, .topic-select-row { width: 100%; }
-      .content-select-row select, .topic-select-row select { min-width: 0; flex: 1; }
+      .content-select-row { width: 100%; }
+      .content-select-row select { min-width: 0; flex: 1; }
       .workspace-head { align-items: stretch; flex-direction: column; }
       .selector-row { justify-content: flex-start; }
       .personal-controls select, .file-control input { width: 100%; max-width: none; }
@@ -912,9 +907,9 @@
 
           <section class="quick-guide" aria-labelledby="quick-guide-title">
             <h2 id="quick-guide-title">Bắt đầu nhanh</h2>
-            <p id="quick-guide-description">Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn.</p>
+            <p id="quick-guide-description">Dán tài liệu cá nhân để luyện, hoặc tham khảo bài mẫu.</p>
             <ol>
-              <li id="quick-guide-step-one">Chọn chủ đề và nội dung thứ bạn muốn luyện.</li>
+              <li id="quick-guide-step-one">Dán tài liệu hoặc tải tệp để bắt đầu ngay.</li>
               <li id="quick-guide-step-two">Viết bản dịch rồi chọn “Kiểm tra &amp; Xem gợi ý”.</li>
             </ol>
           </section>
@@ -943,19 +938,15 @@
           <label>
             <span class="field-label">Nguồn luyện tập</span>
             <span class="source-switch" role="group" aria-label="Nguồn luyện tập">
-              <button id="sample-mode" type="button" aria-pressed="true">Bài mẫu</button>
-              <button id="personal-mode" type="button" aria-pressed="false">Tài liệu cá nhân</button>
+              <button id="personal-mode" type="button" aria-pressed="true">Tài liệu cá nhân</button>
+              <button id="sample-mode" type="button" aria-pressed="false">Bài mẫu</button>
             </span>
           </label>
           <label>
             <span class="field-label">Chủ đề</span>
-            <span class="topic-select-row">
-              <select class="exercise-select" id="industry-select" aria-label="Chọn chủ đề"></select>
-              <button class="quiet-button selector-icon-button" id="open-topic-dialog" type="button" aria-label="Thêm chủ đề" title="Thêm chủ đề" hidden>
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
-              </button>
-            </span>
-            <input class="topic-name-input" id="translation-topic" type="text" maxlength="60" placeholder="Hoặc nhập tên chủ đề riêng" aria-label="Nhập tên chủ đề riêng">
+            <input class="topic-name-input" id="translation-topic" type="text" list="translation-topics" maxlength="60" placeholder="Chọn hoặc nhập chủ đề" aria-label="Chủ đề" autocomplete="off">
+            <datalist id="translation-topics"></datalist>
+            <select id="industry-select" aria-hidden="true" tabindex="-1" hidden></select>
           </label>
           <div class="personal-controls" id="personal-controls" hidden>
             <label class="file-control direction-control" for="personal-direction">Chiều dịch
@@ -977,23 +968,6 @@
           </label>
         </div>
         </div>
-
-        <dialog class="topic-dialog" id="topic-dialog" aria-labelledby="topic-dialog-title">
-          <div class="deepl-settings-head">
-            <h2 class="deepl-settings-title" id="topic-dialog-title">Thêm chủ đề</h2>
-            <button class="quiet-button deepl-modal-close" id="close-topic-dialog" type="button" aria-label="Đóng">×</button>
-          </div>
-          <form class="topic-dialog-body" id="topic-form">
-            <label class="file-control" for="new-topic">Tên chủ đề
-              <input class="topic-dialog-input" id="new-topic" type="text" maxlength="60" placeholder="Ví dụ: Du lịch, Giáo dục" required>
-            </label>
-            <p class="topic-dialog-status" id="topic-dialog-status" role="status" aria-live="polite"></p>
-            <div class="topic-dialog-actions">
-              <button class="quiet-button" id="cancel-topic-dialog" type="button">Hủy</button>
-              <button class="primary-button" type="submit">Thêm chủ đề</button>
-            </div>
-          </form>
-        </dialog>
 
         <dialog class="deepl-settings" id="deepl-settings" aria-labelledby="deepl-settings-title">
           <div class="deepl-settings-head">
@@ -1164,8 +1138,9 @@
         <div class="workspace-actions">
           <span class="score-note" id="translation-score-note">Gợi ý về ý nghĩa, văn phong và thuật ngữ</span>
           <div class="translation-button-group">
-            <button class="quiet-button icon-button" id="save-translation" type="button" aria-label="Lưu bài biên dịch" title="Lưu bài biên dịch" disabled>
+            <button class="quiet-button save-translation-button" id="save-translation" type="button" aria-label="Lưu bài biên dịch" title="Lưu bài biên dịch" disabled>
               <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+              <span>Lưu</span>
             </button>
             <button class="quiet-button" id="open-deepl-settings" type="button">⚙ Cài đặt DeepL API</button>
             <button class="primary-button" id="check-answer" type="button">Kiểm tra &amp; Xem nhận xét <span aria-hidden="true">→</span></button>
@@ -1326,8 +1301,8 @@
         <div class="history-sidebar-card">
           <h2 class="history-sidebar-title">Lịch sử luyện tập</h2>
           <div class="history-tabs" role="tablist" aria-label="Loại lịch sử">
-            <button class="history-tab" id="translation-history-tab" type="button" role="tab" aria-selected="true" aria-controls="translation-history-panel">Lịch sử Biên dịch</button>
-            <button class="history-tab" id="practice-history-tab" type="button" role="tab" aria-selected="false" aria-controls="history-panel">Lịch sử Phiên dịch</button>
+            <button class="history-tab" id="translation-history-tab" type="button" role="tab" aria-selected="true" aria-controls="translation-history-panel">Biên dịch (0)</button>
+            <button class="history-tab" id="practice-history-tab" type="button" role="tab" aria-selected="false" aria-controls="history-panel">Phiên dịch (0)</button>
           </div>
           <section class="history" id="translation-history-panel" role="tabpanel" aria-labelledby="translation-history-tab">
             <div class="history-tools">
@@ -1838,25 +1813,31 @@
       const topics = activeTranslationMode === "sample"
         ? exerciseGroups.map((group) => ({ value: group.id, label: group.label }))
         : [...new Set([
+            DEFAULT_PERSONAL_TOPIC,
             ...readPersonalTopics(),
             ...readPersonalMaterials().map(getMaterialTopic)
           ])].map((topic) => ({ value: topic, label: topic }));
+      const suggestions = document.querySelector("#translation-topics");
       industrySelect.replaceChildren();
+      suggestions.replaceChildren();
       if (activeTranslationMode === "personal") {
-        const placeholder = document.createElement("option");
-        placeholder.value = "";
-        placeholder.textContent = topics.length ? "Chọn chủ đề..." : "Thêm chủ đề để bắt đầu...";
-        industrySelect.append(placeholder);
+        const blank = document.createElement("option");
+        blank.value = "";
+        industrySelect.append(blank);
       }
       topics.forEach(({ value, label }) => {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = label;
         industrySelect.append(option);
+        const suggestion = document.createElement("option");
+        suggestion.value = label;
+        suggestions.append(suggestion);
       });
       if (topics.some((topic) => topic.value === currentTopic)) industrySelect.value = currentTopic;
-      else if (activeTranslationMode === "personal") industrySelect.value = "";
+      else if (activeTranslationMode === "personal") industrySelect.value = DEFAULT_PERSONAL_TOPIC;
       else if (topics.length) industrySelect.value = topics[0].value;
+      translationTopicInput.value = industrySelect.selectedOptions[0]?.textContent || "";
     }
 
     function populateExercises() {
@@ -1990,7 +1971,9 @@
     }
 
     function updateSaveButtonStates() {
-      document.querySelector("#save-translation").disabled = !answerText.value.trim();
+      document.querySelector("#save-translation").disabled = activeTranslationMode === "personal"
+        ? !sourceText.value.trim() && !answerText.value.trim()
+        : !answerText.value.trim();
       document.querySelector("#save-practice").disabled = !transcript.textContent.trim()
         && !speechRecordingsById.has(speechRecordingId);
     }
@@ -2143,7 +2126,6 @@
       document.querySelector("#personal-controls").hidden = !personal;
       document.querySelector("#reference-editor").hidden = !personal;
       contentSelectorField.hidden = personal;
-      document.querySelector("#open-topic-dialog").hidden = !personal;
       document.querySelector("#sample-mode").setAttribute("aria-pressed", String(!personal));
       document.querySelector("#personal-mode").setAttribute("aria-pressed", String(personal));
       const saveButton = document.querySelector("#save-translation");
@@ -2152,7 +2134,7 @@
       sourceText.readOnly = !personal;
       document.querySelector("#translation-title").textContent = personal ? "Tài liệu tự luyện theo chủ đề" : "Bài dịch theo chủ đề";
       document.querySelector("#translation-caption").textContent = personal
-        ? "Chọn chủ đề rồi nhập hoặc tải tài liệu để bắt đầu"
+        ? "Dán văn bản, tải tệp hoặc chụp ảnh để bắt đầu"
         : "Chọn chủ đề và nội dung để bắt đầu luyện tập";
       document.querySelector("#translation-score-note").textContent = personal
         ? "Gợi ý tham khảo về cách diễn đạt và từ khóa"
@@ -2185,14 +2167,10 @@
       updateCounts();
     }
 
-    function addPersonalTopic() {
-      const input = document.querySelector("#new-topic");
-      const topic = input.value.trim();
+    function addPersonalTopic(topicName = translationTopicInput.value) {
+      const topic = topicName.trim();
       const status = document.querySelector("#personal-status");
-      const dialogStatus = document.querySelector("#topic-dialog-status");
       if (!topic) {
-        dialogStatus.textContent = "Nhập tên chủ đề trước khi thêm.";
-        input.focus();
         return;
       }
       const existingTopics = [
@@ -2200,7 +2178,10 @@
         ...readPersonalMaterials().map(getMaterialTopic)
       ];
       if (existingTopics.some((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase())) {
-        dialogStatus.textContent = "Chủ đề này đã có. Hãy chọn chủ đề trong danh sách.";
+        const existingTopic = existingTopics.find((existing) => existing.toLocaleLowerCase() === topic.toLocaleLowerCase());
+        personalDraftTopic = existingTopic;
+        populateTopics(existingTopic);
+        loadPersonalTopicDraft(existingTopic);
         return;
       }
       try {
@@ -2210,13 +2191,10 @@
         personalDraftTopic = topic;
         populateTopics(topic);
         loadPersonalTopicDraft(topic);
-        input.value = "";
-        dialogStatus.textContent = "";
-        document.querySelector("#topic-dialog").close();
         setSaveStatus(status, `Đã thêm chủ đề “${topic}”.`, true);
       } catch (error) {
         status.classList.remove("is-success", "is-error");
-        dialogStatus.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
+        status.textContent = "Không thể thêm chủ đề. Hãy thử lại.";
       }
     }
 
@@ -2766,16 +2744,21 @@
         showTranslationTopicAlert();
         return;
       }
+      if (activeTranslationMode === "personal") {
+        if (!sourceText.value.trim()) {
+          setSaveStatus(status, "Hãy thêm văn bản nguồn trước khi lưu.");
+          return;
+        }
+        capturePersonalDraft();
+        if (answerText.value.trim() && !saveTranslationHistory(topic)) return;
+        saveMaterialDraft(personalDraft, status, undefined, topic);
+        return;
+      }
       if (!answerText.value.trim()) {
         setSaveStatus(status, "Hãy viết bản dịch trước khi lưu.");
         return;
       }
       if (!saveTranslationHistory(topic)) return;
-      if (activeTranslationMode === "personal") {
-        capturePersonalDraft();
-        saveMaterialDraft(personalDraft, status, undefined, topic);
-        return;
-      }
 
       const exercise = currentExercises()[Number(exerciseSelect.value)];
       const draft = {
@@ -2854,6 +2837,9 @@
     function renderTranslationHistory() {
       const entries = readTranslationHistory();
       const list = document.querySelector("#translation-history-list");
+      const tab = document.querySelector("#translation-history-tab");
+      tab.textContent = `Biên dịch (${entries.length})`;
+      tab.setAttribute("aria-label", `Lịch sử Biên dịch (${entries.length} bài)`);
       list.replaceChildren();
       if (!entries.length) {
         const empty = document.createElement("li");
@@ -3145,10 +3131,10 @@
     function setMode(mode) {
       const translating = mode === "translate";
       document.querySelector("#quick-guide-description").textContent = translating
-        ? "Thực hành theo câu mẫu hoặc dùng tài liệu của riêng bạn."
+        ? "Dán tài liệu cá nhân để luyện, hoặc tham khảo bài mẫu."
         : "Nghe video, chọn ngôn ngữ rồi luyện nói và theo dõi thời gian.";
       document.querySelector("#quick-guide-step-one").textContent = translating
-        ? "Chọn chủ đề và nội dung thứ bạn muốn luyện."
+        ? "Dán tài liệu hoặc tải tệp để bắt đầu ngay."
         : "Dán link YouTube hoặc bắt đầu nói trực tiếp.";
       document.querySelector("#quick-guide-step-two").textContent = translating
         ? "Viết bản dịch rồi chọn “Kiểm tra & Xem gợi ý”."
@@ -4279,6 +4265,9 @@
       const historyList = document.querySelector("#history-list");
       historyList.replaceChildren();
       document.querySelector("#history-summary").textContent = `Lịch sử luyện tập (${entries.length})`;
+      const tab = document.querySelector("#practice-history-tab");
+      tab.textContent = `Phiên dịch (${entries.length})`;
+      tab.setAttribute("aria-label", `Lịch sử Phiên dịch (${entries.length} buổi)`);
       if (entries.length === 0) {
         const empty = document.createElement("li");
         empty.className = "history-empty";
@@ -4578,13 +4567,41 @@
     translationTopicInput.addEventListener("input", () => {
       if (getTranslationTopic()) document.querySelector("#translation-topic-toast").hidden = true;
     });
-    industrySelect.addEventListener("change", () => {
-      translationTopicInput.value = "";
+    translationTopicInput.addEventListener("change", () => {
+      const enteredTopic = translationTopicInput.value.trim();
+      if (!enteredTopic) return;
       document.querySelector("#translation-topic-toast").hidden = true;
       if (activeTranslationMode === "personal") {
-        loadPersonalTopicDraft(industrySelect.value);
-      } else {
+        const existingTopic = [
+          ...readPersonalTopics(),
+          ...readPersonalMaterials().map(getMaterialTopic),
+          DEFAULT_PERSONAL_TOPIC
+        ].find((topic) => topic.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase());
+        if (existingTopic) {
+          personalDraftTopic = existingTopic;
+          populateTopics(existingTopic);
+          loadPersonalTopicDraft(existingTopic);
+        } else {
+          addPersonalTopic(enteredTopic);
+        }
+        return;
+      }
+
+      const group = exerciseGroups.find((candidate) =>
+        candidate.id === enteredTopic ||
+        candidate.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
+      );
+      if (group) {
+        industrySelect.value = group.id;
+        translationTopicInput.value = group.label;
         populateExercises();
+      }
+    });
+    translationTopicInput.addEventListener("keydown", (event) => {
+      if (event.key === "Enter") {
+        event.preventDefault();
+        translationTopicInput.dispatchEvent(new Event("change"));
+        sourceText.focus();
       }
     });
     document.querySelector("#dismiss-translation-topic-toast").addEventListener("click", () => {
@@ -4630,25 +4647,6 @@
     personalKeywords.addEventListener("input", handlePersonalInput);
     document.querySelector("#source-file").addEventListener("change", importSourceFile);
     document.querySelector("#save-translation").addEventListener("click", saveCurrentTranslation);
-    document.querySelector("#open-topic-dialog").addEventListener("click", () => {
-      const dialog = document.querySelector("#topic-dialog");
-      document.querySelector("#topic-dialog-status").textContent = "";
-      if (!dialog.open) dialog.showModal();
-      document.querySelector("#new-topic").focus();
-    });
-    document.querySelector("#topic-form").addEventListener("submit", (event) => {
-      event.preventDefault();
-      addPersonalTopic();
-    });
-    document.querySelector("#close-topic-dialog").addEventListener("click", () => {
-      document.querySelector("#topic-dialog").close();
-    });
-    document.querySelector("#cancel-topic-dialog").addEventListener("click", () => {
-      document.querySelector("#topic-dialog").close();
-    });
-    document.querySelector("#topic-dialog").addEventListener("click", (event) => {
-      if (event.target === event.currentTarget) event.currentTarget.close();
-    });
     document.querySelector("#save-deepl-key").addEventListener("click", saveDeepLKey);
     document.querySelector("#remove-deepl-key").addEventListener("click", removeDeepLKey);
     document.querySelector("#open-deepl-settings").addEventListener("click", openDeepLSettings);
@@ -4886,8 +4884,7 @@
       }
     });
     loadDeepLKey();
-    populateTopics(exerciseGroups[0].id);
-    populateExercises();
+    setTranslationMode("personal");
     renderTimer();
     updatePracticeModeControls();
     renderTranslationHistory();
