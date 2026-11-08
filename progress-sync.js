@@ -2,6 +2,8 @@
   const SESSION_KEY = "interslation-supabase-session-v1";
   const LOCAL_OWNER_KEY = "interslation-progress-owner-v1";
   const HISTORY_KEY = "lingua-lab-practice-history-v1";
+  const TRANSLATION_HISTORY_KEY = "lingua-lab-translation-history-v1";
+  const DELETED_TRANSLATION_HISTORY_KEY = "interslation-deleted-translation-history-v1";
   const MATERIALS_KEY = "lingua-lab-personal-materials-v1";
   const TOPICS_KEY = "lingua-lab-personal-topics-v1";
   const DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
@@ -12,6 +14,7 @@
   const BUCKET = "interslation-user-progress";
   const RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
   const MAX_HISTORY = 30;
+  const MAX_TRANSLATION_HISTORY = 30;
   const statusElement = document.querySelector("#progress-sync-status");
   const toastElement = document.querySelector("#progress-sync-toast");
   let activeUserId = "";
@@ -55,6 +58,8 @@
   function readLocalProgress() {
     return {
       history: parseLocalValue(HISTORY_KEY, [], Array.isArray),
+      translationHistory: parseLocalValue(TRANSLATION_HISTORY_KEY, [], Array.isArray),
+      translationHistoryTombstones: parseLocalValue(DELETED_TRANSLATION_HISTORY_KEY, [], Array.isArray),
       materials: parseLocalValue(MATERIALS_KEY, [], Array.isArray),
       topics: parseLocalValue(TOPICS_KEY, [], Array.isArray),
       drafts: parseLocalValue(DRAFTS_KEY, {}, (value) => value && typeof value === "object" && !Array.isArray(value)),
@@ -64,6 +69,8 @@
 
   function writeLocalProgress(progress) {
     window.localStorage.setItem(HISTORY_KEY, JSON.stringify(progress.history));
+    window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(progress.translationHistory || []));
+    window.localStorage.setItem(DELETED_TRANSLATION_HISTORY_KEY, JSON.stringify(progress.translationHistoryTombstones || []));
     window.localStorage.setItem(MATERIALS_KEY, JSON.stringify(progress.materials));
     window.localStorage.setItem(TOPICS_KEY, JSON.stringify(progress.topics));
     window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(progress.drafts));
@@ -242,8 +249,23 @@
       .filter((entry) => (Number(entry.expiresAt) || Date.parse(entry.date) + RETENTION_MS) > Date.now())
       .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
       .slice(0, MAX_HISTORY);
+    const translationHistoryTombstones = mergeUnique(
+      cloudProgress.translationHistoryTombstones || [],
+      localProgress.translationHistoryTombstones || [],
+      (item) => item?.id
+    ).filter((item) => item && typeof item.id === "string" && Number.isFinite(Number(item.deletedAt)));
+    const deletedTranslationIds = new Set(translationHistoryTombstones.map((item) => item.id));
+    const translationHistory = mergeUnique(
+      cloudProgress.translationHistory || [],
+      localProgress.translationHistory || [],
+      (entry) => entry?.id
+    )
+      .filter((entry) => entry && typeof entry.id === "string" && typeof entry.date === "string")
+      .filter((entry) => !deletedTranslationIds.has(entry.id))
+      .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
+      .slice(0, MAX_TRANSLATION_HISTORY);
     const materials = mergeUnique(cloudProgress.materials || [], localProgress.materials || [], (item) => item?.id);
-    return { history, materials, topics: topicNames, drafts, historyTombstones };
+    return { history, translationHistory, translationHistoryTombstones, materials, topics: topicNames, drafts, historyTombstones };
   }
 
   function mediaPath(userId, mediaId, name) {
@@ -261,7 +283,7 @@
     const response = await supabaseFetch(`/rest/v1/${TABLE}?select=payload&user_id=eq.${encodeURIComponent(userId)}`);
     const rows = await readResponse(response, "Không thể tải tiến trình từ Supabase.");
     if (!Array.isArray(rows) || !rows.length) {
-      return { history: [], materials: [], topics: [], drafts: {}, historyTombstones: [], media: [] };
+      return { history: [], translationHistory: [], translationHistoryTombstones: [], materials: [], topics: [], drafts: {}, historyTombstones: [], media: [] };
     }
     const payload = rows[0].payload;
     if (!payload || payload.version !== 1 || !payload.progress) {
@@ -399,7 +421,7 @@
     const [cloud, local, localMedia] = await Promise.all([
       loadCloudProgress(userId),
       Promise.resolve(switchingAccount
-        ? { history: [], materials: [], topics: [], drafts: {}, historyTombstones: [] }
+        ? { history: [], translationHistory: [], translationHistoryTombstones: [], materials: [], topics: [], drafts: {}, historyTombstones: [] }
         : readLocalProgress()),
       switchingAccount ? Promise.resolve([]) : getLocalMedia()
     ]);

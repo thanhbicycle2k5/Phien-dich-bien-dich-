@@ -220,6 +220,7 @@
     .content-select-row select { min-width: 180px; }
     .topic-select-row { display: flex; align-items: center; gap: 6px; }
     .topic-select-row select { min-width: 150px; }
+    .topic-name-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); }
     .selector-icon-button { width: 38px; min-width: 38px; padding: 0; color: var(--muted); }
     .selector-icon-button svg { width: 17px; height: 17px; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
@@ -611,6 +612,11 @@
     .history-sidebar-card .history { margin-top: 0; border-top: 0; }
     .history-sidebar-card .history summary { padding-top: 0; }
     .history-sidebar-card .history-list { margin-bottom: 4px; }
+    .history-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px; margin-bottom: 12px; }
+    .history-tab { min-height: 36px; padding: 6px 8px; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
+    .history-tab[aria-selected="true"] { border-color: var(--blue); background: var(--soft-accent); color: var(--blue-dark); }
+    .translation-history-topic { display: block; margin: 0 0 5px; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
+    .translation-history-answer { margin: 8px 0 0; color: var(--ink); }
     .quick-guide { padding: 20px; }
     .workspace { overflow: hidden; }
     .workspace-head { padding: 18px 22px; }
@@ -713,6 +719,7 @@
     :root[data-theme="dark"] .practice-controls-panel, :root[data-theme="dark"] .interpret-session,
     :root[data-theme="dark"] .history-item, :root[data-theme="dark"] .deepl-settings,
     :root[data-theme="dark"] .topic-dialog, :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
+    :root[data-theme="dark"] .topic-name-input { background: #202024; color: var(--ink); }
     :root[data-theme="dark"] .text-area, :root[data-theme="dark"] .transcript, :root[data-theme="dark"] .practice-status,
     :root[data-theme="dark"] .source-switch, :root[data-theme="dark"] .reference-editor,
     :root[data-theme="dark"] .deepl-guide, :root[data-theme="dark"] .media-mix-panel,
@@ -862,6 +869,11 @@
       <p class="progress-sync-status" id="progress-sync-status"></p>
       <button class="sync-toast-dismiss" id="dismiss-sync-toast" type="button" aria-label="Đóng thông báo">×</button>
     </div>
+    <div class="sync-toast" id="translation-topic-toast" role="alert" aria-live="assertive" hidden>
+      <span class="sync-toast-icon" aria-hidden="true">!</span>
+      <p class="progress-sync-status">Vui lòng nhập hoặc chọn chủ đề trước khi hệ thống có thể lưu lại bài làm của bạn.</p>
+      <button class="sync-toast-dismiss" id="dismiss-translation-topic-toast" type="button" aria-label="Đóng thông báo">×</button>
+    </div>
 
     <main class="app-layout">
       <aside class="app-sidebar">
@@ -943,6 +955,7 @@
                 <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 5v14M5 12h14" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
               </button>
             </span>
+            <input class="topic-name-input" id="translation-topic" type="text" maxlength="60" placeholder="Hoặc nhập tên chủ đề riêng" aria-label="Nhập tên chủ đề riêng">
           </label>
           <div class="personal-controls" id="personal-controls" hidden>
             <label class="file-control direction-control" for="personal-direction">Chiều dịch
@@ -1312,7 +1325,18 @@
         </button>
         <div class="history-sidebar-card">
           <h2 class="history-sidebar-title">Lịch sử luyện tập</h2>
-          <details class="history" id="history-panel" open>
+          <div class="history-tabs" role="tablist" aria-label="Loại lịch sử">
+            <button class="history-tab" id="translation-history-tab" type="button" role="tab" aria-selected="true" aria-controls="translation-history-panel">Lịch sử Biên dịch</button>
+            <button class="history-tab" id="practice-history-tab" type="button" role="tab" aria-selected="false" aria-controls="history-panel">Lịch sử Phiên dịch</button>
+          </div>
+          <section class="history" id="translation-history-panel" role="tabpanel" aria-labelledby="translation-history-tab">
+            <div class="history-tools">
+              <span class="history-message" id="translation-history-message" role="status" aria-live="polite"></span>
+              <button class="quiet-button" id="clear-translation-history" type="button">Xóa lịch sử</button>
+            </div>
+            <ul class="history-list" id="translation-history-list"></ul>
+          </section>
+          <details class="history" id="history-panel" role="tabpanel" aria-labelledby="practice-history-tab" hidden>
             <summary id="history-summary">Các buổi đã lưu</summary>
             <div class="history-tools">
               <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
@@ -1474,7 +1498,10 @@
     ];
 
     const HISTORY_KEY = "lingua-lab-practice-history-v1";
+    const TRANSLATION_HISTORY_KEY = "lingua-lab-translation-history-v1";
+    const DELETED_TRANSLATION_HISTORY_KEY = "interslation-deleted-translation-history-v1";
     const MAX_HISTORY_ITEMS = 30;
+    const MAX_TRANSLATION_HISTORY_ITEMS = 30;
     const PRACTICE_MEDIA_DB_NAME = "interslation-practice-media-v1";
     const PRACTICE_MEDIA_STORE = "sessions";
     const PRACTICE_MEDIA_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
@@ -1503,6 +1530,7 @@
     }
 
     const industrySelect = document.querySelector("#industry-select");
+    const translationTopicInput = document.querySelector("#translation-topic");
     const exerciseSelect = document.querySelector("#exercise-select");
     const contentSelectorField = document.querySelector("#content-selector-field");
     const sourceText = document.querySelector("#source-text");
@@ -2404,11 +2432,17 @@
     }
 
     async function checkTranslation() {
+      const topic = getTranslationTopic();
+      if (!topic) {
+        showTranslationTopicAlert();
+        return;
+      }
       const answer = tokenize(answerText.value);
       if (answer.length === 0) {
         showTranslationFeedback("Chưa có bản dịch", "Hãy nhập bản dịch của bạn trước khi kiểm tra.", true);
         return;
       }
+      if (!saveTranslationHistory(topic)) return;
       if (activeTranslationMode === "personal") {
         await checkPersonalTranslation();
         return;
@@ -2727,17 +2761,19 @@
 
     function saveCurrentTranslation() {
       const status = document.querySelector("#translation-save-status");
+      const topic = getTranslationTopic();
+      if (!topic) {
+        showTranslationTopicAlert();
+        return;
+      }
       if (!answerText.value.trim()) {
         setSaveStatus(status, "Hãy viết bản dịch trước khi lưu.");
         return;
       }
+      if (!saveTranslationHistory(topic)) return;
       if (activeTranslationMode === "personal") {
-        if (!industrySelect.value) {
-          setSaveStatus(document.querySelector("#personal-status"), "Hãy thêm hoặc chọn chủ đề trước khi lưu nội dung.");
-          return;
-        }
         capturePersonalDraft();
-        saveMaterialDraft(personalDraft, status, undefined, personalDraftTopic);
+        saveMaterialDraft(personalDraft, status, undefined, topic);
         return;
       }
 
@@ -2749,8 +2785,159 @@
         keywords: exercise.keyTerms.map((term) => term.translation).join(", "),
         direction: "EN_VI"
       };
-      const title = `${industrySelect.selectedOptions[0].textContent} · ${exerciseSelect.selectedOptions[0].textContent}`;
-      saveMaterialDraft(draft, status, title, personalDraftTopic || DEFAULT_PERSONAL_TOPIC);
+      const title = `${topic} · ${exerciseSelect.selectedOptions[0].textContent}`;
+      saveMaterialDraft(draft, status, title, topic);
+    }
+
+    function getTranslationTopic() {
+      return translationTopicInput.value.trim() || (industrySelect.value
+        ? industrySelect.selectedOptions[0]?.textContent.trim() || ""
+        : "");
+    }
+
+    function showTranslationTopicAlert() {
+      const settings = document.querySelector("#translation-settings");
+      if (settings.hidden) {
+        settings.hidden = false;
+        const toggle = document.querySelector("#toggle-translation-content");
+        toggle.setAttribute("aria-expanded", "true");
+        toggle.setAttribute("aria-label", "Thu gọn phần chọn nguồn, chủ đề và bài tập");
+      }
+      document.querySelector("#translation-topic-toast").hidden = false;
+      translationTopicInput.focus();
+    }
+
+    function readTranslationHistory() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(TRANSLATION_HISTORY_KEY) || "[]");
+        return Array.isArray(saved)
+          ? saved.filter((entry) => entry && typeof entry.id === "string" && typeof entry.date === "string")
+          : [];
+      } catch (error) {
+        document.querySelector("#translation-history-message").textContent = "Không thể đọc lịch sử biên dịch trên trình duyệt này.";
+        return [];
+      }
+    }
+
+    function saveTranslationHistory(topic) {
+      const date = new Date();
+      const exercise = activeTranslationMode === "sample"
+        ? currentExercises()[Number(exerciseSelect.value)]
+        : null;
+      const entry = {
+        id: `${date.getTime()}-${Math.random().toString(36).slice(2, 10)}`,
+        date: date.toISOString(),
+        topic,
+        mode: activeTranslationMode,
+        direction: activeTranslationMode === "personal" ? personalDirection : "EN_VI",
+        title: activeTranslationMode === "sample"
+          ? exerciseSelect.selectedOptions[0]?.textContent || "Bài biên dịch"
+          : sourceText.value.replace(/\s+/g, " ").trim().slice(0, 60) || "Tài liệu cá nhân",
+        source: sourceText.value,
+        answer: answerText.value,
+        reference: activeTranslationMode === "personal" ? referenceAnswer.value : exercise?.answers[0] || ""
+      };
+      try {
+        const entries = readTranslationHistory();
+        entries.unshift(entry);
+        window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_TRANSLATION_HISTORY_ITEMS)));
+        notifyProgressChanged();
+        document.querySelector("#translation-history-message").textContent = "Đã lưu bài biên dịch vào lịch sử trên thiết bị.";
+        renderTranslationHistory();
+        return true;
+      } catch (error) {
+        setSaveStatus(document.querySelector("#translation-save-status"), "Không thể lưu lịch sử biên dịch. Hãy kiểm tra dung lượng trình duyệt rồi thử lại.");
+        return false;
+      }
+    }
+
+    function renderTranslationHistory() {
+      const entries = readTranslationHistory();
+      const list = document.querySelector("#translation-history-list");
+      list.replaceChildren();
+      if (!entries.length) {
+        const empty = document.createElement("li");
+        empty.className = "history-empty";
+        empty.textContent = "Bài biên dịch đã kiểm tra hoặc lưu sẽ hiển thị tại đây.";
+        list.append(empty);
+        return;
+      }
+
+      entries.forEach((entry) => {
+        const item = document.createElement("li");
+        item.className = "history-item";
+        const cardHead = document.createElement("div");
+        cardHead.className = "history-card-head";
+        const cardMain = document.createElement("div");
+        cardMain.className = "history-card-main";
+        const title = document.createElement("span");
+        title.className = "history-source-title";
+        title.textContent = entry.title || "Bài biên dịch";
+        const topic = document.createElement("span");
+        topic.className = "translation-history-topic";
+        topic.textContent = entry.topic || "Chưa phân loại";
+        const metadata = document.createElement("div");
+        metadata.className = "history-meta";
+        const date = document.createElement("span");
+        date.textContent = new Date(entry.date).toLocaleString("vi-VN");
+        const mode = document.createElement("span");
+        mode.textContent = entry.direction === "VI_EN" ? "Việt → Anh" : "Anh → Việt";
+        metadata.append(date, mode);
+        cardMain.append(title, topic, metadata);
+        const actions = document.createElement("div");
+        actions.className = "history-actions";
+        const deleteButton = document.createElement("button");
+        deleteButton.className = "quiet-button";
+        deleteButton.type = "button";
+        deleteButton.textContent = "Xóa";
+        deleteButton.setAttribute("aria-label", `Xóa bài biên dịch ngày ${date.textContent}`);
+        deleteButton.addEventListener("click", () => deleteTranslationHistoryEntry(entry.id));
+        actions.append(deleteButton);
+        cardHead.append(cardMain, actions);
+        const source = document.createElement("p");
+        source.className = "history-transcript";
+        source.textContent = `Nguồn: ${entry.source || "(trống)"}`;
+        const answer = document.createElement("p");
+        answer.className = "history-transcript translation-history-answer";
+        answer.textContent = `Bản dịch: ${entry.answer || "(trống)"}`;
+        item.append(cardHead, source, answer);
+        if (entry.reference) {
+          const reference = document.createElement("p");
+          reference.className = "history-transcript";
+          reference.textContent = `Đáp án tham khảo: ${entry.reference}`;
+          item.append(reference);
+        }
+        if (entry.feedback) {
+          const feedback = document.createElement("p");
+          feedback.className = "history-message";
+          feedback.textContent = entry.feedback;
+          item.append(feedback);
+        }
+        list.append(item);
+      });
+    }
+
+    function markTranslationHistoryDeleted(entries) {
+      const existing = JSON.parse(window.localStorage.getItem(DELETED_TRANSLATION_HISTORY_KEY) || "[]");
+      const deleted = new Map([...existing, ...entries.map((entry) => ({ id: entry.id, deletedAt: Date.now() }))]
+        .map((item) => [item.id, item]));
+      window.localStorage.setItem(DELETED_TRANSLATION_HISTORY_KEY, JSON.stringify([...deleted.values()]));
+    }
+
+    function deleteTranslationHistoryEntry(id) {
+      if (!window.confirm("Xóa bài biên dịch này khỏi lịch sử?")) return;
+      try {
+        const entries = readTranslationHistory();
+        const removed = entries.find((entry) => entry.id === id);
+        if (!removed) return;
+        markTranslationHistoryDeleted([removed]);
+        window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(entries.filter((entry) => entry.id !== id)));
+        notifyProgressChanged();
+        document.querySelector("#translation-history-message").textContent = "Đã xóa bài biên dịch khỏi lịch sử.";
+        renderTranslationHistory();
+      } catch (error) {
+        document.querySelector("#translation-history-message").textContent = `Không thể xóa bài biên dịch: ${error.message}`;
+      }
     }
 
     async function extractDocxText(file) {
@@ -4388,12 +4575,20 @@
     document.querySelector("#personal-direction").addEventListener("change", (event) => {
       changePersonalDirection(event.currentTarget.value);
     });
+    translationTopicInput.addEventListener("input", () => {
+      if (getTranslationTopic()) document.querySelector("#translation-topic-toast").hidden = true;
+    });
     industrySelect.addEventListener("change", () => {
+      translationTopicInput.value = "";
+      document.querySelector("#translation-topic-toast").hidden = true;
       if (activeTranslationMode === "personal") {
         loadPersonalTopicDraft(industrySelect.value);
       } else {
         populateExercises();
       }
+    });
+    document.querySelector("#dismiss-translation-topic-toast").addEventListener("click", () => {
+      document.querySelector("#translation-topic-toast").hidden = true;
     });
     exerciseSelect.addEventListener("change", () => {
       loadExercise();
@@ -4529,6 +4724,15 @@
       }
     });
     document.querySelector("#check-answer").addEventListener("click", checkTranslation);
+    const setHistoryTab = (tab) => {
+      const showTranslations = tab === "translation";
+      document.querySelector("#translation-history-tab").setAttribute("aria-selected", String(showTranslations));
+      document.querySelector("#practice-history-tab").setAttribute("aria-selected", String(!showTranslations));
+      document.querySelector("#translation-history-panel").hidden = !showTranslations;
+      document.querySelector("#history-panel").hidden = showTranslations;
+    };
+    document.querySelector("#translation-history-tab").addEventListener("click", () => setHistoryTab("translation"));
+    document.querySelector("#practice-history-tab").addEventListener("click", () => setHistoryTab("practice"));
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
@@ -4628,6 +4832,18 @@
         document.querySelector("#history-message").textContent = `Không thể xóa lịch sử: ${error.message}`;
       }
     });
+    document.querySelector("#clear-translation-history").addEventListener("click", () => {
+      if (!window.confirm("Xóa toàn bộ lịch sử biên dịch trên trình duyệt này?")) return;
+      try {
+        markTranslationHistoryDeleted(readTranslationHistory());
+        window.localStorage.setItem(TRANSLATION_HISTORY_KEY, "[]");
+        notifyProgressChanged();
+        document.querySelector("#translation-history-message").textContent = "Đã xóa lịch sử biên dịch.";
+        renderTranslationHistory();
+      } catch (error) {
+        document.querySelector("#translation-history-message").textContent = `Không thể xóa lịch sử: ${error.message}`;
+      }
+    });
     document.querySelector("#clear-transcript").addEventListener("click", () => {
       finalTranscript = "";
       transcript.textContent = "";
@@ -4663,6 +4879,7 @@
         await loadStoredPracticeMedia();
         readPracticeHistory();
         renderPracticeHistory();
+        renderTranslationHistory();
         schedulePracticeMediaExpiry();
       } catch (error) {
         document.querySelector("#history-message").textContent = `Không thể mở media đã đồng bộ: ${error.message}`;
@@ -4673,6 +4890,7 @@
     populateExercises();
     renderTimer();
     updatePracticeModeControls();
+    renderTranslationHistory();
     loadStoredPracticeMedia().then(() => {
       readPracticeHistory();
       renderPracticeHistory();
