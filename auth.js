@@ -226,8 +226,8 @@
         body: { email: values.email.trim(), password: values.password }
       });
       saveSession(data);
-      setMessage("Đăng nhập thành công.");
       form.reset();
+      dialog.close();
     } catch (error) {
       showAuthError(error, "Không thể đăng nhập.");
     } finally {
@@ -251,15 +251,16 @@
       });
       if (data.access_token) {
         saveSession(data);
-        setMessage("Tạo tài khoản và đăng nhập thành công.");
+        form.reset();
+        dialog.close();
       } else {
         setMessage(
           "Tài khoản đã được tạo. Hãy mở email xác nhận; sau khi xác nhận, bạn sẽ được đưa về ứng dụng.",
           false,
           emailInboxUrl(values.email.trim())
         );
+        form.reset();
       }
-      form.reset();
     } catch (error) {
       showAuthError(error, "Không thể tạo tài khoản.");
     } finally {
@@ -414,8 +415,7 @@
         openDialog();
         setMessage("Tạo mật khẩu mới cho tài khoản của bạn.");
       } else {
-        openDialog();
-        setMessage("Email đã được xác nhận. Bạn có thể tiếp tục sử dụng tài khoản.");
+        dialog.close();
       }
     } catch (error) {
       openDialog();

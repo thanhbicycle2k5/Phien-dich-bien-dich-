@@ -4,7 +4,7 @@
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="theme-color" content="#f4f8ff">
-  <meta name="description" content="Interslation - Phiên dịch, Biên dịch không hề khó">
+  <meta name="description" content="Interslation - Phiên dịch, Biên dịch không hề khó!">
   <meta name="mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-title" content="Interslation">
@@ -885,7 +885,7 @@
         <span class="brand-mark" aria-hidden="true">
           <span>IT</span>
         </span>
-        <span><span class="brand-name">Interslation</span><span class="brand-note">Phiên dịch, Biên dịch không hề khó</span></span>
+        <span><span class="brand-name">Interslation</span><span class="brand-note">Phiên dịch, Biên dịch không hề khó!</span></span>
       </div>
       <div class="account-tools">
         <span class="account-identity" id="auth-identity" aria-live="polite">Không gian luyện tập của bạn</span>
@@ -1554,11 +1554,37 @@
     const DEFAULT_PERSONAL_TOPIC = "Chưa phân loại";
     const HISTORY_TOMBSTONES_KEY = "interslation-deleted-history-v1";
     const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
+    const APP_PREFERENCES_KEY = "interslation-app-preferences-v1";
     const MAX_PERSONAL_MATERIALS = 10;
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
     const MAX_EDIT_HISTORY = 100;
     const EDIT_HISTORY_DELAY = 500;
     const PERSONAL_DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
+    function readAppPreferences() {
+      try {
+        const saved = JSON.parse(window.localStorage.getItem(APP_PREFERENCES_KEY) || "{}");
+        if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
+          throw new Error("Invalid app preferences");
+        }
+        return saved;
+      } catch (error) {
+        console.error("Không thể đọc tùy chọn giao diện đã lưu:", error);
+        return {};
+      }
+    }
+
+    function saveAppPreferences(patch) {
+      try {
+        window.localStorage.setItem(
+          APP_PREFERENCES_KEY,
+          JSON.stringify({ ...readAppPreferences(), ...patch })
+        );
+      } catch (error) {
+        console.error("Không thể lưu tùy chọn giao diện:", error);
+      }
+    }
+
+    const initialAppPreferences = readAppPreferences();
     function notifyProgressChanged() {
       window.dispatchEvent(new Event("interslation:progress-changed"));
     }
@@ -1594,16 +1620,18 @@
       answer: "",
       reference: "",
       keywords: "",
-      direction: "VI_EN",
+      direction: initialAppPreferences.personalDirection === "EN_VI" ? "EN_VI" : "VI_EN",
       referenceSource: "",
       referenceDirection: "",
       checkedResult: null
     };
-    let personalDraftTopic = "";
+    let personalDraftTopic = typeof initialAppPreferences.personalTopic === "string"
+      ? initialAppPreferences.personalTopic
+      : "";
     const personalDraftsByTopic = new Map();
     let topicOptionPointerDown = false;
     const translationEditHistories = new WeakMap();
-    let personalDirection = "VI_EN";
+    let personalDirection = initialAppPreferences.personalDirection === "EN_VI" ? "EN_VI" : "VI_EN";
     let ocrLibraryPromise = null;
     let ocrWorkerPromise = null;
     let lastOcrProgress = "";
@@ -1959,6 +1987,9 @@
         renderTopicOptions(exerciseGroups.map((item) => ({ value: item.id, label: item.label })));
       }
       closeTopicOptions();
+      saveAppPreferences(activeTranslationMode === "personal"
+        ? { personalTopic: industrySelect.value, personalDirection }
+        : { sampleTopic: industrySelect.value });
       return true;
     }
 
@@ -2275,6 +2306,7 @@
       invalidateTranslationCheck();
       document.querySelector("#personal-status").classList.remove("is-success", "is-error");
       document.querySelector("#personal-status").textContent = "Đã đổi chiều dịch và chuyển nội dung hai ô để bạn tiếp tục chỉnh sửa.";
+      saveAppPreferences({ personalDirection: direction });
     }
 
     function setTranslationMode(mode) {
@@ -2306,6 +2338,7 @@
       closeTopicOptions();
       if (personal) {
         personalDirection = personalDraft.direction || "VI_EN";
+        document.querySelector("#personal-direction").value = personalDirection;
         document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
         if (industrySelect.value) loadPersonalTopicDraft(industrySelect.value);
         else {
@@ -2324,6 +2357,7 @@
         document.querySelector("#source-help").textContent = "Đọc kỹ sắc thái và ngữ cảnh";
       }
       updateCounts();
+      saveAppPreferences({ translationMode: mode });
     }
 
     function addPersonalTopic(topicName = translationTopicInput.value, preserveCurrentDraft = false) {
@@ -2357,6 +2391,7 @@
           loadPersonalTopicDraft(existingTopic);
         }
         closeTopicOptions();
+        saveAppPreferences({ personalTopic: existingTopic, personalDirection });
         return true;
       }
       try {
@@ -2382,6 +2417,7 @@
           loadPersonalTopicDraft(topic);
         }
         closeTopicOptions();
+        saveAppPreferences({ personalTopic: topic, personalDirection });
         setSaveStatus(status, `Đã thêm chủ đề “${topic}”.`, true);
         return true;
       } catch (error) {
@@ -2988,10 +3024,7 @@
       }
       const settings = document.querySelector("#translation-settings");
       if (settings.hidden) {
-        settings.hidden = false;
-        const toggle = document.querySelector("#toggle-translation-content");
-        toggle.setAttribute("aria-expanded", "true");
-        toggle.setAttribute("aria-label", "Thu gọn phần chọn nguồn, chủ đề và bài tập");
+        setTranslationSettingsExpanded(true);
       }
       document.querySelector("#translation-topic-toast").hidden = false;
       translationTopicInput.focus();
@@ -3356,6 +3389,32 @@
       document.querySelector("#interpret-panel").hidden = translating;
       document.querySelector("#tab-translate").setAttribute("aria-selected", String(translating));
       document.querySelector("#tab-interpret").setAttribute("aria-selected", String(!translating));
+      saveAppPreferences({ appMode: translating ? "translate" : "interpret" });
+    }
+
+    function setSidebarExpanded(expanded) {
+      document.querySelector(".app-layout").classList.toggle("is-sidebar-collapsed", !expanded);
+      const button = document.querySelector("#toggle-sidebar");
+      button.setAttribute("aria-expanded", String(expanded));
+      button.setAttribute("aria-label", expanded ? "Thu gọn thanh điều hướng" : "Mở rộng thanh điều hướng");
+      button.title = expanded ? "Thu gọn thanh điều hướng" : "Mở rộng thanh điều hướng";
+      saveAppPreferences({ sidebarCollapsed: !expanded });
+    }
+
+    function setTranslationSettingsExpanded(expanded) {
+      const button = document.querySelector("#toggle-translation-content");
+      button.setAttribute("aria-expanded", String(expanded));
+      button.setAttribute("aria-label", `${expanded ? "Thu gọn" : "Mở rộng"} phần chọn nguồn, chủ đề và bài tập`);
+      document.querySelector("#translation-settings").hidden = !expanded;
+      saveAppPreferences({ translationSettingsExpanded: expanded });
+    }
+
+    function setTheme(dark) {
+      document.documentElement.dataset.theme = dark ? "dark" : "light";
+      const button = document.querySelector("#theme-toggle");
+      button.setAttribute("aria-pressed", String(dark));
+      button.setAttribute("aria-label", dark ? "Bật giao diện sáng" : "Bật giao diện tối");
+      saveAppPreferences({ darkTheme: dark });
     }
 
     function speakSource() {
@@ -3503,6 +3562,7 @@
       document.querySelector("#speech-status").textContent = activePracticeMode === "consecutive"
         ? "Nghe một đoạn rồi bấm “Dừng và thực hiện dịch”."
         : "Chọn ngôn ngữ rồi nhấn bắt đầu.";
+      saveAppPreferences({ practiceMode: activePracticeMode });
     }
 
     async function startConsecutivePractice() {
@@ -4917,12 +4977,7 @@
     document.querySelector("#sample-mode").addEventListener("click", () => setTranslationMode("sample"));
     document.querySelector("#personal-mode").addEventListener("click", () => setTranslationMode("personal"));
     document.querySelector("#toggle-translation-content").addEventListener("click", (event) => {
-      const button = event.currentTarget;
-      const content = document.querySelector("#translation-settings");
-      const isExpanded = button.getAttribute("aria-expanded") === "true";
-      button.setAttribute("aria-expanded", String(!isExpanded));
-      button.setAttribute("aria-label", `${isExpanded ? "Mở rộng" : "Thu gọn"} phần chọn nguồn, chủ đề và bài tập`);
-      content.hidden = isExpanded;
+      setTranslationSettingsExpanded(event.currentTarget.getAttribute("aria-expanded") !== "true");
     });
     document.querySelector("#personal-direction").addEventListener("change", (event) => {
       changePersonalDirection(event.currentTarget.value);
@@ -5103,6 +5158,9 @@
     document.querySelector("#practice-mode").addEventListener("change", (event) => {
       setPracticeMode(event.currentTarget.value);
     });
+    document.querySelector("#speech-language").addEventListener("change", (event) => {
+      saveAppPreferences({ speechLanguage: event.currentTarget.value });
+    });
     document.querySelector("#media-playback-rate").addEventListener("change", applyMediaPlaybackRate);
     localMediaInput.addEventListener("change", loadLocalPracticeMedia);
     ["#local-audio-player", "#local-video-player"].forEach((selector) => {
@@ -5165,6 +5223,7 @@
       document.querySelector("#practice-history-tab").setAttribute("aria-selected", String(!showTranslations));
       document.querySelector("#translation-history-panel").hidden = !showTranslations;
       document.querySelector("#history-panel").hidden = showTranslations;
+      saveAppPreferences({ historyTab: tab });
     };
     document.querySelector("#translation-history-tab").addEventListener("click", () => setHistoryTab("translation"));
     document.querySelector("#practice-history-tab").addEventListener("click", () => setHistoryTab("practice"));
@@ -5172,12 +5231,7 @@
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
     document.querySelector("#toggle-sidebar").addEventListener("click", (event) => {
-      const button = event.currentTarget;
-      const expanded = button.getAttribute("aria-expanded") !== "false";
-      document.querySelector(".app-layout").classList.toggle("is-sidebar-collapsed", expanded);
-      button.setAttribute("aria-expanded", String(!expanded));
-      button.setAttribute("aria-label", expanded ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng");
-      button.title = expanded ? "Mở rộng thanh điều hướng" : "Thu gọn thanh điều hướng";
+      setSidebarExpanded(event.currentTarget.getAttribute("aria-expanded") !== "true");
     });
     const setHistorySidebarExpanded = (expanded) => {
       const layout = document.querySelector(".app-layout");
@@ -5188,6 +5242,7 @@
       collapseButton.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
       collapseButton.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
       historyNavButton.setAttribute("aria-pressed", String(expanded));
+      saveAppPreferences({ historySidebarExpanded: expanded });
     };
     document.querySelector("#nav-history").addEventListener("click", () => {
       if (window.matchMedia("(max-width: 780px)").matches) {
@@ -5203,11 +5258,7 @@
       setHistorySidebarExpanded(button.getAttribute("aria-expanded") !== "true");
     });
     document.querySelector("#theme-toggle").addEventListener("click", (event) => {
-      const button = event.currentTarget;
-      const dark = document.documentElement.dataset.theme !== "dark";
-      document.documentElement.dataset.theme = dark ? "dark" : "light";
-      button.setAttribute("aria-pressed", String(dark));
-      button.setAttribute("aria-label", dark ? "Bật giao diện sáng" : "Bật giao diện tối");
+      setTheme(document.documentElement.dataset.theme !== "dark");
     });
     document.querySelector("#quick-import-source").addEventListener("click", () => {
       setTranslationMode("personal");
@@ -5321,7 +5372,22 @@
       }
     });
     loadDeepLKey();
-    setTranslationMode("personal");
+    const initialTranslationMode = initialAppPreferences.translationMode === "sample" ? "sample" : "personal";
+    setTranslationMode(initialTranslationMode);
+    if (initialTranslationMode === "sample" && typeof initialAppPreferences.sampleTopic === "string") {
+      selectTranslationTopic(initialAppPreferences.sampleTopic);
+    }
+    setPracticeMode(initialAppPreferences.practiceMode === "consecutive" ? "consecutive" : "parallel");
+    const savedSpeechLanguage = initialAppPreferences.speechLanguage;
+    if ([...document.querySelector("#speech-language").options].some((option) => option.value === savedSpeechLanguage)) {
+      document.querySelector("#speech-language").value = savedSpeechLanguage;
+    }
+    setMode(initialAppPreferences.appMode === "interpret" ? "interpret" : "translate");
+    setSidebarExpanded(initialAppPreferences.sidebarCollapsed !== true);
+    setHistorySidebarExpanded(initialAppPreferences.historySidebarExpanded !== false);
+    setTranslationSettingsExpanded(initialAppPreferences.translationSettingsExpanded !== false);
+    setTheme(initialAppPreferences.darkTheme === true);
+    setHistoryTab(initialAppPreferences.historyTab === "practice" ? "practice" : "translation");
     renderTimer();
     updatePracticeModeControls();
     renderTranslationHistory();
