@@ -3381,24 +3381,43 @@
       const recordingId = speechRecordingId;
       practiceSourceTimeline = [];
       currentPracticeSourceSegment = null;
+      const hasPracticeSource = ["local", "youtube"].includes(activePracticeSource);
+      const sourcePlayback = startPracticeMedia();
       if (canRecordAudio) {
         document.querySelector("#speech-recording-preview").hidden = false;
         updateSourcePlaybackPreview();
         recordingStatus.textContent = "Đang xin quyền micro để tạo bản ghi nghe lại...";
         const captureStarted = await startSpeechAudioCapture();
-        if (speechRecordingId === recordingId && captureStarted) {
-          startTimer();
-          startPracticeMedia();
+        if (speechRecordingId !== recordingId) return;
+        if (!captureStarted) {
+          speechSessionActive = false;
+          pausePracticeMedia();
+          updatePracticeModeControls();
+          return;
+        }
+        if (hasPracticeSource && !await Promise.resolve(sourcePlayback)) {
+          speechSessionActive = false;
+          stopSpeechAudioCapture();
+          pausePracticeMedia();
+          pauseTimer();
+          updatePracticeModeControls();
+          return;
+        }
+        startTimer();
+        if (activePracticeSource === "local") {
+          const player = document.querySelector("#local-audio-player").hidden
+            ? document.querySelector("#local-video-player")
+            : document.querySelector("#local-audio-player");
+          if (!player.paused && !player.ended) openPracticeSourceSegment();
         }
       } else {
         recordingStatus.textContent = "Trình duyệt này chưa hỗ trợ ghi âm. Bạn vẫn có thể dùng tính năng chép lời nếu được hỗ trợ.";
+        if (hasPracticeSource && !await Promise.resolve(sourcePlayback)) return;
         startTimer();
-        startPracticeMedia();
       }
       if (speechRecordingId !== recordingId) return;
       if (SpeechRecognition && timerStartedAt === null) {
         startTimer();
-        startPracticeMedia();
       }
 
       if (!SpeechRecognition) {
@@ -3419,8 +3438,6 @@
         pausePracticeMedia();
         setListening(false, "Không thể bắt đầu. Hãy đợi một chút rồi thử lại.");
         if (speechRecordingId === recordingId) stopSpeechAudioCapture();
-      } else {
-        startPracticeMedia();
       }
     }
 
@@ -3873,7 +3890,8 @@
         const player = document.querySelector("#local-audio-player").hidden
           ? document.querySelector("#local-video-player")
           : document.querySelector("#local-audio-player");
-        if (!player.hidden && !player.ended) {
+        if (!player.hidden) {
+          if (player.ended) player.currentTime = 0;
           return player.play().then(() => true).catch(() => {
             document.querySelector("#local-media-status").textContent =
               "Không thể phát tệp này. Hãy kiểm tra định dạng hoặc thử mở tệp bằng trình duyệt Chrome/Edge.";
