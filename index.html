@@ -1244,8 +1244,8 @@
                   <span class="field-label">Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)</span>
                   <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
                 </label>
-                <audio class="local-media-player" id="local-audio-player" preload="metadata" hidden></audio>
-                <video class="local-media-player" id="local-video-player" preload="metadata" playsinline hidden></video>
+                <audio class="local-media-player" id="local-audio-player" preload="auto" hidden></audio>
+                <video class="local-media-player" id="local-video-player" preload="auto" playsinline hidden></video>
                 <div class="media-seek-control" id="media-seek-control" hidden>
                   <output id="media-current-time">00:00</output>
                   <input id="media-seek" type="range" min="0" max="0" step="0.1" value="0" aria-label="Tua đến vị trí trong tệp">
@@ -4118,7 +4118,7 @@
       renderMediaPlaybackRates(mediaPlaybackRates, Number(document.querySelector("#media-playback-rate").value));
       document.querySelector("#media-speed-control").hidden = false;
       applyMediaPlaybackRate();
-      status.textContent = `Đã chọn “${file.name}”. Dùng thanh tua để chọn đoạn muốn nghe, rồi bấm “Bắt đầu nói”; thời gian sẽ tự tính và tệp không được tải lên máy chủ.`;
+      status.textContent = `Đang chuẩn bị “${file.name}” để phát...`;
       event.currentTarget.value = "";
     }
 
@@ -4407,7 +4407,7 @@
       } else {
         const sourceAudio = document.querySelector("#mix-source-audio");
         sourceAudio.volume = Number(document.querySelector("#source-volume").value);
-        if (segment && sourceAudio.readyState < 3) {
+        if (segment && sourceAudio.readyState < 2) {
           if (!voiceAudio.paused) voiceAudio.pause();
           mix.waitingForSource = true;
           setPracticeMediaMixStatus(mix, "loading", "Âm thanh nguồn đang tải, vui lòng chờ...");
@@ -5110,6 +5110,18 @@
       });
       player.addEventListener("playing", () => {
         if (speechSessionActive && activePracticeSource === "local") openPracticeSourceSegment();
+      });
+      player.addEventListener("canplay", () => {
+        if (activePracticeSource === "local" && !speechSessionActive) {
+          document.querySelector("#local-media-status").textContent =
+            `“${localPracticeMediaFile?.name || "Tệp"}” đã sẵn sàng. Dùng thanh tua rồi bấm “Bắt đầu nói”.`;
+        }
+      });
+      player.addEventListener("waiting", () => {
+        if (activePracticeSource === "local") {
+          document.querySelector("#local-media-status").textContent =
+            "Tệp đang nạp thêm dữ liệu để phát...";
+        }
       });
       player.addEventListener("pause", closePracticeSourceSegment);
       player.addEventListener("ended", closePracticeSourceSegment);
