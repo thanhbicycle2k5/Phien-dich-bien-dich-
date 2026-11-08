@@ -219,6 +219,15 @@
     .content-select-row { display: flex; align-items: center; gap: 6px; }
     .content-select-row select { min-width: 180px; }
     .topic-name-input { width: 100%; min-height: 40px; padding: 8px 10px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); color: var(--ink); }
+    .topic-field { position: relative; min-width: 190px; }
+    .topic-combobox { display: flex; align-items: stretch; }
+    .topic-combobox .topic-name-input { min-width: 0; border-radius: 6px 0 0 6px; }
+    .topic-list-toggle { width: 38px; min-width: 38px; padding: 0; border: 1px solid var(--line); border-left: 0; border-radius: 0 6px 6px 0; background: var(--white); color: var(--muted); cursor: pointer; font-size: 15px; }
+    .topic-options { position: absolute; z-index: 5; top: calc(100% + 4px); right: 0; left: 0; display: grid; max-height: 240px; overflow-y: auto; padding: 5px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); box-shadow: 0 8px 20px rgba(29, 78, 216, .14); }
+    .topic-options[hidden] { display: none; }
+    .topic-option { width: 100%; min-height: 36px; justify-content: flex-start; border: 0; text-align: left; }
+    .topic-option[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
+    .topic-options-empty { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
     .source-mode-field { min-width: 150px; display: grid; align-content: end; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
@@ -722,7 +731,8 @@
     :root[data-theme="dark"] .practice-controls-panel, :root[data-theme="dark"] .interpret-session,
     :root[data-theme="dark"] .history-item, :root[data-theme="dark"] .deepl-settings,
     :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
-    :root[data-theme="dark"] .topic-name-input { background: #202024; color: var(--ink); }
+    :root[data-theme="dark"] .topic-name-input, :root[data-theme="dark"] .topic-list-toggle { background: #202024; color: var(--ink); }
+    :root[data-theme="dark"] .topic-options { background: var(--white); }
     :root[data-theme="dark"] .text-area, :root[data-theme="dark"] .transcript, :root[data-theme="dark"] .practice-status,
     :root[data-theme="dark"] .source-switch, :root[data-theme="dark"] .reference-editor,
     :root[data-theme="dark"] .deepl-guide, :root[data-theme="dark"] .media-mix-panel,
@@ -815,6 +825,7 @@
       .workspace-head { padding: 12px 16px; }
       .translation-settings > .selector-row { padding: 12px 16px; }
       .selector-row, .selector-row label { width: 100%; }
+      .topic-field { width: 100%; }
       .source-mode-field { width: 100%; }
       .selector-row label { flex: 1 1 135px; }
       .selector-row select { width: 100%; max-width: none; }
@@ -952,12 +963,15 @@
               <button id="sample-mode" type="button" aria-pressed="false">Bài mẫu</button>
             </span>
           </div>
-          <label>
-            <span class="field-label">Chủ đề</span>
-            <input class="topic-name-input" id="translation-topic" type="text" list="translation-topics" maxlength="60" placeholder="Chọn hoặc nhập chủ đề" aria-label="Chủ đề" autocomplete="off">
-            <datalist id="translation-topics"></datalist>
+          <div class="topic-field">
+            <label class="field-label" for="translation-topic">Chủ đề</label>
+            <div class="topic-combobox">
+              <input class="topic-name-input" id="translation-topic" type="text" maxlength="60" placeholder="Chọn hoặc nhập chủ đề" aria-label="Chủ đề" aria-controls="topic-options" aria-expanded="false" autocomplete="off">
+              <button class="topic-list-toggle" id="topic-list-toggle" type="button" aria-label="Hiện danh sách chủ đề" aria-expanded="false" aria-controls="topic-options">⌄</button>
+            </div>
+            <div class="topic-options" id="topic-options" role="listbox" aria-label="Danh sách chủ đề" hidden></div>
             <select id="industry-select" aria-hidden="true" tabindex="-1" hidden></select>
-          </label>
+          </div>
           <div class="personal-controls" id="personal-controls" hidden>
             <label class="file-control direction-control" for="personal-direction">Chiều dịch
               <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
@@ -984,7 +998,7 @@
           <p class="topic-required-copy">Hãy đặt tên chủ đề để lưu và tìm lại tài liệu của bạn.</p>
           <form class="topic-required-form" id="topic-required-form">
             <label class="file-control" for="required-topic-input">Chủ đề
-              <input class="topic-name-input" id="required-topic-input" type="text" list="translation-topics" maxlength="60" placeholder="Ví dụ: Du lịch, Công nghệ" autocomplete="off" required>
+              <input class="topic-name-input" id="required-topic-input" type="text" maxlength="60" placeholder="Ví dụ: Du lịch, Công nghệ" autocomplete="off" required>
             </label>
             <p class="topic-required-status" id="topic-required-status" role="status" aria-live="polite"></p>
             <div class="topic-required-actions">
@@ -1557,6 +1571,7 @@
     };
     let personalDraftTopic = "";
     const personalDraftsByTopic = new Map();
+    let topicOptionPointerDown = false;
     const translationEditHistories = new WeakMap();
     let personalDirection = "VI_EN";
     let ocrLibraryPromise = null;
@@ -1833,36 +1848,124 @@
       }
     }
 
-    function populateTopics(selectedTopic) {
-      const currentTopic = selectedTopic ?? industrySelect.value;
-      const topics = activeTranslationMode === "sample"
+    function getTranslationTopicOptions() {
+      return activeTranslationMode === "sample"
         ? exerciseGroups.map((group) => ({ value: group.id, label: group.label }))
         : [...new Set([
-            DEFAULT_PERSONAL_TOPIC,
             ...readPersonalTopics(),
             ...readPersonalMaterials().map(getMaterialTopic)
-          ])].map((topic) => ({ value: topic, label: topic }));
-      const suggestions = document.querySelector("#translation-topics");
+          ])].map((topic) => ({ value: topic, label: topic }))
+          .sort((first, second) => first.label.localeCompare(second.label, "vi"));
+    }
+
+    function populateTopics(selectedTopic) {
+      const currentTopic = selectedTopic ?? industrySelect.value;
+      const topics = getTranslationTopicOptions();
       industrySelect.replaceChildren();
-      suggestions.replaceChildren();
-      if (activeTranslationMode === "personal") {
-        const blank = document.createElement("option");
-        blank.value = "";
-        industrySelect.append(blank);
-      }
+      const placeholder = document.createElement("option");
+      placeholder.value = "";
+      placeholder.textContent = "";
+      industrySelect.append(placeholder);
       topics.forEach(({ value, label }) => {
         const option = document.createElement("option");
         option.value = value;
         option.textContent = label;
         industrySelect.append(option);
-        const suggestion = document.createElement("option");
-        suggestion.value = label;
-        suggestions.append(suggestion);
       });
       if (topics.some((topic) => topic.value === currentTopic)) industrySelect.value = currentTopic;
       else if (activeTranslationMode === "personal") industrySelect.value = "";
       else if (topics.length) industrySelect.value = topics[0].value;
       translationTopicInput.value = industrySelect.selectedOptions[0]?.textContent || "";
+      renderTopicOptions(topics);
+    }
+
+    function renderTopicOptions(topics) {
+      const options = document.querySelector("#topic-options");
+      options.replaceChildren();
+      if (!topics.length) {
+        const empty = document.createElement("p");
+        empty.className = "topic-options-empty";
+        empty.textContent = "Chưa có chủ đề. Nhập tên chủ đề mới.";
+        options.append(empty);
+        return;
+      }
+      topics.forEach(({ value, label }) => {
+        const button = document.createElement("button");
+        button.className = "quiet-button topic-option";
+        button.type = "button";
+        button.setAttribute("role", "option");
+        button.textContent = label;
+        button.setAttribute("aria-selected", String(value === industrySelect.value));
+        button.addEventListener("pointerdown", () => {
+          topicOptionPointerDown = true;
+        });
+        button.addEventListener("mousedown", (event) => event.preventDefault());
+        button.addEventListener("click", () => {
+          topicOptionPointerDown = false;
+          selectTranslationTopic(value);
+        });
+        options.append(button);
+      });
+    }
+
+    function selectTranslationTopic(topic) {
+      if (activeTranslationMode === "personal") {
+        const existingTopic = [
+          ...readPersonalTopics(),
+          ...readPersonalMaterials().map(getMaterialTopic)
+        ].find((candidate) => candidate.toLocaleLowerCase() === topic.toLocaleLowerCase());
+        if (!existingTopic) return false;
+        if (industrySelect.value !== existingTopic) capturePersonalDraft();
+        populateTopics(existingTopic);
+        loadPersonalTopicDraft(existingTopic);
+      } else {
+        const group = exerciseGroups.find((candidate) =>
+          candidate.id === topic || candidate.label.toLocaleLowerCase() === topic.toLocaleLowerCase()
+        );
+        if (!group) return false;
+        industrySelect.value = group.id;
+        translationTopicInput.value = group.label;
+        populateExercises();
+        renderTopicOptions(exerciseGroups.map((item) => ({ value: item.id, label: item.label })));
+      }
+      closeTopicOptions();
+      return true;
+    }
+
+    function closeTopicOptions() {
+      document.querySelector("#topic-options").hidden = true;
+      document.querySelector("#topic-list-toggle").setAttribute("aria-expanded", "false");
+      translationTopicInput.setAttribute("aria-expanded", "false");
+    }
+
+    function openTopicOptions() {
+      const options = document.querySelector("#topic-options");
+      renderTopicOptions(getTranslationTopicOptions());
+      options.hidden = false;
+      document.querySelector("#topic-list-toggle").setAttribute("aria-expanded", "true");
+      translationTopicInput.setAttribute("aria-expanded", "true");
+    }
+
+    function clearPersonalDraftForTopicChange() {
+      sourceText.value = "";
+      answerText.value = "";
+      referenceAnswer.value = "";
+      personalKeywords.value = "";
+      personalDraft = {
+        source: "",
+        answer: "",
+        reference: "",
+        keywords: "",
+        direction: personalDirection,
+        referenceSource: "",
+        referenceDirection: "",
+        checkedResult: null
+      };
+      resetEditHistory(sourceText);
+      resetEditHistory(answerText);
+      invalidateTranslationCheck();
+      document.querySelector("#answer-breakdown").hidden = true;
+      updateCounts();
     }
 
     function populateExercises() {
@@ -2170,6 +2273,7 @@
       document.querySelector("#answer-breakdown").hidden = true;
 
       populateTopics(personal ? personalDraftTopic : industrySelect.value);
+      closeTopicOptions();
       if (personal) {
         personalDirection = personalDraft.direction || "VI_EN";
         document.querySelector("#source-help").textContent = "Có thể dán văn bản hoặc chọn tệp .txt / .docx";
@@ -2199,7 +2303,6 @@
         return false;
       }
       const existingTopics = [
-        DEFAULT_PERSONAL_TOPIC,
         ...readPersonalTopics(),
         ...readPersonalMaterials().map(getMaterialTopic)
       ];
@@ -2223,6 +2326,7 @@
         } else {
           loadPersonalTopicDraft(existingTopic);
         }
+        closeTopicOptions();
         return true;
       }
       try {
@@ -2247,6 +2351,7 @@
         } else {
           loadPersonalTopicDraft(topic);
         }
+        closeTopicOptions();
         setSaveStatus(status, `Đã thêm chủ đề “${topic}”.`, true);
         return true;
       } catch (error) {
@@ -2831,6 +2936,7 @@
     }
 
     function getTranslationTopic() {
+      if (activeTranslationMode === "personal") return industrySelect.value;
       return translationTopicInput.value.trim() || (industrySelect.value
         ? industrySelect.selectedOptions[0]?.textContent.trim() || ""
         : "");
@@ -4639,23 +4745,43 @@
       changePersonalDirection(event.currentTarget.value);
     });
     translationTopicInput.addEventListener("input", () => {
+      const enteredTopic = translationTopicInput.value.trim();
       if (getTranslationTopic()) document.querySelector("#translation-topic-toast").hidden = true;
+      if (activeTranslationMode === "personal") {
+        const existingTopic = getTranslationTopicOptions().find((topic) =>
+          topic.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
+        );
+        if (existingTopic) {
+          selectTranslationTopic(existingTopic.value);
+          return;
+        }
+        if (industrySelect.value) {
+          capturePersonalDraft();
+          industrySelect.value = "";
+          personalDraftTopic = "";
+          clearPersonalDraftForTopicChange();
+          document.querySelector("#personal-status").textContent = "Chủ đề đã đổi. Chọn chủ đề có sẵn hoặc xác nhận tên mới trước khi tiếp tục.";
+        }
+      } else {
+        const group = exerciseGroups.find((candidate) =>
+          candidate.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
+        );
+        if (group) selectTranslationTopic(group.id);
+      }
     });
     translationTopicInput.addEventListener("change", () => {
+      if (topicOptionPointerDown) return;
       const enteredTopic = translationTopicInput.value.trim();
       if (!enteredTopic) return;
       document.querySelector("#translation-topic-toast").hidden = true;
       if (activeTranslationMode === "personal") {
-        const preserveUntitledContent = !industrySelect.value && Boolean(sourceText.value.trim() || answerText.value.trim());
-        const existingTopic = [
-          ...readPersonalTopics(),
-          ...readPersonalMaterials().map(getMaterialTopic),
-          DEFAULT_PERSONAL_TOPIC
-        ].find((topic) => topic.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase());
+        const existingTopic = getTranslationTopicOptions().find((topic) =>
+          topic.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
+        );
         if (existingTopic) {
-          addPersonalTopic(existingTopic, preserveUntitledContent);
+          selectTranslationTopic(existingTopic.value);
         } else {
-          addPersonalTopic(enteredTopic, preserveUntitledContent);
+          addPersonalTopic(enteredTopic);
         }
         return;
       }
@@ -4665,12 +4791,17 @@
         candidate.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
       );
       if (group) {
-        industrySelect.value = group.id;
-        translationTopicInput.value = group.label;
-        populateExercises();
+        selectTranslationTopic(group.id);
+      } else {
+        translationTopicInput.value = industrySelect.selectedOptions[0]?.textContent || "";
       }
     });
+    translationTopicInput.addEventListener("focus", openTopicOptions);
     translationTopicInput.addEventListener("keydown", (event) => {
+      if (event.key === "Escape") {
+        closeTopicOptions();
+        return;
+      }
       if (event.key === "Enter") {
         event.preventDefault();
         translationTopicInput.dispatchEvent(new Event("change"));
@@ -4696,6 +4827,19 @@
     });
     document.querySelector("#topic-required-cancel").addEventListener("click", () => {
       document.querySelector("#topic-required-dialog").close();
+    });
+    document.querySelector("#topic-list-toggle").addEventListener("click", () => {
+      const options = document.querySelector("#topic-options");
+      if (options.hidden) openTopicOptions();
+      else closeTopicOptions();
+    });
+    document.addEventListener("click", (event) => {
+      if (!event.target.closest(".topic-field")) closeTopicOptions();
+    });
+    document.addEventListener("pointerup", () => {
+      window.setTimeout(() => {
+        topicOptionPointerDown = false;
+      }, 0);
     });
     document.querySelector("#dismiss-translation-topic-toast").addEventListener("click", () => {
       document.querySelector("#translation-topic-toast").hidden = true;
