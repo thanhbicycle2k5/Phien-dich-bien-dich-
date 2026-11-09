@@ -545,8 +545,6 @@
     .media-mix-speed-control select { min-height: 32px; padding: 4px 28px 4px 8px; border: 1px solid var(--line); border-radius: 5px; background-color: var(--white); }
     .media-mix-control { display: grid; grid-template-columns: minmax(100px, 1fr) minmax(100px, 2fr) auto; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
     .media-mix-control input[type="range"] { width: 100%; accent-color: var(--blue); }
-    .consecutive-countdown { margin: 9px 0; color: var(--blue-dark); font-size: 22px; font-weight: 750; text-align: center; font-variant-numeric: tabular-nums; }
-
     .action-group { display: flex; flex-wrap: wrap; gap: 8px; }
     .notice { margin: 15px 0 0; color: var(--muted); font-size: 11px; }
 
@@ -1296,7 +1294,6 @@
                 </select>
               </label>
               <p class="practice-status" id="speech-status" aria-live="polite">Chọn ngôn ngữ rồi nhấn bắt đầu</p>
-              <p class="consecutive-countdown" id="consecutive-countdown" aria-live="assertive" hidden></p>
               <div class="interpret-actions practice-controls">
                 <div class="action-group">
                   <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
@@ -1664,7 +1661,6 @@
     let localPracticeMediaFile = null;
     let activePracticeMode = "parallel";
     let consecutivePhase = "idle";
-    let consecutiveCountdownTimer = null;
     let storedPracticeMedia = new Map();
     let practiceMediaObjectUrls = new Set();
     let practiceMediaDatabasePromise = null;
@@ -3534,7 +3530,7 @@
       const restartButton = document.querySelector("#restart-practice");
       const modeSelect = document.querySelector("#practice-mode");
       const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
-      const sourceLocked = speechSessionActive || consecutivePhase === "starting" || consecutivePhase === "countdown";
+      const sourceLocked = speechSessionActive || consecutivePhase === "starting";
       modeSelect.value = activePracticeMode;
       modeSelect.disabled = sourceLocked;
       youtubeUrlInput.disabled = sourceLocked;
@@ -3554,12 +3550,11 @@
         idle: "Bắt đầu nghe",
         starting: "Đang chuẩn bị...",
         listening: "Dừng và thực hiện dịch",
-        countdown: "Chuẩn bị dịch...",
         translating: "Tiếp tục",
         finished: "Đã kết thúc"
       };
       startButton.textContent = labels[consecutivePhase];
-      startButton.disabled = consecutivePhase === "countdown" || consecutivePhase === "finished" || !canRecordAudio;
+      startButton.disabled = consecutivePhase === "finished" || !canRecordAudio;
     }
 
     function setPracticeMode(mode) {
@@ -3652,30 +3647,13 @@
     }
 
     function beginConsecutiveTranslation() {
-      consecutivePhase = "countdown";
+      consecutivePhase = "translating";
       updatePracticeModeControls();
       pausePracticeMedia();
-      const countdown = document.querySelector("#consecutive-countdown");
-      countdown.hidden = false;
-      let seconds = 3;
-      countdown.textContent = String(seconds);
-      document.querySelector("#speech-status").textContent = "Chuẩn bị dịch...";
-      consecutiveCountdownTimer = window.setInterval(() => {
-        seconds -= 1;
-        if (seconds > 0) {
-          countdown.textContent = String(seconds);
-          return;
-        }
-        window.clearInterval(consecutiveCountdownTimer);
-        consecutiveCountdownTimer = null;
-        if (consecutivePhase !== "countdown") return;
-        countdown.hidden = true;
-        consecutivePhase = "translating";
-        if (speechInputGain && speechAudioContext) speechInputGain.gain.setTargetAtTime(1, speechAudioContext.currentTime, 0.02);
-        if (SpeechRecognition) startSpeechRecognition(speechRecordingId);
-        setListening(true, "Đang ghi âm phần dịch. Bấm “Tiếp tục” khi dịch xong đoạn này.");
-        updatePracticeModeControls();
-      }, 1000);
+      if (speechInputGain && speechAudioContext) speechInputGain.gain.setTargetAtTime(1, speechAudioContext.currentTime, 0.02);
+      if (SpeechRecognition) startSpeechRecognition(speechRecordingId);
+      setListening(true, "Đang ghi âm phần dịch. Bấm “Tiếp tục” khi dịch xong đoạn này.");
+      updatePracticeModeControls();
     }
 
     function stopCurrentSpeechRecognition() {
@@ -3709,9 +3687,6 @@
         restartPractice();
         return;
       }
-      window.clearInterval(consecutiveCountdownTimer);
-      consecutiveCountdownTimer = null;
-      document.querySelector("#consecutive-countdown").hidden = true;
       stopCurrentSpeechRecognition();
       speechSessionActive = false;
       consecutivePhase = "finished";
@@ -4287,10 +4262,7 @@
       speechSessionActive = false;
       window.clearTimeout(speechRecognitionRestartTimer);
       speechRecognitionRestartTimer = null;
-      window.clearInterval(consecutiveCountdownTimer);
-      consecutiveCountdownTimer = null;
       consecutivePhase = "idle";
-      document.querySelector("#consecutive-countdown").hidden = true;
       if (currentRecordingId) {
         restartingSpeechSessions.add(currentRecordingId);
         if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(currentRecordingId);
@@ -4877,9 +4849,6 @@
         speechSessionActive = false;
         if (activePracticeMode === "consecutive") {
           consecutivePhase = "finished";
-          window.clearInterval(consecutiveCountdownTimer);
-          consecutiveCountdownTimer = null;
-          document.querySelector("#consecutive-countdown").hidden = true;
         }
         window.clearTimeout(speechRecognitionRestartTimer);
         speechRecognitionRestartTimer = null;
