@@ -601,16 +601,16 @@
     .theme-icon { width: 17px; height: 17px; }
     .theme-icon-light, :root[data-theme="dark"] .theme-icon-dark { display: none; }
     :root[data-theme="dark"] .theme-icon-light { display: block; }
-    main { height: calc(100vh - 72px); height: calc(100dvh - 72px); min-height: 0; padding: 20px 24px 24px; }
-    .app-layout { width: min(1680px, 100%); height: 100%; grid-template-columns: 248px minmax(0, 1fr) 320px; gap: 22px; margin: 0 auto; transition: grid-template-columns .2s ease; }
-    .app-layout.is-sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr) 320px; }
-    .app-sidebar, .app-history-sidebar { position: sticky; top: 92px; align-self: start; height: 100%; min-width: 0; }
+    main { height: calc(100vh - 72px); height: calc(100dvh - 72px); min-height: 0; overflow: hidden; padding: 14px 20px; }
+    .app-layout { width: min(1680px, 100%); height: 100%; min-height: 0; grid-template-columns: 220px minmax(0, 1fr) 300px; align-items: stretch; gap: 18px; margin: 0 auto; transition: grid-template-columns .2s ease; }
+    .app-layout.is-sidebar-collapsed { grid-template-columns: 64px minmax(0, 1fr) 300px; }
+    .app-sidebar { position: sticky; top: 86px; align-self: start; height: 100%; min-width: 0; }
     .app-sidebar { display: grid; grid-template-rows: minmax(0, 1fr); }
     .sidebar-content { display: grid; align-content: start; gap: 14px; min-height: 0; overflow-y: auto; padding: 1px 2px 12px 1px; scrollbar-width: thin; }
-    .app-history-sidebar { display: grid; grid-template-columns: minmax(0, 1fr); }
-    .history-sidebar-card { min-width: 0; min-height: 0; overflow-y: auto; padding: 20px; scrollbar-width: thin; }
-    .app-workspace { min-width: 0; height: 100%; overflow-y: auto; padding: 1px 3px 20px 1px; scrollbar-width: thin; }
-    .intro, .quick-guide, .workspace, .sidebar-navigation, .history-sidebar-card {
+    .app-workspace { min-width: 0; min-height: 0; height: 100%; overflow-y: auto; padding: 1px 3px 12px 1px; scrollbar-width: thin; }
+    .app-history-sidebar { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; min-width: 0; }
+    .history-sidebar-card { min-width: 0; min-height: 0; overflow-y: auto; padding: 16px; scrollbar-width: thin; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+    .intro, .quick-guide, .workspace, .sidebar-navigation {
       border: 1px solid var(--line);
       border-radius: 16px;
       background: var(--white);
@@ -620,7 +620,7 @@
     h1 { font-size: 31px; font-weight: 700; letter-spacing: -.8px; }
     .mode-tagline { font-size: 15px; }
     .intro-copy { font-size: 13px; line-height: 1.65; }
-    .sidebar-navigation { display: grid; gap: 12px; padding: 18px; }
+    .sidebar-navigation { display: grid; gap: 8px; padding: 14px; }
     .sidebar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px; }
     .sidebar-section-title { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
     .sidebar-section-description { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
@@ -634,43 +634,35 @@
     .mode-tab svg { width: 17px; height: 17px; flex: 0 0 17px; }
     .mode-tab:hover { transform: translateX(1px); background: var(--soft-blue); color: var(--ink); }
     .mode-tab[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
-    .history-nav-button { margin-top: 6px; padding-top: 9px; border-top: 1px solid var(--line); border-radius: 0 0 8px 8px; }
-    .history-nav-button[aria-pressed="true"] { background: var(--soft-accent); color: var(--blue-dark); }
-    .history-sidebar-collapse { position: absolute; z-index: 3; top: 50%; left: -15px; display: grid; width: 30px; height: 42px; place-items: center; padding: 0; transform: translateY(-50%); border: 1px solid var(--line); border-radius: 10px 0 0 10px; background: var(--white); color: var(--muted); box-shadow: -4px 2px 10px rgba(15, 23, 42, .08); cursor: pointer; transition: background .2s ease, color .2s ease, width .2s ease; }
-    .history-sidebar-collapse:hover { width: 35px; background: var(--soft-accent); color: var(--blue-dark); }
-    .history-sidebar-collapse svg { width: 17px; height: 17px; transition: transform .2s ease; }
-    .app-layout.is-history-collapsed .history-sidebar-collapse svg { transform: rotate(180deg); }
-    .history-sidebar-title { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 15px; font-weight: 700; letter-spacing: -.2px; }
+    .history-sidebar-title { margin: 0 0 12px; padding-bottom: 12px; border-bottom: 1px solid var(--line); font-size: 15px; font-weight: 700; }
     .history-sidebar-card .history { margin-top: 0; border-top: 0; }
-    .history-sidebar-card .history summary { padding-top: 0; }
-    .history-sidebar-card .history-list { margin-bottom: 4px; }
-    .history-tabs { display: grid; grid-template-columns: 1fr 1fr; gap: 4px; margin-bottom: 12px; padding: 4px; border: 1px solid var(--line); border-radius: 9px; background: var(--soft-blue); }
-    .history-tab { min-height: 38px; padding: 6px 8px; border: 1px solid transparent; border-radius: 7px; background: transparent; color: var(--muted); font: inherit; font-size: 11px; font-weight: 700; cursor: pointer; }
-    .history-tab[aria-selected="true"] { border-color: var(--blue); background: var(--blue); color: var(--white); box-shadow: 0 2px 5px rgba(37, 99, 235, .2); }
+    .history-sidebar-card .history summary { padding: 0 0 10px; font-weight: 700; }
+    .history-sidebar-card .history-tools { align-items: flex-start; flex-wrap: wrap; }
+    .history-sidebar-card .history-list { max-height: calc(100dvh - 230px); overflow-y: auto; margin-bottom: 4px; padding-right: 2px; }
     .translation-history-topic { display: block; margin: 0 0 5px; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
     .translation-history-answer { margin: 8px 0 0; color: var(--ink); }
     .quick-guide { padding: 20px; }
     .workspace { overflow: hidden; }
-    .workspace-head { padding: 18px 22px; }
+    .workspace-head { min-height: 56px; padding: 10px 18px; }
     .workspace-title { font-size: 17px; letter-spacing: -.2px; }
     .workspace-caption { font-size: 12px; }
     .translation-settings > .selector-row { padding: 17px 22px; }
     .exercise-select, .language-select, .youtube-input, .practice-mode-control select, .media-speed-control select,
     .auth-input { border-color: var(--line); border-radius: 9px; background-color: var(--white); color: var(--ink); transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
     select:hover, .youtube-input:hover, .auth-input:hover { border-color: #a5b4fc; }
-    .translation-grid { gap: 24px; align-items: stretch; padding: 24px; }
+    .translation-grid { gap: 16px; align-items: stretch; padding: 16px; }
     .translation-pane {
       display: flex;
       min-width: 0;
       flex-direction: column;
-      padding: 18px;
+      padding: 14px;
       border: 1px solid var(--line);
       border-radius: 16px;
       background: color-mix(in srgb, var(--white) 76%, var(--paper));
       box-shadow: 0 1px 2px rgba(15, 23, 42, .035);
     }
     .translation-pane + .translation-pane { border-left: 1px solid var(--line); }
-    .translation-pane .text-area { height: clamp(240px, 34vh, 380px); min-height: 240px; resize: none; }
+    .translation-pane .text-area { height: clamp(180px, 28vh, 320px); min-height: 180px; resize: none; }
     .text-area, .transcript { border-color: var(--line); border-radius: 11px; background: color-mix(in srgb, var(--white) 70%, var(--paper)); color: var(--ink); }
     .text-area:focus, .youtube-input:focus, .auth-input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 16%, transparent); outline: none; }
     .tool-button, .primary-button, .quiet-button { border-radius: 8px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
@@ -683,29 +675,29 @@
     #check-answer.is-loading { cursor: progress; }
     .loading-spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .interpret-body { grid-template-columns: minmax(300px, .82fr) minmax(0, 1.18fr); gap: 18px; padding: 20px; }
-    .interpret-source-column { display: grid; align-content: start; gap: 14px; }
-    .youtube-practice, .practice-controls-panel { margin: 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
-    .youtube-heading { margin-bottom: 12px; font-size: 14px; }
+    .interpret-body { grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr); gap: 14px; padding: 14px; }
+    .interpret-source-column { display: grid; align-content: start; gap: 10px; }
+    .youtube-practice, .practice-controls-panel { margin: 0; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+    .youtube-heading { margin-bottom: 8px; font-size: 14px; }
     .youtube-input-row { align-items: end; }
     .youtube-input { min-height: 42px; }
-    .local-media-source { margin-top: 13px; }
+    .local-media-source { margin-top: 8px; }
     .local-media-input { max-width: 100%; }
-    .practice-controls-panel { display: grid; align-content: start; gap: 11px; }
+    .practice-controls-panel { display: grid; align-content: start; gap: 8px; }
     .practice-mode-control { margin: 0; }
     .practice-mode-control select { width: 100%; }
     .language-control { width: 100%; }
-    .language-select { min-height: 42px; }
-    .practice-status { margin: 0; padding: 9px 11px; border-radius: 8px; background: var(--soft-blue); }
+    .language-select { min-height: 38px; }
+    .practice-status { margin: 0; padding: 7px 9px; border-radius: 8px; background: var(--soft-blue); }
     .practice-controls { align-items: center; margin-top: 0; padding-top: 2px; }
     #start-listening { min-height: 43px; padding: 0 17px; background: #4f46e5; box-shadow: 0 7px 16px rgba(79, 70, 229, .2); }
     .mic-state { padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); }
     .mic-state.is-listening { color: #b42318; background: #fff5f4; border-color: #ffdad5; }
     .mic-state.is-listening .mic-indicator { background: #e5484d; }
-    .interpret-session { min-width: 0; padding: 18px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
-    .interpret-toolbar { margin-bottom: 11px; }
+    .interpret-session { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+    .interpret-toolbar { margin-bottom: 8px; }
     .interpret-toolbar .score-note { color: var(--ink); font-size: 14px; font-weight: 700; }
-    .transcript { min-height: 450px; padding: 20px; font-size: 16px; line-height: 1.85; }
+    .transcript { min-height: clamp(180px, 30vh, 300px); padding: 14px; font-size: 15px; line-height: 1.7; }
     .transcript-foot { justify-content: space-between; margin-top: 9px; }
     .transcript-foot::before { content: "Bản chép lời trực tiếp"; color: var(--muted); }
     .history { margin-top: 8px; padding-top: 12px; border-top-color: var(--line); }
@@ -741,13 +733,9 @@
     .app-layout.is-sidebar-collapsed .mode-tab span { display: none; }
     .app-layout.is-sidebar-collapsed .mode-tab { justify-content: center; padding: 0; }
     .app-layout.is-sidebar-collapsed .mode-tab svg { width: 19px; height: 19px; }
-    .app-layout.is-history-collapsed { grid-template-columns: 248px minmax(0, 1fr) 64px; }
-    .app-layout.is-sidebar-collapsed.is-history-collapsed { grid-template-columns: 64px minmax(0, 1fr) 64px; }
-    .app-layout.is-history-collapsed .history-sidebar-card { display: none; }
-
     :root[data-theme="dark"] body { color: var(--ink); }
     :root[data-theme="dark"] .intro, :root[data-theme="dark"] .quick-guide, :root[data-theme="dark"] .workspace,
-    :root[data-theme="dark"] .sidebar-navigation, :root[data-theme="dark"] .youtube-practice,
+    :root[data-theme="dark"] .sidebar-navigation, :root[data-theme="dark"] .history-sidebar-card, :root[data-theme="dark"] .youtube-practice,
     :root[data-theme="dark"] .practice-controls-panel, :root[data-theme="dark"] .interpret-session,
     :root[data-theme="dark"] .history-item, :root[data-theme="dark"] .deepl-settings,
     :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
@@ -789,24 +777,22 @@
 
     @media (max-width: 1100px) and (min-width: 781px) {
       main { padding-right: 16px; padding-left: 16px; }
-      .app-layout { grid-template-columns: 200px minmax(0, 1fr) 260px; gap: 16px; }
-      .app-layout.is-sidebar-collapsed { grid-template-columns: 60px minmax(0, 1fr) 260px; }
-      .app-layout.is-history-collapsed { grid-template-columns: 200px minmax(0, 1fr) 60px; }
-      .app-layout.is-sidebar-collapsed.is-history-collapsed { grid-template-columns: 60px minmax(0, 1fr) 60px; }
+      .app-layout { grid-template-columns: 180px minmax(0, 1fr) 230px; gap: 12px; }
+      .app-layout.is-sidebar-collapsed { grid-template-columns: 60px minmax(0, 1fr) 230px; }
       .app-sidebar, .app-history-sidebar { height: 100%; }
       .intro { padding: 16px; }
       .sidebar-navigation { padding: 16px; }
-      .history-sidebar-card { padding: 16px; }
+      .history-sidebar-card { padding: 12px; }
       .history-card-head { flex-wrap: wrap; }
       .history-actions { flex-basis: 100%; justify-content: flex-start; padding-left: 49px; }
       .history-actions .quiet-button { font-size: 9px; }
-      .interpret-body { grid-template-columns: minmax(0, 1fr); }
+      .interpret-body { grid-template-columns: minmax(240px, .8fr) minmax(0, 1.2fr); }
     }
 
     @media (max-width: 950px) and (min-width: 781px) {
-      .translation-grid { grid-template-columns: minmax(0, 1fr); gap: 16px; padding: 18px; }
+      .translation-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px; }
       .translation-pane + .translation-pane { border-left: 1px solid var(--line); }
-      .translation-pane .text-area { height: clamp(240px, 42vh, 360px); }
+      .translation-pane .text-area { height: clamp(180px, 28vh, 300px); }
     }
 
     @media (max-width: 780px) {
@@ -816,17 +802,14 @@
       .account-identity { display: none; }
       .sync-toast { top: 10px; right: 10px; }
       #auth-open, #auth-signout { min-height: 34px; padding: 0 8px; font-size: 11px; }
-      main { height: auto; min-height: calc(100dvh - 64px); padding: 12px 12px 20px; }
-      .app-layout, .app-layout.is-sidebar-collapsed, .app-layout.is-history-collapsed,
-      .app-layout.is-sidebar-collapsed.is-history-collapsed { height: auto; grid-template-columns: minmax(0, 1fr); gap: 12px; }
+      main { height: auto; min-height: calc(100dvh - 64px); overflow: visible; padding: 12px 12px 20px; }
+      .app-layout, .app-layout.is-sidebar-collapsed { height: auto; grid-template-columns: minmax(0, 1fr); gap: 12px; }
       .app-sidebar { position: static; height: auto; }
       .sidebar-content { display: block; overflow: visible; padding: 0; }
       .app-sidebar > .sidebar-collapse { display: none; }
-      .app-history-sidebar { position: relative; height: auto; }
-      .app-history-sidebar > .history-sidebar-collapse { display: none; }
-      .history-sidebar-card { max-height: 480px; }
-      .app-layout.is-history-collapsed .history-sidebar-card { display: block; }
       .app-workspace { height: auto; overflow: visible; padding: 0; }
+      .app-history-sidebar { position: relative; height: auto; }
+      .history-sidebar-card { max-height: 480px; }
       .sidebar-content > .intro, .sidebar-content > .quick-guide { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-content > :not(.sidebar-navigation) { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
@@ -862,7 +845,7 @@
       .interpret-toolbar { align-items: start; flex-direction: column; }
       .language-control { width: 100%; }
       .interpret-actions, .page-foot { align-items: start; flex-direction: column; }
-      .transcript { min-height: 290px; }
+      .transcript { min-height: 240px; }
       .timer-tools { width: 100%; }
       .history-meta { flex-direction: column; gap: 2px; }
       .youtube-input-row { align-items: stretch; flex-direction: column; }
@@ -946,10 +929,6 @@
               <span>Phiên dịch</span>
             </button>
           </nav>
-          <button class="mode-tab history-nav-button" id="nav-history" type="button" aria-controls="history-panel" aria-pressed="true" title="Mở hoặc thu gọn lịch sử luyện tập">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5"/><path d="M12 7v5l4 2"/></svg>
-            <span>Lịch sử</span>
-          </button>
           </section>
 
           <section class="quick-guide" aria-labelledby="quick-guide-title">
@@ -1371,31 +1350,24 @@
         <span>Nhấn biểu tượng lưu để giữ lại bài làm</span>
       </footer>
       </div>
-      <aside class="app-history-sidebar" aria-label="Lịch sử luyện tập">
-        <button class="history-sidebar-collapse" id="toggle-history-sidebar" type="button" aria-label="Thu gọn cột lịch sử" aria-expanded="true" title="Thu gọn cột lịch sử">
-          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5v14M9 8l4 4-4 4"/></svg>
-        </button>
+      <aside class="app-history-sidebar" aria-label="Lịch sử theo chế độ">
         <div class="history-sidebar-card">
-          <h2 class="history-sidebar-title">Lịch sử luyện tập</h2>
-          <div class="history-tabs" role="tablist" aria-label="Loại lịch sử">
-            <button class="history-tab" id="translation-history-tab" type="button" role="tab" aria-selected="true" aria-controls="translation-history-panel">Biên dịch (0)</button>
-            <button class="history-tab" id="practice-history-tab" type="button" role="tab" aria-selected="false" aria-controls="history-panel">Phiên dịch (0)</button>
-          </div>
-          <section class="history" id="translation-history-panel" role="tabpanel" aria-labelledby="translation-history-tab">
+          <section class="history" id="translation-history-panel">
+            <h2 class="history-sidebar-title" id="translation-history-summary">Lịch sử biên dịch (0)</h2>
             <div class="history-tools">
               <span class="history-message" id="translation-history-message" role="status" aria-live="polite"></span>
               <button class="quiet-button" id="clear-translation-history" type="button">Xóa lịch sử</button>
             </div>
             <ul class="history-list" id="translation-history-list"></ul>
           </section>
-          <details class="history" id="history-panel" role="tabpanel" aria-labelledby="practice-history-tab" hidden>
-            <summary id="history-summary">Các buổi đã lưu</summary>
+          <section class="history" id="history-panel" hidden>
+            <h2 class="history-sidebar-title" id="history-summary">Lịch sử phiên dịch (0)</h2>
             <div class="history-tools">
               <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
               <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
             </div>
             <ul class="history-list" id="history-list"></ul>
-          </details>
+          </section>
         </div>
       </aside>
     </main>
@@ -3084,9 +3056,7 @@
     function renderTranslationHistory() {
       const entries = readTranslationHistory();
       const list = document.querySelector("#translation-history-list");
-      const tab = document.querySelector("#translation-history-tab");
-      tab.textContent = `Biên dịch (${entries.length})`;
-      tab.setAttribute("aria-label", `Lịch sử Biên dịch (${entries.length} bài)`);
+      document.querySelector("#translation-history-summary").textContent = `Lịch sử biên dịch (${entries.length})`;
       list.replaceChildren();
       if (!entries.length) {
         const empty = document.createElement("li");
@@ -3394,6 +3364,8 @@
         : "Nghe kỹ. Chuyển ý. Nói tự tin.";
       document.querySelector("#translate-panel").hidden = !translating;
       document.querySelector("#interpret-panel").hidden = translating;
+      document.querySelector("#translation-history-panel").hidden = !translating;
+      document.querySelector("#history-panel").hidden = translating;
       document.querySelector("#tab-translate").setAttribute("aria-selected", String(translating));
       document.querySelector("#tab-interpret").setAttribute("aria-selected", String(!translating));
       saveAppPreferences({ appMode: translating ? "translate" : "interpret" });
@@ -4670,10 +4642,7 @@
       const entries = readPracticeHistory();
       const historyList = document.querySelector("#history-list");
       historyList.replaceChildren();
-      document.querySelector("#history-summary").textContent = `Lịch sử luyện tập (${entries.length})`;
-      const tab = document.querySelector("#practice-history-tab");
-      tab.textContent = `Phiên dịch (${entries.length})`;
-      tab.setAttribute("aria-label", `Lịch sử Phiên dịch (${entries.length} buổi)`);
+      document.querySelector("#history-summary").textContent = `Lịch sử phiên dịch (${entries.length})`;
       if (entries.length === 0) {
         const empty = document.createElement("li");
         empty.className = "history-empty";
@@ -5197,45 +5166,11 @@
       }
     });
     document.querySelector("#check-answer").addEventListener("click", checkTranslation);
-    const setHistoryTab = (tab) => {
-      const showTranslations = tab === "translation";
-      document.querySelector("#translation-history-tab").setAttribute("aria-selected", String(showTranslations));
-      document.querySelector("#practice-history-tab").setAttribute("aria-selected", String(!showTranslations));
-      document.querySelector("#translation-history-panel").hidden = !showTranslations;
-      document.querySelector("#history-panel").hidden = showTranslations;
-      saveAppPreferences({ historyTab: tab });
-    };
-    document.querySelector("#translation-history-tab").addEventListener("click", () => setHistoryTab("translation"));
-    document.querySelector("#practice-history-tab").addEventListener("click", () => setHistoryTab("practice"));
     document.querySelector("#speak-source").addEventListener("click", speakSource);
     document.querySelector("#tab-translate").addEventListener("click", () => setMode("translate"));
     document.querySelector("#tab-interpret").addEventListener("click", () => setMode("interpret"));
     document.querySelector("#toggle-sidebar").addEventListener("click", (event) => {
       setSidebarExpanded(event.currentTarget.getAttribute("aria-expanded") !== "true");
-    });
-    const setHistorySidebarExpanded = (expanded) => {
-      const layout = document.querySelector(".app-layout");
-      const collapseButton = document.querySelector("#toggle-history-sidebar");
-      const historyNavButton = document.querySelector("#nav-history");
-      layout.classList.toggle("is-history-collapsed", !expanded);
-      collapseButton.setAttribute("aria-expanded", String(expanded));
-      collapseButton.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
-      collapseButton.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
-      historyNavButton.setAttribute("aria-pressed", String(expanded));
-      saveAppPreferences({ historySidebarExpanded: expanded });
-    };
-    document.querySelector("#nav-history").addEventListener("click", () => {
-      if (window.matchMedia("(max-width: 780px)").matches) {
-        setHistorySidebarExpanded(true);
-        document.querySelector(".app-history-sidebar").scrollIntoView({ behavior: "smooth", block: "start" });
-        return;
-      }
-      const expanded = document.querySelector("#nav-history").getAttribute("aria-pressed") !== "true";
-      setHistorySidebarExpanded(expanded);
-    });
-    document.querySelector("#toggle-history-sidebar").addEventListener("click", (event) => {
-      const button = event.currentTarget;
-      setHistorySidebarExpanded(button.getAttribute("aria-expanded") !== "true");
     });
     document.querySelector("#theme-toggle").addEventListener("click", (event) => {
       setTheme(document.documentElement.dataset.theme !== "dark");
@@ -5364,10 +5299,8 @@
     }
     setMode(initialAppPreferences.appMode === "interpret" ? "interpret" : "translate");
     setSidebarExpanded(initialAppPreferences.sidebarCollapsed !== true);
-    setHistorySidebarExpanded(initialAppPreferences.historySidebarExpanded !== false);
     setTranslationSettingsExpanded(initialAppPreferences.translationSettingsExpanded !== false);
     setTheme(initialAppPreferences.darkTheme === true);
-    setHistoryTab(initialAppPreferences.historyTab === "practice" ? "practice" : "translation");
     renderTimer();
     updatePracticeModeControls();
     renderTranslationHistory();
