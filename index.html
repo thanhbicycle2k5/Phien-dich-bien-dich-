@@ -1604,6 +1604,7 @@
     const MAX_HISTORY_ITEMS = 30;
     const MAX_TRANSLATION_HISTORY_ITEMS = 30;
     const PRACTICE_MEDIA_DB_NAME = "interslation-practice-media-v1";
+    const PRACTICE_MEDIA_DB_VERSION = 2;
     const PRACTICE_MEDIA_STORE = "sessions";
     const PRACTICE_MEDIA_RETENTION_MS = 3 * 24 * 60 * 60 * 1000;
     const PERSONAL_MATERIALS_KEY = "lingua-lab-personal-materials-v1";
@@ -1740,13 +1741,16 @@
           reject(new Error("Trình duyệt này không hỗ trợ lưu media trên thiết bị."));
           return;
         }
-        const request = window.indexedDB.open(PRACTICE_MEDIA_DB_NAME, 1);
+        const request = window.indexedDB.open(PRACTICE_MEDIA_DB_NAME, PRACTICE_MEDIA_DB_VERSION);
         request.onupgradeneeded = () => {
           if (!request.result.objectStoreNames.contains(PRACTICE_MEDIA_STORE)) {
             request.result.createObjectStore(PRACTICE_MEDIA_STORE, { keyPath: "id" });
           }
         };
-        request.onsuccess = () => resolve(request.result);
+        request.onsuccess = () => {
+          request.result.onversionchange = () => request.result.close();
+          resolve(request.result);
+        };
         request.onerror = () => reject(request.error || new Error("Không thể mở kho media."));
         request.onblocked = () => reject(new Error("Kho media đang được dùng ở thẻ khác. Hãy đóng thẻ trùng lặp rồi thử lại."));
       });
