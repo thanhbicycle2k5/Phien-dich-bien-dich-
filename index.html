@@ -1714,6 +1714,7 @@
     let localPracticeMediaFile = null;
     let activePracticeMode = "parallel";
     let consecutivePhase = "idle";
+    let currentPracticeSaved = false;
     let storedPracticeMedia = new Map();
     let practiceMediaObjectUrls = new Set();
     let practiceMediaDatabasePromise = null;
@@ -2223,8 +2224,9 @@
       document.querySelector("#save-translation").disabled = activeTranslationMode === "personal"
         ? !sourceText.value.trim() && !answerText.value.trim()
         : !answerText.value.trim();
-      document.querySelector("#save-practice").disabled = !transcript.textContent.trim()
-        && !speechRecordingsById.has(speechRecordingId);
+      document.querySelector("#save-practice").disabled = currentPracticeSaved
+        || (activePracticeMode === "consecutive" && (speechSessionActive || consecutivePhase === "starting"))
+        || (!transcript.textContent.trim() && !speechRecordingsById.has(speechRecordingId));
     }
 
     function loadExercise() {
@@ -3607,6 +3609,8 @@
       speechSessionActive = true;
       updatePracticeModeControls();
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      currentPracticeSaved = false;
+      updateSaveButtonStates();
       const recordingId = speechRecordingId;
       practiceSourceTimeline = [];
       currentPracticeSourceSegment = null;
@@ -3697,15 +3701,20 @@
         starting: "Đang chuẩn bị...",
         listening: "Dừng và thực hiện dịch",
         translating: "Tiếp tục",
-        finished: "Đã kết thúc"
+        finished: "Tiếp tục"
       };
       startButton.textContent = labels[consecutivePhase];
-      startButton.disabled = consecutivePhase === "finished" || !canRecordAudio;
+      startButton.disabled = !canRecordAudio;
     }
 
     function setPracticeMode(mode) {
       if (speechSessionActive || (consecutivePhase !== "idle" && consecutivePhase !== "finished")) {
         document.querySelector("#practice-mode").value = activePracticeMode;
+        return;
+      }
+      if (consecutivePhase === "finished" && !currentPracticeSaved) {
+        document.querySelector("#practice-mode").value = activePracticeMode;
+        document.querySelector("#speech-status").textContent = "Hãy lưu hoặc đặt lại đoạn ghi vừa kết thúc trước khi đổi chế độ.";
         return;
       }
       activePracticeMode = mode === "consecutive" ? "consecutive" : "parallel";
@@ -3719,6 +3728,10 @@
 
     async function startConsecutivePractice() {
       if (consecutivePhase !== "idle" && consecutivePhase !== "finished") return;
+      if (currentPracticeSaved === false && speechRecordingId && consecutivePhase === "finished") {
+        document.querySelector("#speech-status").textContent = "Hãy lưu đoạn ghi vừa kết thúc trước khi tiếp tục.";
+        return;
+      }
       const canRecordAudio = Boolean(navigator.mediaDevices?.getUserMedia && typeof MediaRecorder !== "undefined");
       if (!canRecordAudio) {
         document.querySelector("#speech-status").textContent = "Chế độ dịch nối tiếp cần quyền micro để ghi âm phần dịch.";
@@ -3728,10 +3741,26 @@
         document.querySelector("#speech-status").textContent = "Hãy tải link YouTube hoặc chọn tệp MP3/MP4 trước.";
         return;
       }
+      if (currentPracticeSaved) {
+        const recordedAudio = document.querySelector("#speech-recorded-audio");
+        recordedAudio.pause();
+        recordedAudio.removeAttribute("src");
+        recordedAudio.load();
+        const downloadLink = document.querySelector("#download-speech-recording");
+        downloadLink.hidden = true;
+        downloadLink.removeAttribute("href");
+        downloadLink.removeAttribute("download");
+        finalTranscript = "";
+        transcript.textContent = "";
+        updateCounts();
+        resetTimer();
+      }
       consecutivePhase = "starting";
       updatePracticeModeControls();
       document.querySelector("#speech-status").textContent = "Đang xin quyền micro; nguồn bắt đầu phát ngay.";
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      currentPracticeSaved = false;
+      updateSaveButtonStates();
       practiceSourceTimeline = [];
       currentPracticeSourceSegment = null;
       const sourcePlayback = startPracticeMedia();
@@ -3840,8 +3869,9 @@
       pauseTimer();
       stopSpeechAudioCapture();
       updateSourcePlaybackPreview();
-      setListening(false, "Đã kết thúc. Có thể lưu buổi luyện hoặc nghe hai bản ghi song song.");
+      setListening(false, "Đã kết thúc đoạn ghi. Lưu đoạn này, rồi bấm “Tiếp tục” để nghe tiếp từ vị trí đang dừng.");
       updatePracticeModeControls();
+      updateSaveButtonStates();
     }
 
     function scheduleSpeechRecognitionRestart(recordingId) {
@@ -4429,6 +4459,7 @@
       practiceSourceTimeline = [];
       currentPracticeSourceSegment = null;
       speechRecordingId = "";
+      currentPracticeSaved = false;
       clearSourcePlaybackPreview();
 
       const isSavedRecording = currentRecordingId && readPracticeHistory().some((entry) => entry.recordingId === currentRecordingId);
@@ -4983,6 +5014,9 @@
     }
 
     async function savePractice() {
+      const saveButton = document.querySelector("#save-practice");
+      if (saveButton.disabled) return;
+      saveButton.disabled = true;
       const savedTranscript = transcript.textContent.trim();
       const durationSeconds = Math.floor(getElapsedTime() / 1000);
       const historyMessage = document.querySelector("#history-message");
@@ -5012,6 +5046,7 @@
         if (!savedTranscript && !voiceBlob) {
           historyMessage.textContent = "Hãy có bản chép lời hoặc bản ghi giọng người dùng trước khi lưu.";
           speechStatus.textContent = historyMessage.textContent;
+          updateSaveButtonStates();
           return;
         }
 
@@ -5065,6 +5100,8 @@
         window.localStorage.setItem(HISTORY_KEY, JSON.stringify(retainedEntries));
         notifyProgressChanged();
         historyCommitted = true;
+        currentPracticeSaved = true;
+        updateSaveButtonStates();
         storedPracticeMedia.set(storageId, storedRecord);
         const retainedIds = new Set(retainedEntries.map((savedEntry) => savedEntry.storageId).filter(Boolean));
         for (const oldEntry of entries.slice(MAX_HISTORY_ITEMS)) {
@@ -5096,6 +5133,8 @@
           renderPracticeHistory();
           schedulePracticeMediaExpiry();
         }
+      } finally {
+        updateSaveButtonStates();
       }
     }
 
