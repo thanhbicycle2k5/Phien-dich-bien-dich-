@@ -5,6 +5,7 @@
   const emailLink = document.querySelector("#auth-email-link");
   const identity = document.querySelector("#auth-identity");
   const openButton = document.querySelector("#auth-open");
+  const mobileAccountButton = document.querySelector("#auth-mobile-account");
   const accountMenu = document.querySelector("#auth-account-menu");
   const avatarButton = document.querySelector("#auth-avatar");
   const avatarImage = document.querySelector("#auth-avatar-image");
@@ -360,6 +361,10 @@
   });
 
   openButton.addEventListener("click", openDialog);
+  mobileAccountButton.addEventListener("click", () => {
+    if (session?.user?.email) avatarButton.click();
+    else openButton.click();
+  });
   avatarButton.addEventListener("click", () => {
     const expanded = avatarButton.getAttribute("aria-expanded") !== "true";
     avatarButton.setAttribute("aria-expanded", String(expanded));

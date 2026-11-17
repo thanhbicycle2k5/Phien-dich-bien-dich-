@@ -163,7 +163,7 @@
       padding: 15px 16px;
       border: 1px solid var(--line);
       border-radius: 9px;
-      background: #f8fbff;
+      background: #f0f9ff;
     }
 
     .quick-guide h2 { margin: 0 0 8px; font-size: 14px; }
@@ -240,7 +240,7 @@
     .topic-option[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
     .topic-options-empty { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
     .source-mode-field { min-width: 150px; display: grid; align-content: end; }
-    .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--panel-border, var(--line)); border-radius: 7px; background: var(--panel-bg, #f0f9ff); }
     .source-switch button { min-height: 34px; padding: 0 11px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
     .source-switch button[aria-pressed="true"] { background: var(--blue); color: var(--white); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
     .personal-controls { display: contents; }
@@ -285,13 +285,13 @@
     .auth-avatar { position: relative; display: grid; width: 38px; height: 38px; place-items: center; overflow: hidden; padding: 0; border: 2px solid var(--line); border-radius: 50%; background: var(--soft-accent); color: var(--blue-dark); cursor: pointer; font-size: 14px; font-weight: 750; }
     .auth-avatar:hover, .auth-avatar:focus-visible { border-color: var(--blue); outline: none; }
     .auth-avatar img { position: absolute; inset: 0; width: 100%; height: 100%; border-radius: 50%; object-fit: cover; }
-    .auth-open-icon { display: none; }
+    #auth-mobile-account { display: none; }
     #auth-signout { position: absolute; z-index: 20; top: calc(100% + 8px); right: 0; white-space: nowrap; background: var(--white); box-shadow: 0 8px 20px rgba(23, 43, 77, .14); }
-    .progress-sync-status { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); background: #f8fbff; color: var(--muted); font-size: 12px; }
+    .progress-sync-status { margin: 0; padding: 8px 12px; border-bottom: 1px solid var(--line); background: #f0f9ff; color: var(--muted); font-size: 12px; }
     .progress-sync-status[hidden] { display: none; }
     .progress-sync-status.is-error { background: #fff7ed; color: #9a3412; }
     .auth-body { display: grid; gap: 14px; padding: 18px 20px 20px; }
-    .auth-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .auth-switch { display: grid; grid-template-columns: repeat(3, 1fr); gap: 4px; padding: 4px; border: 1px solid var(--line); border-radius: 7px; background: #f0f9ff; }
     .auth-switch button { min-height: 34px; padding: 4px 7px; border: 0; border-radius: 5px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 650; }
     .auth-switch button[aria-pressed="true"] { background: var(--white); color: var(--blue-dark); box-shadow: 0 1px 3px rgba(15, 23, 42, .12); }
     .auth-form { display: grid; gap: 12px; }
@@ -313,7 +313,7 @@
     .deepl-key-field { flex: 1; min-width: 0; }
     .deepl-key-field .field-label { margin-bottom: 5px; }
     .deepl-key-input { width: 100%; min-height: 36px; padding: 7px 9px; border: 1px solid var(--line); border-radius: 5px; background: var(--white); font: 12px var(--sans); }
-    .deepl-guide { padding: 13px 15px; border-radius: 7px; background: #f8fbff; }
+    .deepl-guide { padding: 13px 15px; border-radius: 7px; background: #f0f9ff; }
     .deepl-guide h3 { margin: 0 0 8px; font-size: 13px; }
     .deepl-guide ol { display: grid; gap: 7px; margin: 0; padding-left: 19px; color: var(--muted); font-size: 12px; }
     .deepl-guide-note { margin: 10px 0 0; color: var(--muted); font-size: 12px; line-height: 1.5; }
@@ -329,7 +329,7 @@
     }
 
     .translation-pane { min-width: 0; padding: 22px; }
-    .translation-pane + .translation-pane { border-left: 1px solid var(--line); }
+    .translation-pane + .translation-pane { border-left: 1px solid var(--panel-border); }
 
     .pane-top {
       min-height: 42px;
@@ -348,7 +348,7 @@
       padding: 15px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      background: #f8fbff;
+      background: #f0f9ff;
       color: var(--ink);
       font: 16px/1.7 var(--sans);
     }
@@ -391,6 +391,8 @@
     .save-translation-button { min-width: 88px; border-color: var(--blue); background: var(--soft-blue); color: var(--blue-dark); }
     .save-translation-button:not(:disabled):hover { background: var(--soft-accent); }
     .save-translation-button svg { width: 18px; height: 18px; }
+    .save-practice-button { width: auto; min-width: 80px; padding: 0 11px; border-color: var(--blue); background: var(--blue); color: var(--white); }
+    .save-practice-button:not(:disabled):hover { border-color: var(--blue-dark); background: var(--blue-dark); }
     button:disabled { opacity: .48; cursor: not-allowed; }
 
     .workspace-actions {
@@ -468,7 +470,7 @@
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 6px;
-      background: #f8fbff;
+      background: #f0f9ff;
       color: var(--ink);
       font: 17px/1.75 var(--sans);
       white-space: pre-wrap;
@@ -514,11 +516,11 @@
     .history-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .history-message { color: var(--muted); font-size: 11px; }
     .history-list { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
-    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #f8fbff; }
+    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #f0f9ff; }
     .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
     .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .history-empty { color: var(--muted); font-size: 12px; }
-    .youtube-practice { margin: 0 0 13px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .youtube-practice { margin: 0 0 13px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f0f9ff; }
     .youtube-heading { margin: 0 0 8px; font: 700 16px var(--sans); }
     .youtube-input-row { display: flex; align-items: end; gap: 8px; }
     .youtube-url-label { flex: 1; min-width: 0; }
@@ -536,10 +538,10 @@
     .media-speed-control select { min-height: 34px; padding: 5px 32px 5px 8px; border: 1px solid var(--line); border-radius: 5px; background-color: var(--white); }
     .practice-mode-control { display: grid; gap: 4px; margin-bottom: 12px; }
     .practice-mode-control select { min-height: 36px; padding: 6px 32px 6px 9px; border: 1px solid var(--line); border-radius: 5px; background-color: var(--white); }
-    .media-mix-panel { display: grid; gap: 10px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f8fbff; }
+    .media-mix-panel { display: grid; gap: 10px; margin-top: 16px; padding: 12px; border: 1px solid var(--line); border-radius: 7px; background: #f0f9ff; }
     .media-mix-panel h3 { margin: 0; font: 700 13px var(--sans); }
     .media-mix-panel p { margin: 0; color: var(--muted); font-size: 11px; line-height: 1.4; }
-    #media-mix-status { padding: 8px; border-radius: 5px; background: #f1f5f9; }
+    #media-mix-status { padding: 8px; border-radius: 5px; background: #f0f9ff; }
     #media-mix-status.is-loading { color: #854d0e; background: #fefce8; }
     #media-mix-status.is-playing { color: #166534; background: #f0fdf4; }
     .media-mix-speed-control { display: flex; align-items: center; gap: 8px; color: var(--muted); font-size: 11px; }
@@ -560,16 +562,18 @@
 
     :root {
       color-scheme: light;
-      --paper: #f8fafc;
+      --paper: #f5fbff;
       --ink: #18181b;
       --muted: #71717a;
-      --line: #e4e4e7;
+      --line: #cfe3f2;
       --blue: #4f46e5;
       --blue-dark: #4338ca;
       --accent: #6366f1;
       --white: #ffffff;
-      --soft-blue: #f4f4f5;
-      --soft-accent: #eef2ff;
+      --soft-blue: #f0f9ff;
+      --soft-accent: #e0f2fe;
+      --panel-bg: rgba(240, 249, 255, .72);
+      --panel-border: rgba(186, 230, 253, .6);
       --card-shadow: 0 1px 2px rgba(15, 23, 42, .04), 0 10px 30px rgba(15, 23, 42, .035);
       --sans: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
     }
@@ -586,6 +590,8 @@
       --white: #18181b;
       --soft-blue: #202024;
       --soft-accent: #272a3b;
+      --panel-bg: var(--white);
+      --panel-border: var(--line);
       --card-shadow: 0 1px 2px rgba(0, 0, 0, .24), 0 12px 32px rgba(0, 0, 0, .12);
     }
 
@@ -610,11 +616,11 @@
     .sidebar-content { display: grid; align-content: start; gap: 14px; min-height: 0; overflow-y: auto; padding: 1px 2px 12px 1px; scrollbar-width: thin; }
     .app-workspace { min-width: 0; min-height: 0; height: 100%; overflow-y: auto; padding: 1px 3px 12px 1px; scrollbar-width: thin; }
     .app-history-sidebar { position: relative; display: grid; grid-template-columns: minmax(0, 1fr); height: 100%; min-width: 0; }
-    .history-sidebar-card { display: flex; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; padding: 16px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+    .history-sidebar-card { display: flex; min-width: 0; min-height: 0; flex-direction: column; overflow: hidden; padding: 16px; border: 1px solid var(--panel-border); border-radius: 16px; background: var(--panel-bg); box-shadow: var(--card-shadow); transition: opacity .16s ease, transform .2s ease, visibility .2s; }
     .intro, .quick-guide, .workspace, .sidebar-navigation {
-      border: 1px solid var(--line);
+      border: 1px solid var(--panel-border);
       border-radius: 16px;
-      background: var(--white);
+      background: var(--panel-bg);
       box-shadow: var(--card-shadow);
     }
     .intro { padding: 20px; }
@@ -645,7 +651,10 @@
     .history-sidebar-card .history-list { min-height: 0; flex: 1; overflow-y: auto; margin-bottom: 4px; padding-right: 2px; }
     .app-layout.is-history-collapsed { grid-template-columns: 220px minmax(0, 1fr) 64px; }
     .app-layout.is-sidebar-collapsed.is-history-collapsed { grid-template-columns: 64px minmax(0, 1fr) 64px; }
-    .app-layout.is-history-collapsed .history-sidebar-card { display: none; }
+    .app-layout.is-history-collapsed .history-sidebar-card { visibility: hidden; opacity: 0; transform: translateX(8px); pointer-events: none; }
+    .history-nav-button { justify-content: flex-start; }
+    .history-nav-button svg { width: 17px; height: 17px; flex: 0 0 17px; }
+    .history-nav-button[aria-pressed="true"] { background: var(--soft-accent); color: var(--blue-dark); }
     .translation-history-topic { display: block; margin: 0 0 5px; color: var(--blue-dark); font-size: 11px; font-weight: 700; }
     .translation-history-answer { margin: 8px 0 0; color: var(--ink); }
     .quick-guide { padding: 20px; }
@@ -653,6 +662,7 @@
     .workspace-head { min-height: 56px; padding: 10px 18px; }
     .workspace-title { font-size: 17px; letter-spacing: -.2px; }
     .workspace-caption { font-size: 12px; }
+    .workspace-head, .translation-settings > .selector-row { background: var(--panel-bg); border-color: var(--panel-border); }
     .translation-settings > .selector-row { padding: 17px 22px; }
     .exercise-select, .language-select, .youtube-input, .practice-mode-control select, .media-speed-control select,
     .auth-input { border-color: var(--line); border-radius: 9px; background-color: var(--white); color: var(--ink); transition: border-color .2s ease, box-shadow .2s ease, background .2s ease; }
@@ -665,12 +675,13 @@
       padding: 14px;
       border: 1px solid var(--line);
       border-radius: 16px;
-      background: color-mix(in srgb, var(--white) 76%, var(--paper));
+      background: var(--panel-bg);
+      border-color: var(--panel-border);
       box-shadow: 0 1px 2px rgba(15, 23, 42, .035);
     }
-    .translation-pane + .translation-pane { border-left: 1px solid var(--line); }
+    .translation-pane + .translation-pane { border-left: 1px solid var(--panel-border); }
     .translation-pane .text-area { height: clamp(180px, 28vh, 320px); min-height: 180px; resize: none; }
-    .text-area, .transcript { border-color: var(--line); border-radius: 11px; background: color-mix(in srgb, var(--white) 70%, var(--paper)); color: var(--ink); }
+    .text-area, .transcript { border-color: var(--line); border-radius: 11px; background: var(--white); color: var(--ink); }
     .text-area:focus, .youtube-input:focus, .auth-input:focus, select:focus { border-color: var(--blue); box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 16%, transparent); outline: none; }
     .tool-button, .primary-button, .quiet-button { border-radius: 8px; transition: transform .2s ease, box-shadow .2s ease, background .2s ease, border-color .2s ease, color .2s ease; }
     .tool-button:hover, .quiet-button:hover, .primary-button:hover:not(:disabled) { transform: translateY(-1px); }
@@ -682,10 +693,13 @@
     #check-answer.is-loading { cursor: progress; }
     .loading-spinner { width: 15px; height: 15px; border: 2px solid rgba(255,255,255,.4); border-top-color: #fff; border-radius: 50%; animation: spin .7s linear infinite; }
     @keyframes spin { to { transform: rotate(360deg); } }
-    .interpret-body { grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr); gap: 14px; padding: 14px; }
+    .interpret-body { grid-template-columns: minmax(280px, .82fr) minmax(0, 1.18fr); gap: 20px; padding: 14px; }
     .interpret-source-column { display: grid; align-content: start; gap: 10px; }
-    .youtube-practice, .practice-controls-panel { margin: 0; padding: 13px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+    .youtube-practice, .practice-controls-panel { margin: 0; padding: 13px; border: 1px solid var(--panel-border); border-radius: 16px; background: var(--panel-bg); box-shadow: var(--card-shadow); }
     .youtube-heading { margin-bottom: 8px; font-size: 14px; }
+    .youtube-heading { display: flex; align-items: center; gap: 8px; }
+    .youtube-heading svg, .field-label-icon svg { width: 15px; height: 15px; flex: 0 0 15px; }
+    .field-label-icon { display: inline-flex; align-items: center; gap: 6px; }
     .youtube-input-row { align-items: end; }
     .youtube-input { min-height: 42px; }
     .local-media-source { margin-top: 8px; }
@@ -701,7 +715,7 @@
     .mic-state { padding: 7px 11px; border: 1px solid var(--line); border-radius: 999px; background: var(--white); }
     .mic-state.is-listening { color: #b42318; background: #fff5f4; border-color: #ffdad5; }
     .mic-state.is-listening .mic-indicator { background: #e5484d; }
-    .interpret-session { min-width: 0; padding: 14px; border: 1px solid var(--line); border-radius: 16px; background: var(--white); box-shadow: var(--card-shadow); }
+    .interpret-session { min-width: 0; padding: 14px; border: 1px solid var(--panel-border); border-radius: 16px; background: var(--panel-bg); box-shadow: var(--card-shadow); }
     .interpret-toolbar { margin-bottom: 8px; }
     .interpret-toolbar .score-note { color: var(--ink); font-size: 14px; font-weight: 700; }
     .transcript { min-height: clamp(180px, 30vh, 300px); padding: 14px; font-size: 15px; line-height: 1.7; }
@@ -710,7 +724,7 @@
     .history { margin-top: 8px; padding-top: 12px; border-top-color: var(--line); }
     .history summary { padding: 7px 0 11px; }
     .history-list { gap: 9px; }
-    .history-item { padding: 13px; border-color: var(--line); border-radius: 11px; background: var(--white); transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
+    .history-item { padding: 13px; border-color: var(--panel-border); border-radius: 11px; background: var(--panel-bg); transition: border-color .2s ease, box-shadow .2s ease, transform .2s ease; }
     .history-item:hover { transform: translateY(-1px); border-color: #c7d2fe; box-shadow: var(--card-shadow); }
     .history-card-head { display: flex; align-items: center; gap: 11px; min-width: 0; }
     .history-source-icon { display: grid; width: 38px; height: 38px; flex: 0 0 38px; place-items: center; border-radius: 10px; background: var(--soft-accent); color: var(--blue); font-size: 16px; font-weight: 800; }
@@ -742,6 +756,8 @@
     .app-layout.is-sidebar-collapsed .mode-tab svg { width: 19px; height: 19px; }
     :root[data-theme="dark"] body { color: var(--ink); }
     :root[data-theme="dark"] .intro, :root[data-theme="dark"] .quick-guide, :root[data-theme="dark"] .workspace,
+    :root[data-theme="dark"] .workspace-head, :root[data-theme="dark"] .translation-settings > .selector-row,
+    :root[data-theme="dark"] .translation-pane,
     :root[data-theme="dark"] .sidebar-navigation, :root[data-theme="dark"] .history-sidebar-card, :root[data-theme="dark"] .youtube-practice,
     :root[data-theme="dark"] .practice-controls-panel, :root[data-theme="dark"] .interpret-session,
     :root[data-theme="dark"] .history-item, :root[data-theme="dark"] .deepl-settings,
@@ -771,6 +787,7 @@
     :root[data-theme="dark"] .source-switch button[aria-pressed="true"] { background: #6366f1; color: #fff; }
     :root[data-theme="dark"] .auth-switch button[aria-pressed="true"] { background: #30303a; color: #c7d2fe; }
     :root[data-theme="dark"] .save-translation-button { border-color: #818cf8; background: #272a3b; color: #c7d2fe; }
+    :root[data-theme="dark"] .save-practice-button { border-color: #6366f1; background: #6366f1; color: #fff; }
     :root[data-theme="dark"] .deepl-guide ol, :root[data-theme="dark"] .deepl-guide-note,
     :root[data-theme="dark"] .quick-guide p, :root[data-theme="dark"] .quick-guide ol,
     :root[data-theme="dark"] .page-foot, :root[data-theme="dark"] .local-label { color: var(--muted); }
@@ -800,8 +817,9 @@
 
     @media (max-width: 950px) and (min-width: 781px) {
       .translation-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px; }
-      .translation-pane + .translation-pane { border-left: 1px solid var(--line); }
+      .translation-pane + .translation-pane { border-left: 1px solid var(--panel-border); }
       .translation-pane .text-area { height: clamp(180px, 28vh, 300px); }
+      .interpret-body { gap: 14px; }
     }
 
     @media (max-width: 780px) {
@@ -821,7 +839,9 @@
       .app-workspace { height: auto; overflow: visible; padding: 0; }
       .app-history-sidebar { position: relative; height: auto; }
       .app-layout.is-history-collapsed .history-sidebar-card { display: flex; }
+      .app-layout.is-history-collapsed .history-sidebar-card { visibility: visible; opacity: 1; transform: none; pointer-events: auto; }
       .history-sidebar-card { max-height: 480px; }
+      #toggle-history-nav { display: none; }
       .sidebar-content > .intro, .sidebar-content > .quick-guide { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-content > :not(.sidebar-navigation) { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
@@ -836,7 +856,7 @@
       .translation-pane .pane-top { align-items: center; flex-wrap: wrap; }
       .translation-pane .pane-tools { gap: 3px; margin-left: auto; }
       .translation-pane .pane-tools .tool-button { width: 32px; min-width: 32px; min-height: 32px; }
-      .translation-pane + .translation-pane { border-top: 1px solid var(--line); border-left: 1px solid var(--line); }
+      .translation-pane + .translation-pane { border-top: 1px solid var(--panel-border); border-left: 1px solid var(--panel-border); }
       .workspace-head { padding: 12px 16px; }
       .translation-settings > .selector-row { padding: 12px 16px; }
       .selector-row, .selector-row label { width: 100%; }
@@ -868,9 +888,9 @@
       .account-tools { flex-shrink: 0; }
       .brand { min-width: 0; gap: 8px; }
       .brand-name { font-size: 16px; }
-      #auth-open { display: grid; width: 38px; min-width: 38px; height: 38px; min-height: 38px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--soft-accent); color: var(--blue-dark); }
-      #auth-open span { display: none; }
-      .auth-open-icon { display: block; width: 19px; height: 19px; }
+      #auth-open { display: none; }
+      #auth-mobile-account { display: grid; width: 38px; min-width: 38px; height: 38px; min-height: 38px; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--soft-accent); color: var(--blue-dark); }
+      #auth-mobile-account svg { width: 19px; height: 19px; }
       #auth-signout { max-width: 118px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
     }
 
@@ -894,10 +914,7 @@
           <svg class="theme-icon theme-icon-dark" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M20.5 15.2A8.5 8.5 0 0 1 8.8 3.5 8.5 8.5 0 1 0 20.5 15.2Z"/></svg>
           <svg class="theme-icon theme-icon-light" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2m0 16v2M4.93 4.93l1.42 1.42m11.3 11.3 1.42 1.42M2 12h2m16 0h2M4.93 19.07l1.42-1.42m11.3-11.3 1.42-1.42"/></svg>
         </button>
-        <button class="quiet-button" id="auth-open" type="button" aria-label="Đăng nhập / Đăng ký" title="Đăng nhập / Đăng ký">
-          <svg class="auth-open-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
-          <span>Đăng nhập / Đăng ký</span>
-        </button>
+        <button class="quiet-button" id="auth-open" type="button">Đăng nhập / Đăng ký</button>
         <div class="account-menu" id="auth-account-menu" hidden>
           <button class="auth-avatar" id="auth-avatar" type="button" aria-label="Tài khoản" aria-expanded="false" aria-controls="auth-signout" title="Tài khoản">
             <span id="auth-avatar-initials" aria-hidden="true"></span>
@@ -905,6 +922,9 @@
           </button>
           <button class="quiet-button" id="auth-signout" type="button" hidden>Đăng xuất</button>
         </div>
+        <button class="quiet-button" id="auth-mobile-account" type="button" aria-label="Tài khoản hoặc đăng nhập" title="Tài khoản hoặc đăng nhập">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><circle cx="12" cy="8" r="3.5"/><path d="M5 20a7 7 0 0 1 14 0"/></svg>
+        </button>
       </div>
     </header>
     <div class="sync-toast" id="progress-sync-toast" role="status" aria-live="polite" hidden>
@@ -947,6 +967,10 @@
               <span>Phiên dịch</span>
             </button>
           </nav>
+          <button class="mode-tab history-nav-button" id="toggle-history-nav" type="button" aria-expanded="true" aria-pressed="true" aria-controls="app-history-sidebar" aria-label="Thu gọn cột lịch sử" title="Thu gọn cột lịch sử">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></svg>
+            <span>Lịch sử</span>
+          </button>
           </section>
 
           <section class="quick-guide" aria-labelledby="quick-guide-title">
@@ -1233,7 +1257,10 @@
         <div class="interpret-body">
           <div class="interpret-source-column">
             <section class="youtube-practice" aria-labelledby="youtube-heading">
-              <h3 class="youtube-heading" id="youtube-heading">Chọn nguồn luyện phiên dịch</h3>
+              <h3 class="youtube-heading" id="youtube-heading">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m10 8 6 4-6 4z"/><rect x="3" y="5" width="18" height="14" rx="3"/></svg>
+                Chọn nguồn luyện phiên dịch
+              </h3>
               <div class="youtube-input-row">
                 <label class="youtube-url-label" for="youtube-url">
                   <span class="field-label">Video YouTube</span>
@@ -1247,7 +1274,10 @@
               <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
               <div class="local-media-source">
                 <label class="file-control" for="local-media-file">
-                  <span class="field-label">Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)</span>
+                  <span class="field-label field-label-icon">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/></svg>
+                    Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)
+                  </span>
                   <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
                 </label>
                 <audio class="local-media-player" id="local-audio-player" preload="auto" hidden></audio>
@@ -1274,7 +1304,10 @@
             </section>
             <section class="practice-controls-panel" aria-label="Điều khiển buổi luyện tập">
               <label class="practice-mode-control">
-                <span class="field-label">Chế độ phiên dịch</span>
+                <span class="field-label field-label-icon">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4m4-6h4m4 8h4"/></svg>
+                  Chế độ phiên dịch
+                </span>
                 <select id="practice-mode">
                   <option value="parallel">Dịch song song</option>
                   <option value="consecutive">Dịch nối tiếp</option>
@@ -1296,8 +1329,9 @@
                   <button class="primary-button" id="start-listening" type="button"><span aria-hidden="true">●</span> Bắt đầu nói</button>
                   <button class="quiet-button" id="stop-listening" type="button" disabled>Dừng mic</button>
                   <button class="quiet-button" id="restart-practice" type="button">Bắt đầu lại</button>
-                  <button class="quiet-button icon-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch" disabled>
+                  <button class="quiet-button icon-button save-practice-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu buổi phiên dịch" disabled>
                     <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
+                    <span>Lưu</span>
                   </button>
                 </div>
                 <div class="timer-tools" aria-label="Đồng hồ luyện tập">
@@ -1368,7 +1402,7 @@
         <span>Nhấn biểu tượng lưu để giữ lại bài làm</span>
       </footer>
       </div>
-      <aside class="app-history-sidebar" aria-label="Lịch sử theo chế độ">
+      <aside class="app-history-sidebar" id="app-history-sidebar" aria-label="Lịch sử theo chế độ">
         <button class="history-sidebar-collapse" id="toggle-history-sidebar" type="button" aria-label="Thu gọn cột lịch sử" aria-expanded="true" title="Thu gọn cột lịch sử">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5v14M9 8l4 4-4 4"/></svg>
         </button>
@@ -3403,10 +3437,15 @@
 
     function setHistorySidebarExpanded(expanded) {
       document.querySelector(".app-layout").classList.toggle("is-history-collapsed", !expanded);
-      const button = document.querySelector("#toggle-history-sidebar");
-      button.setAttribute("aria-expanded", String(expanded));
-      button.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
-      button.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
+      const collapseButton = document.querySelector("#toggle-history-sidebar");
+      collapseButton.setAttribute("aria-expanded", String(expanded));
+      collapseButton.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
+      collapseButton.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
+      const navigationButton = document.querySelector("#toggle-history-nav");
+      navigationButton.setAttribute("aria-expanded", String(expanded));
+      navigationButton.setAttribute("aria-pressed", String(expanded));
+      navigationButton.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
+      navigationButton.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
       saveAppPreferences({ historySidebarExpanded: expanded });
     }
 
@@ -5203,6 +5242,9 @@
       setSidebarExpanded(event.currentTarget.getAttribute("aria-expanded") !== "true");
     });
     document.querySelector("#toggle-history-sidebar").addEventListener("click", (event) => {
+      setHistorySidebarExpanded(event.currentTarget.getAttribute("aria-expanded") !== "true");
+    });
+    document.querySelector("#toggle-history-nav").addEventListener("click", (event) => {
       setHistorySidebarExpanded(event.currentTarget.getAttribute("aria-expanded") !== "true");
     });
     document.querySelector("#theme-toggle").addEventListener("click", (event) => {
