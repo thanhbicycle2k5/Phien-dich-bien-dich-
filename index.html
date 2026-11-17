@@ -1280,6 +1280,9 @@
                 <iframe id="youtube-frame" title="Video YouTube luyện phiên dịch" loading="lazy" referrerpolicy="strict-origin-when-cross-origin" allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; web-share" allowfullscreen></iframe>
               </div>
               <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
+              <p class="local-media-status" id="youtube-export-notice" role="status" aria-live="polite" hidden>
+                Âm thanh YouTube không thể ghép trực tiếp vào file tải về. Muốn xuất bản phối, hãy dùng tệp MP3/MP4 trên thiết bị mà bạn có quyền sử dụng.
+              </p>
               <div class="local-media-source">
                 <label class="file-control" for="local-media-file">
                   <span class="field-label field-label-icon">
@@ -4314,7 +4317,9 @@
             downloadLink.hidden = false;
             document.querySelector("#speech-recording-preview").hidden = false;
             document.querySelector("#speech-recording-status").textContent =
-              "Bản MP3 chỉ chứa giọng dịch của bạn; âm thanh YouTube phát riêng trong chế độ đồng bộ.";
+              activePracticeSource === "youtube"
+                ? "Bản MP3 chỉ chứa giọng dịch; âm thanh YouTube phát riêng và không được ghép vào file."
+                : "Bản MP3 chứa giọng dịch. Dùng “Xuất bản phối MP3 từ tệp nguồn” để gộp với nguồn local.";
             updatePracticePreviewMixButton();
             renderPracticeHistory();
             speechRecordingStopResolve?.(recording);
@@ -4508,6 +4513,7 @@
       const player = document.querySelector("#youtube-player");
       const frame = document.querySelector("#youtube-frame");
       if (!videoId) {
+        document.querySelector("#youtube-export-notice").hidden = true;
         player.hidden = true;
         frame.removeAttribute("src");
         frame.dataset.videoId = "";
@@ -4519,6 +4525,7 @@
 
       clearLocalPracticeMedia();
       activePracticeSource = "youtube";
+      document.querySelector("#youtube-export-notice").hidden = false;
       setPracticeControlsOpen(true);
       document.querySelector("#media-speed-control").hidden = false;
       if (frame.dataset.videoId !== videoId) {
@@ -4579,6 +4586,7 @@
       player.load();
       localPracticeMediaFile = file;
       activePracticeSource = "local";
+      document.querySelector("#youtube-export-notice").hidden = true;
       setPracticeControlsOpen(true);
       document.querySelector("#media-seek-control").hidden = false;
       renderMediaPlaybackRates(mediaPlaybackRates, Number(document.querySelector("#media-playback-rate").value));
@@ -5676,6 +5684,7 @@
         loadYouTubeVideo();
       } else {
         document.querySelector("#youtube-player").hidden = true;
+        document.querySelector("#youtube-export-notice").hidden = true;
         document.querySelector("#youtube-frame").removeAttribute("src");
         document.querySelector("#youtube-frame").dataset.videoId = "";
         if (activePracticeSource === "youtube") activePracticeSource = "";
