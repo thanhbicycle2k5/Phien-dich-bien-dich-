@@ -10,7 +10,7 @@
   <meta name="apple-mobile-web-app-title" content="Interslation">
   <meta name="apple-mobile-web-app-status-bar-style" content="default">
   <link rel="manifest" href="./manifest.webmanifest">
-  <link rel="icon" type="image/svg+xml" href="./favicon.svg">
+  <link rel="icon" type="image/png" sizes="192x192" href="./icons/icon-192.png">
   <link rel="apple-touch-icon" href="./icons/icon-192.png">
   <title>Interslation</title>
   <style>
@@ -74,14 +74,11 @@
     .brand-mark {
       width: 40px;
       height: 40px;
-      display: grid;
-      place-items: center;
+      display: block;
+      flex: 0 0 auto;
+      object-fit: contain;
       border-radius: 9px;
-      background: var(--blue);
-      color: var(--white);
     }
-
-    .brand-mark svg { width: 25px; height: 25px; }
 
     .brand-name { font: 700 19px var(--sans); letter-spacing: 0; }
     .brand-note { margin-left: 5px; color: var(--muted); font-size: 12px; }
@@ -599,7 +596,7 @@
     .shell { width: 100%; }
     .topbar { position: sticky; z-index: 15; top: 0; height: 72px; min-height: 72px; padding: 0 32px; border-bottom-color: var(--line); background: color-mix(in srgb, var(--paper) 92%, transparent); backdrop-filter: blur(14px); }
     .brand { gap: 11px; }
-    .brand-mark { width: 42px; height: 42px; border-radius: 13px; background: #4f46e5; font-size: 15px; font-weight: 800; letter-spacing: -.5px; box-shadow: 0 5px 12px rgba(79, 70, 229, .2); }
+    .brand-mark { width: 42px; height: 42px; border-radius: 13px; background: #fff; box-shadow: 0 5px 12px rgba(37, 99, 235, .12); }
     .brand-name { font-size: 18px; letter-spacing: -.35px; }
     .brand-note { display: block; margin: 3px 0 0; font-size: 11px; }
     .account-tools { gap: 8px; }
@@ -914,9 +911,7 @@
   <div class="shell">
     <header class="topbar">
       <div class="brand" aria-label="Interslation">
-        <span class="brand-mark" aria-hidden="true">
-          <span>IT</span>
-        </span>
+        <img class="brand-mark" src="./icons/icon-192.png" alt="" aria-hidden="true">
         <span><span class="brand-name">Interslation</span><span class="brand-note">Phiên dịch, Biên dịch không hề khó!</span></span>
       </div>
       <div class="account-tools">
@@ -1454,6 +1449,7 @@
     </section>
   </div>
 
+  <script src="./lib/lamejs/lame.min.js"></script>
   <script>
     const exerciseGroups = [
       {
@@ -1707,6 +1703,7 @@
     let speechSessionActive = false;
     let speechRecognitionRestartTimer = null;
     let speechRecordingStartedAt = 0;
+    let speechRecordingError = "";
     let practiceSourceTimeline = [];
     let currentPracticeSourceSegment = null;
     let activePracticeMediaMix = null;
@@ -3609,6 +3606,7 @@
       speechSessionActive = true;
       updatePracticeModeControls();
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      speechRecordingError = "";
       currentPracticeSaved = false;
       updateSaveButtonStates();
       const recordingId = speechRecordingId;
@@ -3759,6 +3757,7 @@
       updatePracticeModeControls();
       document.querySelector("#speech-status").textContent = "Đang xin quyền micro; nguồn bắt đầu phát ngay.";
       speechRecordingId = `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`;
+      speechRecordingError = "";
       currentPracticeSaved = false;
       updateSaveButtonStates();
       practiceSourceTimeline = [];
@@ -3985,10 +3984,63 @@
       updatePracticePreviewMixButton();
     }
 
+    function getAudioFileExtension(mimeType = "") {
+      const normalizedType = mimeType.toLowerCase();
+      if (normalizedType.includes("audio/mp4")) return "m4a";
+      if (normalizedType.includes("audio/mpeg")) return "mp3";
+      if (normalizedType.includes("audio/ogg")) return "ogg";
+      if (normalizedType.includes("audio/aac")) return "aac";
+      return "webm";
+    }
+
+    async function convertRecordingToMp3(sourceBlob) {
+      if (!window.lamejs?.Mp3Encoder) throw new Error("Bộ mã hóa MP3 chưa được tải.");
+      const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+      if (!AudioContextClass) throw new Error("Trình duyệt không hỗ trợ giải mã âm thanh để chuyển sang MP3.");
+      const audioContext = new AudioContextClass();
+      try {
+        const audioBuffer = await audioContext.decodeAudioData(await sourceBlob.arrayBuffer());
+        const channelCount = Math.min(2, audioBuffer.numberOfChannels);
+        if (channelCount < 1) throw new Error("Bản ghi không có kênh âm thanh.");
+        const encoder = new window.lamejs.Mp3Encoder(channelCount, audioBuffer.sampleRate, 128);
+        const leftSamples = audioBuffer.getChannelData(0);
+        const rightSamples = channelCount === 2 ? audioBuffer.getChannelData(1) : null;
+        const mp3Chunks = [];
+        const frameSize = 1152;
+        for (let offset = 0; offset < audioBuffer.length; offset += frameSize) {
+          const end = Math.min(offset + frameSize, audioBuffer.length);
+          const toPcm16 = (samples) => {
+            const pcm = new Int16Array(end - offset);
+            for (let index = offset; index < end; index += 1) {
+              const sample = Math.max(-1, Math.min(1, samples[index]));
+              pcm[index - offset] = sample < 0 ? sample * 32768 : sample * 32767;
+            }
+            return pcm;
+          };
+          const left = toPcm16(leftSamples);
+          const encoded = rightSamples
+            ? encoder.encodeBuffer(left, toPcm16(rightSamples))
+            : encoder.encodeBuffer(left);
+          if (encoded.length > 0) mp3Chunks.push(encoded);
+          if (offset > 0 && offset % (frameSize * 100) === 0) {
+            await new Promise((resolve) => window.setTimeout(resolve, 0));
+          }
+        }
+        const finalChunk = encoder.flush();
+        if (finalChunk.length > 0) mp3Chunks.push(finalChunk);
+        const recording = new Blob(mp3Chunks, { type: "audio/mpeg" });
+        if (recording.size === 0) throw new Error("Bộ mã hóa không tạo được dữ liệu MP3.");
+        return recording;
+      } finally {
+        if (audioContext.state !== "closed") await audioContext.close();
+      }
+    }
+
     async function startSpeechAudioCapture({ muted = false } = {}) {
       if (!navigator.mediaDevices?.getUserMedia || typeof MediaRecorder === "undefined") return false;
       if (speechRecordingStopResolve) await speechRecordingStopPromise;
       const recordingId = speechRecordingId;
+      speechRecordingError = "";
       let stream = null;
       let audioContext = null;
       try {
@@ -4045,7 +4097,7 @@
         recorder.addEventListener("dataavailable", (event) => {
           if (event.data.size > 0) chunks.push(event.data);
         });
-        recorder.addEventListener("stop", () => {
+        recorder.addEventListener("stop", async () => {
           closePracticeSourceSegment();
           speechRecordingStartedAt = 0;
           stream.getTracks().forEach((track) => track.stop());
@@ -4061,26 +4113,49 @@
             return;
           }
           if (chunks.length > 0) {
-            const mimeType = recorder.mimeType || "audio/webm";
-            const recording = new Blob(chunks, { type: mimeType });
+            document.querySelector("#speech-recording-status").textContent = "Đang hoàn tất bản ghi MP3 trên thiết bị...";
+            let recording;
+            try {
+              const mimeType = recorder.mimeType || chunks[0].type || "audio/webm";
+              recording = await convertRecordingToMp3(new Blob(chunks, { type: mimeType }));
+            } catch (error) {
+              if (discardedSpeechRecordings.delete(recordingId)) {
+                speechRecordingStopResolve?.(null);
+                speechRecordingStopResolve = null;
+                return;
+              }
+              speechRecordingError = error.message;
+              document.querySelector("#speech-recording-status").textContent =
+                `Không thể chuyển bản ghi sang MP3: ${error.message}`;
+              speechRecordingStopResolve?.(null);
+              speechRecordingStopResolve = null;
+              return;
+            }
+            if (discardedSpeechRecordings.delete(recordingId)) {
+              speechRecordingStopResolve?.(null);
+              speechRecordingStopResolve = null;
+              return;
+            }
             const recordingUrl = URL.createObjectURL(recording);
             speechRecordingUrls.add(recordingUrl);
-            speechRecordingsById.set(recordingId, { url: recordingUrl, mimeType, blob: recording });
+            speechRecordingsById.set(recordingId, { url: recordingUrl, mimeType: recording.type, blob: recording });
             updateSaveButtonStates();
             document.querySelector("#speech-recorded-audio").src = recordingUrl;
             const downloadLink = document.querySelector("#download-speech-recording");
-            const extension = mimeType.includes("mp4") ? "mp4" : mimeType.includes("ogg") ? "ogg" : "webm";
+            const extension = getAudioFileExtension(recording.type);
             downloadLink.href = recordingUrl;
             downloadLink.download = `interslation-translation-${new Date().toISOString().replace(/[:.]/g, "-")}.${extension}`;
             downloadLink.textContent = `Tải file .${extension}`;
             downloadLink.hidden = false;
             document.querySelector("#speech-recording-preview").hidden = false;
-            document.querySelector("#speech-recording-status").textContent = "Bản ghi sẵn sàng. Bấm “Phát đồng bộ cả nguồn và bản ghi” để nghe lại cả hai theo lượt luyện.";
+            document.querySelector("#speech-recording-status").textContent =
+              "Bản ghi MP3 đã hoàn tất trên thiết bị. Bấm “Phát đồng bộ cả nguồn và bản ghi” để nghe lại cả hai theo lượt luyện.";
             updatePracticePreviewMixButton();
             renderPracticeHistory();
             speechRecordingStopResolve?.(recording);
           } else {
-            document.querySelector("#speech-recording-status").textContent = "Không thu được âm thanh. Hãy kiểm tra micro và thử lại.";
+            speechRecordingError = "Không thu được âm thanh. Hãy kiểm tra micro và thử lại.";
+            document.querySelector("#speech-recording-status").textContent = speechRecordingError;
             speechRecordingStopResolve?.(null);
           }
           speechRecordingStopResolve = null;
@@ -4443,7 +4518,9 @@
       consecutivePhase = "idle";
       if (currentRecordingId) {
         restartingSpeechSessions.add(currentRecordingId);
-        if (speechAudioRecorder?.state === "recording") discardedSpeechRecordings.add(currentRecordingId);
+        if (speechAudioRecorder?.state === "recording" || speechRecordingStopResolve) {
+          discardedSpeechRecordings.add(currentRecordingId);
+        }
       }
       if (recognition) {
         try {
@@ -4914,7 +4991,7 @@
           audioPlayer.preload = "metadata";
           audioPlayer.src = recording.url;
           const downloadLink = document.createElement("a");
-          const extension = recording.mimeType.includes("mp4") ? "mp4" : recording.mimeType.includes("ogg") ? "ogg" : "webm";
+          const extension = getAudioFileExtension(recording.mimeType);
           downloadLink.className = "quiet-button";
           downloadLink.href = recording.url;
           downloadLink.download = `interslation-practice-${entry.date.replace(/[:.]/g, "-")}.${extension}`;
@@ -4964,7 +5041,7 @@
             const voiceDownload = document.createElement("a");
             voiceDownload.className = "quiet-button";
             voiceDownload.href = storedMedia.voiceUrl;
-            const voiceExtension = storedMedia.voiceMimeType?.includes("mp4") ? "mp4" : storedMedia.voiceMimeType?.includes("ogg") ? "ogg" : "webm";
+            const voiceExtension = getAudioFileExtension(storedMedia.voiceMimeType);
             voiceDownload.download = `interslation-translation-${entry.date.replace(/[:.]/g, "-")}.${voiceExtension}`;
             voiceDownload.textContent = "Tải bản dịch";
             voiceAudio.setAttribute("aria-label", "Nghe bản dịch");
@@ -5113,7 +5190,11 @@
         }
         renderPracticeHistory();
         schedulePracticeMediaExpiry();
-        historyMessage.textContent = "Đã lưu nguồn và bản ghi giọng nói trên thiết bị. Hai bản sẽ tự xóa sau 3 ngày; tải về trước hạn nếu cần giữ lâu hơn.";
+        historyMessage.textContent = voiceBlob
+          ? "Đã lưu nguồn và bản ghi giọng nói trên thiết bị. Hai bản sẽ tự xóa sau 3 ngày; tải về trước hạn nếu cần giữ lâu hơn."
+          : speechRecordingError
+            ? `Đã lưu bản chép lời, nhưng không lưu được file MP3: ${speechRecordingError}`
+            : "Đã lưu bản chép lời; buổi này không có file ghi âm.";
         speechStatus.textContent = historyMessage.textContent;
       } catch (error) {
         if (savedStorageId && !historyCommitted) {

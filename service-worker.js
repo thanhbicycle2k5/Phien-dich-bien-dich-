@@ -1,12 +1,12 @@
-const CACHE_NAME = "interslation-shell-v10";
+const CACHE_NAME = "interslation-shell-v13";
 const APP_SHELL = [
   "./",
   "./index.html",
+  "./lib/lamejs/lame.min.js",
   "./supabase-config.js",
   "./auth.js",
   "./progress-sync.js",
   "./manifest.webmanifest",
-  "./favicon.svg",
   "./icons/icon-192.png",
   "./icons/icon-512.png"
 ];
