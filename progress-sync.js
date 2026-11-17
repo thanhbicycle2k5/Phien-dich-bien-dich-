@@ -9,7 +9,6 @@
   const DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
   const HISTORY_TOMBSTONES_KEY = "interslation-deleted-history-v1";
   const DATABASE_NAME = "interslation-practice-media-v1";
-  const DATABASE_VERSION = 2;
   const MEDIA_STORE = "sessions";
   const TABLE = "interslation_user_progress";
   const BUCKET = "interslation-user-progress";
@@ -84,7 +83,7 @@
         reject(new Error("Trình duyệt này không hỗ trợ đồng bộ bản ghi âm."));
         return;
       }
-      const request = window.indexedDB.open(DATABASE_NAME, DATABASE_VERSION);
+      const request = window.indexedDB.open(DATABASE_NAME);
       request.onupgradeneeded = () => {
         if (!request.result.objectStoreNames.contains(MEDIA_STORE)) {
           request.result.createObjectStore(MEDIA_STORE, { keyPath: "id" });
