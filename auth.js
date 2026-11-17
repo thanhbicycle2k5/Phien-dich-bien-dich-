@@ -104,6 +104,7 @@
     const email = user?.email;
     identity.textContent = email || "Không gian luyện tập của bạn";
     openButton.hidden = Boolean(email);
+    mobileAccountButton.hidden = Boolean(email);
     accountMenu.hidden = !email;
     signoutButton.hidden = true;
     avatarButton.setAttribute("aria-expanded", "false");
