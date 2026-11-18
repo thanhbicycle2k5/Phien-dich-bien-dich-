@@ -1281,15 +1281,15 @@
               </div>
               <p class="youtube-status" id="youtube-status" role="status" aria-live="polite">Dán link YouTube để tải trình phát. Video được nhúng từ YouTube và cần kết nối Internet.</p>
               <p class="local-media-status" id="youtube-export-notice" role="status" aria-live="polite" hidden>
-                Âm thanh YouTube không thể ghép trực tiếp vào file tải về. Muốn xuất bản phối, hãy dùng tệp MP3/MP4 trên thiết bị mà bạn có quyền sử dụng.
+                Âm thanh YouTube không thể ghép trực tiếp vào file tải về. Muốn xuất bản phối, hãy dùng tệp MP3/MP4/M4A/MP4A trên thiết bị mà bạn có quyền sử dụng.
               </p>
               <div class="local-media-source">
                 <label class="file-control" for="local-media-file">
                   <span class="field-label field-label-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/></svg>
-                    Hoặc chọn tệp trên thiết bị (.mp3 / .mp4)
+                    Hoặc chọn tệp trên thiết bị (.mp3 / .mp4 / .m4a / .mp4a)
                   </span>
-                  <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,audio/mpeg,video/mp4">
+                  <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,.m4a,.mp4a,audio/mpeg,audio/mp4,video/mp4">
                 </label>
                 <audio class="local-media-player" id="local-audio-player" preload="auto" hidden></audio>
                 <video class="local-media-player" id="local-video-player" preload="auto" playsinline hidden></video>
@@ -3755,7 +3755,7 @@
         return;
       }
       if (activePracticeSource === "none" || !activePracticeSource) {
-        document.querySelector("#speech-status").textContent = "Hãy tải link YouTube hoặc chọn tệp MP3/MP4 trước.";
+        document.querySelector("#speech-status").textContent = "Hãy tải link YouTube hoặc chọn tệp MP3/MP4/M4A/MP4A trước.";
         return;
       }
       if (currentPracticeSaved) {
@@ -4081,7 +4081,7 @@
             audioContext.decodeAudioData(await voiceBlob.arrayBuffer())
           ]);
         } catch (error) {
-          throw new Error("Không thể đọc âm thanh của một trong hai tệp. Hãy thử dùng tệp MP3 hoặc MP4 khác.");
+          throw new Error("Không thể đọc âm thanh của một trong hai tệp. Hãy thử dùng tệp MP3, MP4, M4A hoặc MP4A khác.");
         }
         if (!voiceBuffer.duration || voiceBuffer.duration > 30 * 60) {
           throw new Error("Bản phối phải dài dưới 30 phút để xử lý an toàn trên thiết bị.");
@@ -4573,14 +4573,14 @@
 
       clearLocalPracticeMedia();
       const extension = file.name.toLocaleLowerCase().split(".").pop();
-      if (extension !== "mp3" && extension !== "mp4") {
-        status.textContent = "Chỉ hỗ trợ tệp .mp3 hoặc .mp4.";
+      if (!["mp3", "mp4", "m4a", "mp4a"].includes(extension)) {
+        status.textContent = "Chỉ hỗ trợ tệp .mp3, .mp4, .m4a hoặc .mp4a.";
         event.currentTarget.value = "";
         return;
       }
 
       localPracticeMediaUrl = URL.createObjectURL(file);
-      const player = document.querySelector(extension === "mp3" ? "#local-audio-player" : "#local-video-player");
+      const player = document.querySelector(["mp3", "m4a", "mp4a"].includes(extension) ? "#local-audio-player" : "#local-video-player");
       player.src = localPracticeMediaUrl;
       player.hidden = false;
       player.load();
@@ -5210,7 +5210,15 @@
             sourceDownload.className = "quiet-button";
             sourceDownload.href = sourceAudio.src;
             const sourceMimeType = storedMedia.sourceRecordingBlob?.type || storedMedia.sourceBlob?.type || "";
-            const sourceExtension = sourceMimeType.includes("mp4") ? "mp4" : sourceMimeType.includes("mpeg") ? "mp3" : "webm";
+            const sourceExtension = storedMedia.sourceName?.toLocaleLowerCase().endsWith(".mp4a")
+              ? "mp4a"
+              : storedMedia.sourceName?.toLocaleLowerCase().endsWith(".m4a")
+                ? "m4a"
+                : sourceMimeType.includes("mp4")
+                  ? "mp4"
+                  : sourceMimeType.includes("mpeg")
+                    ? "mp3"
+                    : "webm";
             sourceDownload.download = storedMedia.sourceName && storedMedia.sourceUrl
               ? storedMedia.sourceName
               : `interslation-source-${entry.date.replace(/[:.]/g, "-")}.${sourceExtension}`;
