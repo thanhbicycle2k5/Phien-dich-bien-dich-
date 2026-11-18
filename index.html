@@ -1645,8 +1645,9 @@
       try {
         window.localStorage.setItem(
           APP_PREFERENCES_KEY,
-          JSON.stringify({ ...readAppPreferences(), ...patch })
+          JSON.stringify({ ...readAppPreferences(), ...patch, __updatedAt: Date.now() })
         );
+        notifyProgressChanged();
       } catch (error) {
         console.error("Không thể lưu tùy chọn giao diện:", error);
       }
@@ -2888,7 +2889,7 @@
       try {
         const savedKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
         deeplApiKeyInput.value = savedKey;
-        setDeepLStatus(savedKey ? "Đã lưu khóa DeepL trên thiết bị này." : "Bạn có thể dùng DeepL để nhận gợi ý cho tài liệu cá nhân.");
+        setDeepLStatus(savedKey ? "Đã lưu khóa DeepL và đồng bộ theo tài khoản." : "Bạn có thể dùng DeepL để nhận gợi ý cho tài liệu cá nhân.");
       } catch (error) {
         setDeepLStatus("Không thể đọc cài đặt DeepL trên thiết bị này.", true);
       }
@@ -2902,7 +2903,9 @@
       }
       try {
         window.localStorage.setItem(DEEPL_KEY_STORAGE_KEY, key);
-        setDeepLStatus("Đã lưu khóa DeepL trên thiết bị này.");
+        window.localStorage.setItem("interslation-deepl-api-key-updated-v1", String(Date.now()));
+        notifyProgressChanged();
+        setDeepLStatus("Đã lưu khóa DeepL và đồng bộ theo tài khoản.");
       } catch (error) {
         setDeepLStatus("Không thể lưu khóa DeepL. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.", true);
       }
@@ -2911,8 +2914,10 @@
     function removeDeepLKey() {
       try {
         window.localStorage.removeItem(DEEPL_KEY_STORAGE_KEY);
+        window.localStorage.setItem("interslation-deepl-api-key-updated-v1", String(Date.now()));
         deeplApiKeyInput.value = "";
-        setDeepLStatus("Đã xóa khóa DeepL khỏi thiết bị này.");
+        notifyProgressChanged();
+        setDeepLStatus("Đã xóa khóa DeepL khỏi tài khoản đồng bộ.");
       } catch (error) {
         setDeepLStatus("Không thể xóa khóa DeepL. Hãy thử lại.", true);
       }
@@ -5822,6 +5827,24 @@
     window.addEventListener("interslation:progress-restored", async () => {
       const selectedTopic = industrySelect.value;
       populateTopics(selectedTopic);
+      loadDeepLKey();
+      const syncedPreferences = readAppPreferences();
+      if (syncedPreferences.appMode === "interpret" || syncedPreferences.appMode === "translate") {
+        setMode(syncedPreferences.appMode);
+      }
+      if (syncedPreferences.translationMode === "sample" || syncedPreferences.translationMode === "personal") {
+        setTranslationMode(syncedPreferences.translationMode);
+      }
+      if (syncedPreferences.practiceMode === "consecutive" || syncedPreferences.practiceMode === "parallel") {
+        setPracticeMode(syncedPreferences.practiceMode);
+      }
+      setSidebarExpanded(syncedPreferences.sidebarCollapsed !== true);
+      setHistorySidebarExpanded(syncedPreferences.historySidebarExpanded !== false);
+      setTranslationSettingsExpanded(syncedPreferences.translationSettingsExpanded !== false);
+      setTheme(syncedPreferences.darkTheme === true);
+      if ([...document.querySelector("#speech-language").options].some((option) => option.value === syncedPreferences.speechLanguage)) {
+        document.querySelector("#speech-language").value = syncedPreferences.speechLanguage;
+      }
       if (activeTranslationMode === "personal" && industrySelect.value) {
         loadPersonalTopicDraft(industrySelect.value);
       }

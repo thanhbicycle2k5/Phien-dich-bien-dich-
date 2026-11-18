@@ -7,6 +7,9 @@
   const MATERIALS_KEY = "lingua-lab-personal-materials-v1";
   const TOPICS_KEY = "lingua-lab-personal-topics-v1";
   const DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
+  const APP_PREFERENCES_KEY = "interslation-app-preferences-v1";
+  const DEEPL_KEY_STORAGE_KEY = "interslation-deepl-api-key-v1";
+  const DEEPL_KEY_UPDATED_KEY = "interslation-deepl-api-key-updated-v1";
   const HISTORY_TOMBSTONES_KEY = "interslation-deleted-history-v1";
   const DATABASE_NAME = "interslation-practice-media-v1";
   const MEDIA_STORE = "sessions";
@@ -22,6 +25,8 @@
   let syncPromise = null;
   let syncAgain = false;
   let applyingRemoteData = false;
+  let lastCloudUpdatedAt = "";
+  const REMOTE_POLL_MS = 15000;
 
   function setStatus(text, isError = false) {
     statusElement.textContent = text;
@@ -63,7 +68,10 @@
       materials: parseLocalValue(MATERIALS_KEY, [], Array.isArray),
       topics: parseLocalValue(TOPICS_KEY, [], Array.isArray),
       drafts: parseLocalValue(DRAFTS_KEY, {}, (value) => value && typeof value === "object" && !Array.isArray(value)),
-      historyTombstones: parseLocalValue(HISTORY_TOMBSTONES_KEY, [], Array.isArray)
+      historyTombstones: parseLocalValue(HISTORY_TOMBSTONES_KEY, [], Array.isArray),
+      appPreferences: parseLocalValue(APP_PREFERENCES_KEY, {}, (value) => value && typeof value === "object" && !Array.isArray(value)),
+      deeplApiKey: window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "",
+      deeplApiKeyUpdatedAt: Number(window.localStorage.getItem(DEEPL_KEY_UPDATED_KEY) || 0)
     };
   }
 
@@ -75,6 +83,17 @@
     window.localStorage.setItem(TOPICS_KEY, JSON.stringify(progress.topics));
     window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(progress.drafts));
     window.localStorage.setItem(HISTORY_TOMBSTONES_KEY, JSON.stringify(progress.historyTombstones));
+    window.localStorage.setItem(APP_PREFERENCES_KEY, JSON.stringify(progress.appPreferences || {}));
+    if (typeof progress.deeplApiKey === "string") {
+      if (progress.deeplApiKey) {
+        window.localStorage.setItem(DEEPL_KEY_STORAGE_KEY, progress.deeplApiKey);
+      } else {
+        window.localStorage.removeItem(DEEPL_KEY_STORAGE_KEY);
+      }
+    }
+    if (Number(progress.deeplApiKeyUpdatedAt) > 0) {
+      window.localStorage.setItem(DEEPL_KEY_UPDATED_KEY, String(progress.deeplApiKeyUpdatedAt));
+    }
   }
 
   function openMediaDatabase() {
@@ -240,6 +259,27 @@
   }
 
   function mergeProgress(cloudProgress, localProgress) {
+    const cloudPreferences = cloudProgress.appPreferences || {};
+    const localPreferences = localProgress.appPreferences || {};
+    const cloudPreferenceTime = Number(cloudPreferences.__updatedAt) || 0;
+    const localPreferenceTime = Number(localPreferences.__updatedAt) || 0;
+    const appPreferences = cloudPreferenceTime >= localPreferenceTime ? cloudPreferences : localPreferences;
+    const cloudDeepLTime = Number(cloudProgress.deeplApiKeyUpdatedAt) || 0;
+    const localDeepLTime = Number(localProgress.deeplApiKeyUpdatedAt) || 0;
+    let deeplApiKey;
+    if (cloudDeepLTime === 0 && localDeepLTime === 0) {
+      deeplApiKey = typeof localProgress.deeplApiKey === "string" && localProgress.deeplApiKey
+        ? localProgress.deeplApiKey
+        : (typeof cloudProgress.deeplApiKey === "string" ? cloudProgress.deeplApiKey : "");
+    } else {
+      const useCloudDeepLKey = cloudDeepLTime >= localDeepLTime;
+      deeplApiKey = useCloudDeepLKey
+        ? (typeof cloudProgress.deeplApiKey === "string" ? cloudProgress.deeplApiKey : "")
+        : (typeof localProgress.deeplApiKey === "string" ? localProgress.deeplApiKey : "");
+    }
+    const deeplApiKeyUpdatedAt = cloudDeepLTime || localDeepLTime
+      ? Math.max(cloudDeepLTime, localDeepLTime)
+      : (typeof deeplApiKey === "string" && deeplApiKey ? Date.now() : 0);
     const topics = mergeUnique(cloudProgress.topics || [], localProgress.topics || [],
       (topic) => typeof topic === "string" ? topic.trim().toLocaleLowerCase() : "");
     const topicNames = topics.filter((topic) => typeof topic === "string" && topic.trim());
@@ -273,7 +313,7 @@
       .sort((a, b) => Date.parse(b.date) - Date.parse(a.date))
       .slice(0, MAX_TRANSLATION_HISTORY);
     const materials = mergeUnique(cloudProgress.materials || [], localProgress.materials || [], (item) => item?.id);
-    return { history, translationHistory, translationHistoryTombstones, materials, topics: topicNames, drafts, historyTombstones };
+    return { history, translationHistory, translationHistoryTombstones, materials, topics: topicNames, drafts, historyTombstones, appPreferences, deeplApiKey, deeplApiKeyUpdatedAt };
   }
 
   function mediaPath(userId, mediaId, name) {
@@ -288,10 +328,10 @@
   }
 
   async function loadCloudProgress(userId) {
-    const response = await supabaseFetch(`/rest/v1/${TABLE}?select=payload&user_id=eq.${encodeURIComponent(userId)}`);
+    const response = await supabaseFetch(`/rest/v1/${TABLE}?select=payload,updated_at&user_id=eq.${encodeURIComponent(userId)}`);
     const rows = await readResponse(response, "Không thể tải tiến trình từ Supabase.");
     if (!Array.isArray(rows) || !rows.length) {
-      return { history: [], translationHistory: [], translationHistoryTombstones: [], materials: [], topics: [], drafts: {}, historyTombstones: [], media: [] };
+      return { history: [], translationHistory: [], translationHistoryTombstones: [], materials: [], topics: [], drafts: {}, historyTombstones: [], appPreferences: {}, media: [], _cloudUpdatedAt: "" };
     }
     const payload = rows[0].payload;
     if (!payload || payload.version !== 1 || !payload.progress) {
@@ -299,7 +339,11 @@
     }
     return {
       ...payload.progress,
-      media: Array.isArray(payload.media) ? payload.media : []
+      appPreferences: payload.progress.appPreferences || {},
+      deeplApiKey: typeof payload.progress.deeplApiKey === "string" ? payload.progress.deeplApiKey : "",
+      deeplApiKeyUpdatedAt: Number(payload.progress.deeplApiKeyUpdatedAt) || 0,
+      media: Array.isArray(payload.media) ? payload.media : [],
+      _cloudUpdatedAt: rows[0].updated_at || ""
     };
   }
 
@@ -420,7 +464,7 @@
     return { combined, manifest };
   }
 
-  async function runSync(userId) {
+  async function runSync(userId, force = true) {
     const session = getSession();
     if (session.user.id !== userId) return;
     setStatus("");
@@ -434,6 +478,8 @@
       switchingAccount ? Promise.resolve([]) : getLocalMedia()
     ]);
     if (activeUserId !== userId) return;
+    if (!force && cloud._cloudUpdatedAt && cloud._cloudUpdatedAt === lastCloudUpdatedAt) return;
+    lastCloudUpdatedAt = cloud._cloudUpdatedAt || lastCloudUpdatedAt;
     const merged = mergeProgress(cloud, local);
     const media = await synchronizeMedia(userId, cloud.media || [], localMedia, merged.history);
     if (activeUserId !== userId) return;
@@ -464,7 +510,7 @@
     return `Không thể đồng bộ tiến trình: ${error?.message || "Đã xảy ra lỗi."}`;
   }
 
-  function scheduleSync(delay = 1200) {
+  function scheduleSync(delay = 1200, force = true) {
     if (!activeUserId || applyingRemoteData) return;
     window.clearTimeout(syncTimer);
     syncTimer = window.setTimeout(() => {
@@ -473,7 +519,7 @@
         return;
       }
       const userId = activeUserId;
-      syncPromise = runSync(userId)
+      syncPromise = runSync(userId, force)
         .catch((error) => {
           if (activeUserId === userId) {
             if (isStaleConflictError(error)) setStatus("");
@@ -505,8 +551,15 @@
 
   window.addEventListener("interslation:progress-changed", () => scheduleSync());
   window.addEventListener("online", () => scheduleSync(0));
+  window.addEventListener("focus", () => scheduleSync(0, false));
+  document.addEventListener("visibilitychange", () => {
+    if (!document.hidden) scheduleSync(0, false);
+  });
+  window.setInterval(() => {
+    if (activeUserId && !document.hidden) scheduleSync(0, false);
+  }, REMOTE_POLL_MS);
   window.addEventListener("storage", (event) => {
-    if ([HISTORY_KEY, MATERIALS_KEY, TOPICS_KEY, DRAFTS_KEY].includes(event.key)) scheduleSync();
+    if ([HISTORY_KEY, MATERIALS_KEY, TOPICS_KEY, DRAFTS_KEY, APP_PREFERENCES_KEY, DEEPL_KEY_STORAGE_KEY, DEEPL_KEY_UPDATED_KEY].includes(event.key)) scheduleSync();
   });
   try {
     const session = getSession();
