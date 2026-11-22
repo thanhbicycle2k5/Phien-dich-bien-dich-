@@ -4378,7 +4378,7 @@
       return first + (second - first) * fraction;
     }
 
-    async function createPracticeMixMp3(sourceBlob, voiceBlob, timeline, sourceVolume, voiceVolume, statusElement) {
+    async function createPracticeMixMp3(sourceBlob, voiceBlob, timeline, sourceVolume, voiceVolume, statusElement, practiceMode = "") {
       if (!window.lamejs?.Mp3Encoder) throw new Error("Bộ mã hóa MP3 chưa được tải.");
       const AudioContextClass = window.AudioContext || window.webkitAudioContext;
       if (!AudioContextClass) throw new Error("Trình duyệt không hỗ trợ giải mã âm thanh.");
@@ -4412,12 +4412,14 @@
             Number.isFinite(segment.playbackRate) && segment.playbackRate > 0)
           .sort((first, second) => first.start - second.start);
         if (sourceSegments.length === 0) {
-          sourceSegments.push({
-            start: 0,
-            end: voiceBuffer.duration,
-            sourceTime: 0,
-            playbackRate: 1
-          });
+          if (practiceMode !== "consecutive") {
+            sourceSegments.push({
+              start: 0,
+              end: voiceBuffer.duration,
+              sourceTime: 0,
+              playbackRate: 1
+            });
+          }
         }
 
         const mp3Chunks = [];
@@ -4470,7 +4472,7 @@
       }
     }
 
-    async function createPracticeMixDownload(sourceBlob, voiceBlob, timeline, filename, statusElement) {
+    async function createPracticeMixDownload(sourceBlob, voiceBlob, timeline, filename, statusElement, practiceMode = "") {
       statusElement.textContent = "Đang đọc và trộn tệp nguồn với giọng dịch trên thiết bị...";
       const mixBlob = await createPracticeMixMp3(
         sourceBlob,
@@ -4478,7 +4480,8 @@
         timeline,
         Number(document.querySelector("#source-volume").value),
         Number(document.querySelector("#voice-volume").value),
-        statusElement
+        statusElement,
+        practiceMode
       );
       const downloadUrl = URL.createObjectURL(mixBlob);
       const link = document.createElement("a");
@@ -4490,7 +4493,7 @@
       return { link, downloadUrl };
     }
 
-    async function exportPracticeMix(button, statusElement, sourceBlob, voiceBlob, timeline, filename, container) {
+    async function exportPracticeMix(button, statusElement, sourceBlob, voiceBlob, timeline, filename, container, practiceMode = "") {
       button.disabled = true;
       container.querySelectorAll(".practice-mix-download").forEach((link) => {
         URL.revokeObjectURL(link.href);
@@ -4498,7 +4501,7 @@
       });
       try {
         const { link } = await createPracticeMixDownload(
-          sourceBlob, voiceBlob, timeline, filename, statusElement
+          sourceBlob, voiceBlob, timeline, filename, statusElement, practiceMode
         );
         button.insertAdjacentElement("afterend", link);
         statusElement.textContent = "Bản phối đã sẵn sàng. Bấm “Tải bản phối MP3” để tải xuống.";
@@ -5102,12 +5105,16 @@
         document.querySelector("#history-message").textContent = "Buổi luyện này chưa có bản ghi giọng người dùng.";
         return;
       }
+      const practiceMode = readPracticeHistory().find((entry) => entry.storageId === storageId)?.mode
+        || media.mode
+        || "";
       startPracticeMediaMix({
         sourceType,
         sourceUrl: media.sourceUrl || media.sourceRecordingUrl || "",
         youtubeUrl,
         voiceUrl: media.voiceUrl,
-        timeline: Array.isArray(media.sourceTimeline) ? media.sourceTimeline : []
+        timeline: Array.isArray(media.sourceTimeline) ? media.sourceTimeline : [],
+        practiceMode
       });
     }
 
@@ -5181,7 +5188,9 @@
       }
       const segments = mix.timeline.length
         ? mix.timeline
-        : [{ start: 0, end: Number.POSITIVE_INFINITY, sourceTime: 0, playbackRate: 1 }];
+        : mix.practiceMode === "consecutive"
+          ? []
+          : [{ start: 0, end: Number.POSITIVE_INFINITY, sourceTime: 0, playbackRate: 1 }];
       const segment = segments.find((item) => elapsed >= item.start && elapsed < item.end);
       if (mix.sourceType === "youtube") {
         if (!youtubePlayer?.getCurrentTime || !youtubePlayer?.playVideo || !segment) {
@@ -5233,15 +5242,8 @@
         }
         if (!segment) {
           sourceAudio.volume = 0;
-          if (sourceAudio.paused && !mix.sourcePlayRequested) {
-            mix.sourcePlayRequested = true;
-            sourceAudio.play().catch(() => {
-              if (activePracticeMediaMix !== mix) return;
-              mix.sourcePlayRequested = false;
-              setPracticeMediaMixStatus(mix, "error", "Không thể phát âm thanh nguồn. Hãy thử phát lại.");
-              stopPracticeMediaMix(true);
-            });
-          }
+          sourceAudio.pause();
+          mix.sourcePlayRequested = false;
         } else {
           const targetTime = segment.sourceTime + (elapsed - segment.start) * segment.playbackRate;
           sourceAudio.volume = Number(document.querySelector("#source-volume").value);
@@ -5271,6 +5273,7 @@
       youtubeUrl = "",
       voiceUrl,
       timeline = [],
+      practiceMode = activePracticeMode,
       statusTarget = document.querySelector("#media-mix-status")
     }) {
       const sourceAudio = document.querySelector("#mix-source-audio");
@@ -5291,6 +5294,7 @@
       voiceAudio.volume = Number(document.querySelector("#voice-volume").value);
       activePracticeMediaMix = {
         sourceType,
+        practiceMode,
         timeline: (Array.isArray(timeline) ? timeline : [])
           .filter((segment) => segment &&
             Number.isFinite(segment.start) && segment.start >= 0 &&
@@ -5406,17 +5410,6 @@
       mix.isPlaying = true;
       document.querySelector("#toggle-media-mix").textContent = "Dừng phát cả hai";
       setPracticeMediaMixStatus(mix, "loading", "Đang chuẩn bị âm thanh, vui lòng chờ...");
-      if (mix.sourceType !== "youtube") {
-        const sourceAudio = document.querySelector("#mix-source-audio");
-        sourceAudio.volume = 0;
-        mix.sourcePlayRequested = true;
-        sourceAudio.play().catch(() => {
-          if (activePracticeMediaMix !== mix) return;
-          mix.sourcePlayRequested = false;
-          setPracticeMediaMixStatus(mix, "error", "Không thể phát âm thanh nguồn. Hãy thử phát lại.");
-          stopPracticeMediaMix(true);
-        });
-      }
       voiceAudio.play().then(() => {
         if (activePracticeMediaMix !== mix) return;
         mix.waitingForSource = false;
@@ -5580,7 +5573,8 @@
               storedMedia.voiceBlob,
               storedMedia.sourceTimeline,
               `interslation-mix-${entry.date.replace(/[:.]/g, "-")}.mp3`,
-              item
+              item,
+              entry.mode
             ));
             item.append(exportButton, exportStatus);
           }
@@ -5948,16 +5942,15 @@
         recording.blob,
         practiceSourceTimeline,
         `interslation-mix-${new Date().toISOString().replace(/[:.]/g, "-")}.mp3`,
-        document.querySelector("#speech-recording-preview")
+        document.querySelector("#speech-recording-preview"),
+        activePracticeMode
       );
     });
-    document.querySelector("#speech-recorded-audio").addEventListener("play", (event) => {
-      const sourceAvailable = activePracticeSource === "local"
-        ? Boolean(localPracticeMediaUrl)
-        : activePracticeSource === "youtube" && Boolean(getYouTubeVideoId(youtubeUrlInput.value));
-      if (!sourceAvailable || !speechRecordingsById.get(speechRecordingId)?.url) return;
-      event.currentTarget.pause();
-      playPracticePreviewMix();
+    document.querySelector("#speech-recorded-audio").addEventListener("play", () => {
+      if (activePracticeMediaMix?.isPlaying) stopPracticeMediaMix();
+      document.querySelector("#local-audio-player").pause();
+      document.querySelector("#local-video-player").pause();
+      if (activePracticeSource === "youtube") youtubePlayer?.pauseVideo?.();
     });
     document.querySelector("#toggle-media-mix").addEventListener("click", toggleSavedMediaMix);
     document.querySelector("#seek-media-mix-backward").addEventListener("click", () => seekPracticeMediaMix(-10));
