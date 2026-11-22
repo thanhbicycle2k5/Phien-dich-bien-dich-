@@ -239,6 +239,7 @@
     .topic-create-button .topic-create-search { margin-left: auto; color: var(--muted); font-size: 12px; }
     .topic-option { width: 100%; min-height: 36px; justify-content: flex-start; border: 0; text-align: left; }
     .topic-option[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
+    .topic-option.is-keyboard-highlighted, .topic-create-button.is-keyboard-highlighted { background: #e0e7ff; color: var(--blue-dark); outline: 2px solid #a5b4fc; outline-offset: -2px; }
     .topic-options-empty { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
     .source-mode-field { min-width: 150px; display: grid; align-content: end; }
     .source-switch { display: flex; gap: 4px; padding: 3px; border: 1px solid var(--panel-border, var(--line)); border-radius: 7px; background: var(--panel-bg, #f0f9ff); }
@@ -1723,6 +1724,7 @@
       : "";
     const personalDraftsByTopic = new Map();
     let topicOptionPointerDown = false;
+    let topicKeyboardIndex = -1;
     const translationEditHistories = new WeakMap();
     let personalDirection = initialAppPreferences.personalDirection === "EN_VI" ? "EN_VI" : "VI_EN";
     let ocrLibraryPromise = null;
@@ -2044,6 +2046,7 @@
     function renderTopicOptions(topics) {
       const options = document.querySelector("#topic-options");
       options.replaceChildren();
+      topicKeyboardIndex = -1;
       const search = activeTranslationMode === "personal"
         ? translationTopicInput.value.trim().toLocaleLowerCase()
         : "";
@@ -2136,6 +2139,20 @@
       options.hidden = false;
       document.querySelector("#topic-list-toggle").setAttribute("aria-expanded", "true");
       translationTopicInput.setAttribute("aria-expanded", "true");
+    }
+
+    function moveTopicKeyboardHighlight(direction) {
+      const options = document.querySelector("#topic-options");
+      if (options.hidden) openTopicOptions();
+      const candidates = [...options.querySelectorAll(".topic-create-button, .topic-option")];
+      if (!candidates.length) return;
+      candidates.forEach((candidate) => candidate.classList.remove("is-keyboard-highlighted"));
+      topicKeyboardIndex = topicKeyboardIndex + direction;
+      if (topicKeyboardIndex < 0) topicKeyboardIndex = candidates.length - 1;
+      if (topicKeyboardIndex >= candidates.length) topicKeyboardIndex = 0;
+      const candidate = candidates[topicKeyboardIndex];
+      candidate.classList.add("is-keyboard-highlighted");
+      candidate.scrollIntoView({ block: "nearest" });
     }
 
     function clearPersonalDraftForTopicChange() {
@@ -5550,19 +5567,13 @@
       const enteredTopic = translationTopicInput.value.trim();
       if (getTranslationTopic()) document.querySelector("#translation-topic-toast").hidden = true;
       if (activeTranslationMode === "personal") {
-        const existingTopic = getTranslationTopicOptions().find((topic) =>
-          topic.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
-        );
-        if (existingTopic) {
-          selectTranslationTopic(existingTopic.value);
-          return;
-        }
         if (industrySelect.value) {
-          capturePersonalDraft();
-          industrySelect.value = "";
-          personalDraftTopic = "";
-          clearPersonalDraftForTopicChange();
-          document.querySelector("#personal-status").textContent = "Chủ đề đã đổi. Chọn chủ đề có sẵn hoặc xác nhận tên mới trước khi tiếp tục.";
+          const existingTopic = getTranslationTopicOptions().find((topic) =>
+            topic.label.toLocaleLowerCase() === enteredTopic.toLocaleLowerCase()
+          );
+          if (!existingTopic && enteredTopic !== industrySelect.value) {
+            capturePersonalDraft();
+          }
         }
       } else {
         const group = exerciseGroups.find((candidate) =>
@@ -5607,10 +5618,25 @@
         closeTopicOptions();
         return;
       }
+      if (event.key === "ArrowDown") {
+        event.preventDefault();
+        moveTopicKeyboardHighlight(1);
+        return;
+      }
+      if (event.key === "ArrowUp") {
+        event.preventDefault();
+        moveTopicKeyboardHighlight(-1);
+        return;
+      }
       if (event.key === "Enter") {
         event.preventDefault();
-        translationTopicInput.dispatchEvent(new Event("change"));
-        sourceText.focus();
+        const highlighted = document.querySelector("#topic-options .is-keyboard-highlighted");
+        if (highlighted) {
+          highlighted.click();
+        } else {
+          translationTopicInput.dispatchEvent(new Event("change"));
+          sourceText.focus();
+        }
       }
     });
     document.querySelector("#topic-required-form").addEventListener("submit", (event) => {
