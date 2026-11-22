@@ -193,7 +193,8 @@
     .workspace-title { margin: 0; font: 700 16px var(--sans); }
     .workspace-caption { margin: 2px 0 0; color: var(--muted); font-size: 12px; }
     .workspace-title-row { display: flex; align-items: center; justify-content: space-between; gap: 10px; }
-    .collapse-toggle { width: 32px; height: 32px; display: grid; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 6px; background: var(--white); color: var(--muted); cursor: pointer; }
+    .collapse-toggle { width: 36px; height: 36px; display: grid; flex: 0 0 auto; place-items: center; padding: 0; border: 1px solid var(--line); border-radius: 50%; background: var(--white); color: var(--muted); box-shadow: 0 4px 12px rgba(15, 23, 42, .08); cursor: pointer; transition: background .18s ease, color .18s ease, box-shadow .18s ease; }
+    .collapse-toggle:hover { background: var(--soft-accent); color: var(--blue-dark); box-shadow: 0 6px 16px rgba(15, 23, 42, .12); }
     .collapse-toggle svg { width: 18px; height: 18px; transition: transform .18s ease; }
     .collapse-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
     .collapse-toggle:focus-visible { outline: 2px solid var(--blue); outline-offset: 2px; }
@@ -653,13 +654,13 @@
     .sidebar-heading { display: flex; align-items: center; justify-content: space-between; gap: 8px; padding: 0 2px; }
     .sidebar-section-title { margin: 0; font-size: 14px; font-weight: 700; letter-spacing: -.2px; }
     .sidebar-section-description { margin: 2px 0 0; color: var(--muted); font-size: 11px; }
-    .sidebar-collapse, .history-sidebar-collapse { position: absolute; z-index: 3; top: 50%; display: grid; width: 28px; height: 40px; place-items: center; padding: 0; transform: translateY(-50%); border: 1px solid var(--line); background: var(--white); color: var(--muted); box-shadow: 0 2px 8px rgba(15, 23, 42, .08); cursor: pointer; transition: background .2s ease, color .2s ease; }
-    .sidebar-collapse { right: 0; border-right: 0; border-radius: 8px 0 0 8px; }
-    .history-sidebar-collapse { left: 0; border-left: 0; border-radius: 0 8px 8px 0; }
-    .sidebar-collapse:hover, .history-sidebar-collapse:hover { background: var(--soft-accent); color: var(--blue-dark); }
-    .sidebar-collapse svg { width: 17px; height: 17px; transition: transform .2s ease; }
+    .sidebar-collapse, .history-sidebar-collapse { position: absolute; z-index: 3; top: 50%; display: grid; width: 40px; height: 40px; place-items: center; padding: 0; transform: translateY(-50%); border: 1px solid var(--line); border-radius: 50%; background: var(--white); color: var(--muted); box-shadow: 0 6px 16px rgba(15, 23, 42, .14); cursor: pointer; transition: background .2s ease, color .2s ease, box-shadow .2s ease; }
+    .sidebar-collapse { right: -20px; }
+    .history-sidebar-collapse { left: -20px; }
+    .sidebar-collapse:hover, .history-sidebar-collapse:hover { background: var(--soft-accent); color: var(--blue-dark); box-shadow: 0 8px 20px rgba(15, 23, 42, .18); }
+    .sidebar-collapse svg { width: 19px; height: 19px; transition: transform .2s ease; }
     .app-layout.is-sidebar-collapsed .sidebar-collapse svg { transform: rotate(180deg); }
-    .history-sidebar-collapse svg { width: 17px; height: 17px; transition: transform .18s ease; }
+    .history-sidebar-collapse svg { width: 19px; height: 19px; transition: transform .18s ease; }
     .app-layout.is-history-collapsed .history-sidebar-collapse svg { transform: rotate(180deg); }
     .mode-tabs { display: grid; grid-template-columns: 1fr; gap: 4px; margin: 0; padding: 0; border: 0; background: transparent; }
     .mode-tab { display: flex; width: 100%; min-height: 39px; align-items: center; justify-content: flex-start; gap: 11px; padding: 0 10px; border: 0; border-radius: 8px; background: transparent; color: var(--muted); cursor: pointer; font-size: 12px; font-weight: 600; text-align: left; transition: background .2s ease, color .2s ease, transform .2s ease; }
