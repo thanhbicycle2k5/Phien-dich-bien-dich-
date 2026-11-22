@@ -411,6 +411,9 @@
     .save-status { min-height: 36px; display: flex; align-items: center; gap: 9px; margin: -7px 22px 14px; padding: 8px 11px; border-radius: 6px; color: var(--muted); font-size: 14px; line-height: 1.4; }
     .save-status.is-success, .personal-status.is-success { color: #166534; background: #f0fdf4; font-weight: 650; }
     .save-status.is-error, .personal-status.is-error { color: #9a3412; background: #fff7ed; }
+    .save-status.is-loading { color: var(--blue-dark); background: var(--soft-blue); font-weight: 650; }
+    .save-status.is-loading::before { content: ""; width: 14px; height: 14px; flex: 0 0 14px; border: 2px solid #93c5fd; border-top-color: var(--blue); border-radius: 50%; animation: save-status-spin .8s linear infinite; }
+    @keyframes save-status-spin { to { transform: rotate(360deg); } }
     .save-status-icon { width: 18px; height: 18px; flex: 0 0 18px; color: #16a34a; }
 
     .feedback {
@@ -513,7 +516,7 @@
     .history-tools { display: flex; align-items: center; justify-content: space-between; gap: 10px; margin-bottom: 10px; }
     .history-message { color: var(--muted); font-size: 11px; }
     .history-list { display: grid; gap: 8px; margin: 0 0 18px; padding: 0; list-style: none; }
-    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #f0f9ff; }
+    .history-item { padding: 12px; border: 1px solid var(--line); border-radius: 5px; background: #f0f9ff; cursor: pointer; }
     .history-meta { display: flex; justify-content: space-between; gap: 12px; margin-bottom: 5px; color: var(--muted); font-size: 11px; }
     .history-transcript { margin: 0; font-size: 13px; white-space: pre-wrap; overflow-wrap: anywhere; }
     .history-empty { color: var(--muted); font-size: 12px; }
@@ -826,6 +829,7 @@
     :root[data-theme="dark"] .feedback, :root[data-theme="dark"] .feedback.is-low { background: #202024; color: var(--ink); }
     :root[data-theme="dark"] .save-status.is-success, :root[data-theme="dark"] .personal-status.is-success { background: #14251c; color: #86efac; }
     :root[data-theme="dark"] .save-status.is-error, :root[data-theme="dark"] .personal-status.is-error { background: #2b2118; color: #fdba74; }
+    :root[data-theme="dark"] .save-status.is-loading { background: #1d2938; color: #93c5fd; }
     :root[data-theme="dark"] .sync-toast { border-color: #713f12; }
     :root[data-theme="dark"] .ocr-status.is-error { color: #fda4af; }
 
@@ -2272,10 +2276,11 @@
       updateEditHistoryButtons();
     }
 
-    function setSaveStatus(status, message, success = false) {
+    function setSaveStatus(status, message, success = false, loading = false) {
       status.hidden = false;
       status.classList.toggle("is-success", success);
-      status.classList.toggle("is-error", !success);
+      status.classList.toggle("is-error", !success && !loading);
+      status.classList.toggle("is-loading", loading);
       const content = document.createElement("span");
       content.textContent = message;
       if (success) {
@@ -2696,6 +2701,11 @@
         exercise.keyTerms,
         "Bài mẫu"
       );
+      updateTranslationHistoryFeedback(
+        sourceText.value,
+        answerTextValue,
+        { title: feedback.dataset.title, message: feedback.dataset.message }
+      );
     }
 
     function checkPersonalTranslationAgainstReference(answerTextValue) {
@@ -2741,6 +2751,11 @@
       const feedbackTitle = `${title} · Tài liệu cá nhân`;
       const feedbackMessage = `${introduction} ${guidance}`;
       showTranslationFeedback(feedbackTitle, feedbackMessage, needsReview);
+      updateTranslationHistoryFeedback(
+        sourceText.value,
+        answerTextValue,
+        { title: feedbackTitle, message: feedbackMessage }
+      );
       personalDraft.checkedResult = {
         source: sourceText.value,
         answer: answerText.value,
@@ -3071,8 +3086,22 @@
       }
     }
 
-    function saveMaterialDraft(draft, status, title, topic = industrySelect.selectedOptions[0]?.textContent || DEFAULT_PERSONAL_TOPIC) {
+    function formatSavedTime(date) {
+      const savedDate = date instanceof Date ? date : new Date(date);
+      if (Number.isNaN(savedDate.getTime())) return "";
+      return savedDate.toLocaleString("vi-VN", {
+        day: "2-digit",
+        month: "2-digit",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit"
+      });
+    }
+
+    function saveMaterialDraft(draft, status, title, topic = industrySelect.selectedOptions[0]?.textContent || DEFAULT_PERSONAL_TOPIC, savedAt = new Date()) {
       status.hidden = false;
+      const savedDate = savedAt instanceof Date ? savedAt : new Date(savedAt);
       if (!draft.source.trim()) {
         setSaveStatus(status, "Hãy thêm văn bản nguồn trước khi lưu.");
         return;
@@ -3086,7 +3115,7 @@
         id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
         title: title || draft.source.replace(/\s+/g, " ").trim().slice(0, 60),
         topic,
-        savedAt: new Date().toISOString(),
+        savedAt: savedDate.toISOString(),
         ...draft
       };
       try {
@@ -3101,13 +3130,13 @@
           personalDraftsByTopic.set(topic, { ...draft });
           window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
           notifyProgressChanged();
-          setSaveStatus(status, `Đã lưu bản nháp cho chủ đề “${topic}”.`, true);
+          setSaveStatus(status, `Đã lưu bản nháp cho chủ đề “${topic}” lúc ${formatSavedTime(savedDate)}.`, true);
         } else {
           materials.unshift(entry);
           window.localStorage.setItem(PERSONAL_MATERIALS_KEY, JSON.stringify(materials.slice(0, MAX_PERSONAL_MATERIALS)));
           notifyProgressChanged();
           personalDraftTopic = topic;
-          setSaveStatus(status, "Đã lưu bài biên dịch. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.", true);
+          setSaveStatus(status, `Đã lưu bài biên dịch lúc ${formatSavedTime(savedDate)}. Mở Tài liệu cá nhân để tìm bài trong chủ đề đã chọn.`, true);
         }
       } catch (error) {
         setSaveStatus(status, "Không thể lưu bài. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.");
@@ -3116,6 +3145,7 @@
 
     function saveCurrentTranslation() {
       const status = document.querySelector("#translation-save-status");
+      const savedAt = new Date();
       const topic = getTranslationTopic();
       if (!topic) {
         showTranslationTopicAlert();
@@ -3126,16 +3156,18 @@
           setSaveStatus(status, "Hãy thêm văn bản nguồn trước khi lưu.");
           return;
         }
+        setSaveStatus(status, "Đang lưu bài biên dịch...", false, true);
         capturePersonalDraft();
-        if (answerText.value.trim() && !saveTranslationHistory(topic)) return;
-        saveMaterialDraft(personalDraft, status, undefined, topic);
+        if (answerText.value.trim() && !saveTranslationHistory(topic, savedAt)) return;
+        saveMaterialDraft(personalDraft, status, undefined, topic, savedAt);
         return;
       }
       if (!answerText.value.trim()) {
         setSaveStatus(status, "Hãy viết bản dịch trước khi lưu.");
         return;
       }
-      if (!saveTranslationHistory(topic)) return;
+      setSaveStatus(status, "Đang lưu bài biên dịch...", false, true);
+      if (!saveTranslationHistory(topic, savedAt)) return;
 
       const exercise = currentExercises()[Number(exerciseSelect.value)];
       const draft = {
@@ -3146,7 +3178,7 @@
         direction: "EN_VI"
       };
       const title = `${topic} · ${exerciseSelect.selectedOptions[0].textContent}`;
-      saveMaterialDraft(draft, status, title, topic);
+      saveMaterialDraft(draft, status, title, topic, savedAt);
     }
 
     function getTranslationTopic() {
@@ -3190,35 +3222,65 @@
       }
     }
 
-    function saveTranslationHistory(topic) {
-      const date = new Date();
+    function saveTranslationHistory(topic, date = new Date()) {
+      const savedDate = date instanceof Date ? date : new Date(date);
       const exercise = activeTranslationMode === "sample"
         ? currentExercises()[Number(exerciseSelect.value)]
         : null;
+      const checkedResult = activeTranslationMode === "personal" &&
+        personalDraft.checkedResult &&
+        isCurrentPersonalCheck(personalDraft.checkedResult)
+          ? personalDraft.checkedResult
+          : null;
       const entry = {
-        id: `${date.getTime()}-${Math.random().toString(36).slice(2, 10)}`,
-        date: date.toISOString(),
+        id: `${savedDate.getTime()}-${Math.random().toString(36).slice(2, 10)}`,
+        date: savedDate.toISOString(),
         topic,
         mode: activeTranslationMode,
         direction: activeTranslationMode === "personal" ? personalDirection : "EN_VI",
+        exerciseIndex: activeTranslationMode === "sample" ? Number(exerciseSelect.value) : null,
         title: activeTranslationMode === "sample"
           ? exerciseSelect.selectedOptions[0]?.textContent || "Bài biên dịch"
           : sourceText.value.replace(/\s+/g, " ").trim().slice(0, 60) || "Tài liệu cá nhân",
         source: sourceText.value,
         answer: answerText.value,
-        reference: activeTranslationMode === "personal" ? referenceAnswer.value : exercise?.answers[0] || ""
+        reference: activeTranslationMode === "personal" ? referenceAnswer.value : exercise?.answers[0] || "",
+        keywords: activeTranslationMode === "personal" ? personalKeywords.value : "",
+        feedback: checkedResult ? {
+          title: checkedResult.title,
+          message: checkedResult.message
+        } : null
       };
       try {
         const entries = readTranslationHistory();
         entries.unshift(entry);
         window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_TRANSLATION_HISTORY_ITEMS)));
         notifyProgressChanged();
-        document.querySelector("#translation-history-message").textContent = "Đã lưu bài biên dịch vào lịch sử trên thiết bị.";
+        document.querySelector("#translation-history-message").textContent = `Đã lưu bài biên dịch lúc ${formatSavedTime(savedDate)}.`;
         renderTranslationHistory();
         return true;
       } catch (error) {
         setSaveStatus(document.querySelector("#translation-save-status"), "Không thể lưu lịch sử biên dịch. Hãy kiểm tra dung lượng trình duyệt rồi thử lại.");
         return false;
+      }
+    }
+
+    function updateTranslationHistoryFeedback(source, answer, feedbackData) {
+      if (!feedbackData?.title || !feedbackData?.message) return;
+      try {
+        const entries = readTranslationHistory();
+        const entry = entries.find((item) =>
+          item.source === source &&
+          item.answer === answer &&
+          item.mode === activeTranslationMode
+        );
+        if (!entry) return;
+        entry.feedback = feedbackData;
+        window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(entries.slice(0, MAX_TRANSLATION_HISTORY_ITEMS)));
+        renderTranslationHistory();
+        notifyProgressChanged();
+      } catch (error) {
+        console.error("Không thể cập nhật nhận xét trong lịch sử biên dịch:", error);
       }
     }
 
@@ -3238,6 +3300,19 @@
       entries.forEach((entry) => {
         const item = document.createElement("li");
         item.className = "history-item";
+        item.tabIndex = 0;
+        item.setAttribute("role", "button");
+        item.setAttribute("aria-label", `Mở bài biên dịch: ${entry.title || "Bài biên dịch"}`);
+        item.addEventListener("click", (event) => {
+          if (event.target.closest("button")) return;
+          openTranslationHistoryEntry(entry);
+        });
+        item.addEventListener("keydown", (event) => {
+          if ((event.key === "Enter" || event.key === " ") && event.target === item) {
+            event.preventDefault();
+            openTranslationHistoryEntry(entry);
+          }
+        });
         const cardHead = document.createElement("div");
         cardHead.className = "history-card-head";
         const cardMain = document.createElement("div");
@@ -3251,7 +3326,7 @@
         const metadata = document.createElement("div");
         metadata.className = "history-meta";
         const date = document.createElement("span");
-        date.textContent = new Date(entry.date).toLocaleString("vi-VN");
+        date.textContent = `Đã lưu lúc ${formatSavedTime(entry.date)}`;
         const mode = document.createElement("span");
         mode.textContent = entry.direction === "VI_EN" ? "Việt → Anh" : "Anh → Việt";
         metadata.append(date, mode);
@@ -3287,6 +3362,89 @@
         }
         list.append(item);
       });
+    }
+
+    function openTranslationHistoryEntry(entry) {
+      setMode("translate");
+      setTranslationMode(entry.mode === "personal" ? "personal" : "sample");
+
+      if (entry.mode === "personal") {
+        populateTopics(entry.topic);
+        if (entry.topic && industrySelect.value !== entry.topic) {
+          const option = document.createElement("option");
+          option.value = entry.topic;
+          option.textContent = entry.topic;
+          industrySelect.append(option);
+          industrySelect.value = entry.topic;
+          translationTopicInput.value = entry.topic;
+        }
+
+        personalDirection = entry.direction === "EN_VI" ? "EN_VI" : "VI_EN";
+        document.querySelector("#personal-direction").value = personalDirection;
+        updatePersonalDirectionLabels();
+        sourceText.value = entry.source || "";
+        answerText.value = entry.answer || "";
+        referenceAnswer.value = entry.reference || "";
+        personalKeywords.value = entry.keywords || "";
+        personalDraft = {
+          source: sourceText.value,
+          answer: answerText.value,
+          reference: referenceAnswer.value,
+          keywords: personalKeywords.value,
+          direction: personalDirection,
+          referenceSource: entry.reference ? sourceText.value : "",
+          referenceDirection: entry.reference ? personalDirection : "",
+          checkedResult: entry.feedback ? {
+            source: sourceText.value,
+            answer: answerText.value,
+            direction: personalDirection,
+            keywords: personalKeywords.value,
+            title: entry.feedback.title,
+            message: entry.feedback.message
+          } : null
+        };
+        personalDraftTopic = entry.topic || industrySelect.value;
+        personalDraftsByTopic.set(personalDraftTopic, { ...personalDraft });
+        resetEditHistory(sourceText);
+        resetEditHistory(answerText);
+        updateCounts();
+        invalidateTranslationCheck();
+        if (referenceAnswer.value.trim()) renderDeepLBreakdown(referenceAnswer.value);
+        if (entry.feedback?.title && entry.feedback?.message) {
+          showTranslationFeedback(entry.feedback.title, entry.feedback.message);
+        }
+        document.querySelector("#personal-status").textContent = `Đã mở bài biên dịch đã lưu lúc ${formatSavedTime(entry.date)}.`;
+      } else {
+        const group = exerciseGroups.find((item) =>
+          item.id === entry.topic ||
+          item.label.toLocaleLowerCase() === String(entry.topic || "").toLocaleLowerCase()
+        );
+        if (group) selectTranslationTopic(group.id);
+        if (Number.isInteger(entry.exerciseIndex) && exerciseSelect.options[entry.exerciseIndex]) {
+          exerciseSelect.value = String(entry.exerciseIndex);
+        } else {
+          const exerciseIndex = currentExercises().findIndex((exercise) =>
+            exercise.source === entry.source
+          );
+          if (exerciseIndex >= 0) exerciseSelect.value = String(exerciseIndex);
+        }
+        loadExercise();
+        sourceText.value = entry.source || "";
+        answerText.value = entry.answer || "";
+        resetEditHistory(sourceText);
+        resetEditHistory(answerText);
+        updateCounts();
+        invalidateTranslationCheck();
+        const exercise = currentExercises()[Number(exerciseSelect.value)];
+        if (exercise) renderSampleBreakdown(exercise);
+        if (entry.feedback?.title && entry.feedback?.message) {
+          showTranslationFeedback(entry.feedback.title, entry.feedback.message);
+        }
+        document.querySelector("#translation-save-status").hidden = true;
+      }
+
+      document.querySelector("#translate-panel").scrollIntoView({ behavior: "smooth", block: "start" });
+      updateSaveButtonStates();
     }
 
     function markTranslationHistoryDeleted(entries) {
@@ -5304,7 +5462,7 @@
         const metadata = document.createElement("div");
         metadata.className = "history-meta";
         const date = document.createElement("span");
-        date.textContent = new Date(entry.date).toLocaleString("vi-VN");
+        date.textContent = `Đã lưu lúc ${formatSavedTime(entry.date)}`;
         const duration = document.createElement("span");
         duration.textContent = formatDuration((Number(entry.durationSeconds) || 0) * 1000);
         const mode = document.createElement("span");
@@ -5472,10 +5630,13 @@
       const saveButton = document.querySelector("#save-practice");
       if (saveButton.disabled) return;
       saveButton.disabled = true;
+      const date = new Date();
       const savedTranscript = transcript.textContent.trim();
       const durationSeconds = Math.floor(getElapsedTime() / 1000);
       const historyMessage = document.querySelector("#history-message");
       const speechStatus = document.querySelector("#speech-status");
+      historyMessage.textContent = "Đang lưu buổi phiên dịch...";
+      speechStatus.textContent = historyMessage.textContent;
       let savedStorageId = "";
       let savedMediaRecord = null;
       let historyCommitted = false;
@@ -5505,7 +5666,6 @@
           return;
         }
 
-        const date = new Date();
         const storageId = `${date.getTime()}-${Math.random().toString(36).slice(2, 10)}`;
         const expiresAt = date.getTime() + PRACTICE_MEDIA_RETENTION_MS;
         const storedRecord = {
@@ -5569,10 +5729,10 @@
         renderPracticeHistory();
         schedulePracticeMediaExpiry();
         historyMessage.textContent = voiceBlob
-          ? "Đã lưu nguồn và bản ghi giọng nói trên thiết bị. Hai bản sẽ tự xóa sau 3 ngày; tải về trước hạn nếu cần giữ lâu hơn."
+          ? `Đã lưu nguồn và bản ghi giọng nói lúc ${formatSavedTime(date)}. Hai bản sẽ tự xóa sau 3 ngày; tải về trước hạn nếu cần giữ lâu hơn.`
           : speechRecordingError
-            ? `Đã lưu bản chép lời, nhưng không lưu được file MP3: ${speechRecordingError}`
-            : "Đã lưu bản chép lời; buổi này không có file ghi âm.";
+            ? `Đã lưu bản chép lời lúc ${formatSavedTime(date)}, nhưng không lưu được file MP3: ${speechRecordingError}`
+            : `Đã lưu bản chép lời lúc ${formatSavedTime(date)}; buổi này không có file ghi âm.`;
         speechStatus.textContent = historyMessage.textContent;
       } catch (error) {
         if (savedStorageId && !historyCommitted) {
@@ -5585,7 +5745,7 @@
           storedPracticeMedia.delete(savedStorageId);
         }
         historyMessage.textContent = historyCommitted
-          ? `Đã lưu buổi luyện, nhưng không thể dọn một số tệp cũ: ${error.message}.`
+          ? `Đã lưu buổi luyện lúc ${formatSavedTime(date)}, nhưng không thể dọn một số tệp cũ: ${error.message}.`
           : `Không thể lưu buổi luyện: ${error.message}. Hãy tải bản ghi xuống hoặc kiểm tra dung lượng thiết bị.`;
         speechStatus.textContent = historyMessage.textContent;
         if (historyCommitted) {
