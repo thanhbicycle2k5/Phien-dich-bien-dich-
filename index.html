@@ -527,6 +527,26 @@
     .youtube-player iframe { display: block; width: 100%; height: 100%; border: 0; }
     .local-media-source { display: grid; gap: 7px; margin-top: 14px; padding-top: 12px; border-top: 1px solid var(--line); }
     .local-media-input { max-width: 100%; font-size: 12px; }
+    .local-media-dropzone {
+      display: grid;
+      gap: 8px;
+      min-height: 94px;
+      place-content: center;
+      padding: 12px;
+      border: 1.5px dashed #94a3b8;
+      border-radius: 8px;
+      background: rgba(239, 246, 255, .72);
+      text-align: center;
+      transition: border-color .15s ease, background .15s ease, box-shadow .15s ease;
+    }
+    .local-media-dropzone.is-dragging {
+      border-color: var(--blue);
+      background: #dbeafe;
+      box-shadow: 0 0 0 3px color-mix(in srgb, var(--blue) 12%, transparent);
+    }
+    .local-media-dropzone .field-label { margin: 0; }
+    .local-media-dropzone .local-media-input { margin: 0 auto; }
+    .local-media-drop-hint { color: var(--muted); font-size: 12px; }
     .local-media-player { width: 100%; max-height: 360px; margin-top: 4px; border-radius: 6px; background: #0f172a; }
     .local-media-status { min-height: 16px; margin: 0; color: var(--muted); font-size: 12px; line-height: 1.4; }
     .media-seek-control { display: grid; grid-template-columns: auto minmax(0, 1fr) auto; align-items: center; gap: 8px; margin-top: 4px; color: var(--muted); font-size: 11px; font-variant-numeric: tabular-nums; }
@@ -1284,13 +1304,16 @@
                 Âm thanh YouTube không thể ghép trực tiếp vào file tải về. Muốn xuất bản phối, hãy dùng tệp MP3/MP4/M4A/MP4A trên thiết bị mà bạn có quyền sử dụng.
               </p>
               <div class="local-media-source">
-                <label class="file-control" for="local-media-file">
+                <div class="local-media-dropzone" id="local-media-dropzone" role="group" aria-label="Thêm tệp nguồn âm thanh bằng cách chọn hoặc thả vào đây">
+                  <label class="file-control" for="local-media-file">
                   <span class="field-label field-label-icon">
                     <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 7a2 2 0 0 1 2-2h5l2 2h7a2 2 0 0 1 2 2v10H3z"/></svg>
-                    Hoặc chọn tệp trên thiết bị (.mp3 / .mp4 / .m4a / .mp4a)
+                    Hoặc chọn tệp trên thiết bị
                   </span>
-                  <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,.m4a,.mp4a,audio/mpeg,audio/mp4,video/mp4">
-                </label>
+                    <input class="local-media-input" id="local-media-file" type="file" accept=".mp3,.mp4,.m4a,.mp4a,.aac,.wav,.ogg,.oga,.webm,.m4b,audio/*,video/mp4">
+                  </label>
+                  <span class="local-media-drop-hint">Hoặc kéo và thả tệp MP3, MP4A, M4A, MP4, AAC, WAV, OGG… vào đây</span>
+                </div>
                 <audio class="local-media-player" id="local-audio-player" preload="auto" hidden></audio>
                 <video class="local-media-player" id="local-video-player" preload="auto" playsinline hidden></video>
                 <div class="media-seek-control" id="media-seek-control" hidden>
@@ -4571,21 +4594,23 @@
       if (activePracticeSource === "local") activePracticeSource = "";
     }
 
-    function loadLocalPracticeMedia(event) {
-      const file = event.currentTarget.files?.[0];
+    function loadLocalPracticeMedia(fileOrEvent) {
+      const file = fileOrEvent instanceof File
+        ? fileOrEvent
+        : fileOrEvent.currentTarget?.files?.[0];
       const status = document.querySelector("#local-media-status");
       if (!file) return;
 
       clearLocalPracticeMedia();
       const extension = file.name.toLocaleLowerCase().split(".").pop();
-      if (!["mp3", "mp4", "m4a", "mp4a"].includes(extension)) {
-        status.textContent = "Chỉ hỗ trợ tệp .mp3, .mp4, .m4a hoặc .mp4a.";
-        event.currentTarget.value = "";
+      if (!["mp3", "mp4", "m4a", "mp4a", "aac", "wav", "ogg", "oga", "webm", "m4b"].includes(extension)) {
+        status.textContent = "Chỉ hỗ trợ tệp MP3, MP4, M4A, MP4A, AAC, WAV, OGG, WEBM hoặc M4B.";
+        localMediaInput.value = "";
         return;
       }
 
       localPracticeMediaUrl = URL.createObjectURL(file);
-      const player = document.querySelector(["mp3", "m4a", "mp4a"].includes(extension) ? "#local-audio-player" : "#local-video-player");
+      const player = document.querySelector(["mp3", "m4a", "mp4a", "aac", "wav", "ogg", "oga", "webm", "m4b"].includes(extension) ? "#local-audio-player" : "#local-video-player");
       player.src = localPracticeMediaUrl;
       player.hidden = false;
       player.load();
@@ -4598,7 +4623,7 @@
       document.querySelector("#media-speed-control").hidden = false;
       applyMediaPlaybackRate();
       status.textContent = `Đang chuẩn bị “${file.name}” để phát...`;
-      event.currentTarget.value = "";
+      localMediaInput.value = "";
     }
 
     function resetYouTubeVideo() {
@@ -5658,6 +5683,33 @@
     });
     document.querySelector("#media-playback-rate").addEventListener("change", applyMediaPlaybackRate);
     localMediaInput.addEventListener("change", loadLocalPracticeMedia);
+    const localMediaDropzone = document.querySelector("#local-media-dropzone");
+    ["dragenter", "dragover"].forEach((eventName) => {
+      localMediaDropzone.addEventListener(eventName, (event) => {
+        event.preventDefault();
+        event.stopPropagation();
+        if (event.dataTransfer) event.dataTransfer.dropEffect = "copy";
+        localMediaDropzone.classList.add("is-dragging");
+      });
+    });
+    localMediaDropzone.addEventListener("dragleave", (event) => {
+      if (!localMediaDropzone.contains(event.relatedTarget)) {
+        localMediaDropzone.classList.remove("is-dragging");
+      }
+    });
+    localMediaDropzone.addEventListener("drop", (event) => {
+      event.preventDefault();
+      event.stopPropagation();
+      localMediaDropzone.classList.remove("is-dragging");
+      if (speechSessionActive || consecutivePhase === "starting") return;
+      const files = Array.from(event.dataTransfer?.files || []);
+      if (!files.length) return;
+      if (files.length > 1) {
+        document.querySelector("#local-media-status").textContent =
+          `Đã chọn tệp đầu tiên “${files[0].name}”. Chỉ có thể nạp một tệp nguồn trong mỗi buổi.`;
+      }
+      loadLocalPracticeMedia(files[0]);
+    });
     ["#local-audio-player", "#local-video-player"].forEach((selector) => {
       const player = document.querySelector(selector);
       ["loadedmetadata", "durationchange", "timeupdate", "seeked"].forEach((eventName) => {
