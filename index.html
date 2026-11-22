@@ -604,7 +604,7 @@
       color-scheme: dark;
       --paper: #09090b;
       --ink: #f4f4f5;
-      --muted: #a1a1aa;
+      --muted: #b4b4be;
       --line: #27272a;
       --blue: #818cf8;
       --blue-dark: #a5b4fc;
@@ -799,6 +799,9 @@
     :root[data-theme="dark"] .auth-dialog { background: var(--white); color: var(--ink); }
     :root[data-theme="dark"] .topic-name-input, :root[data-theme="dark"] .topic-list-toggle { background: #202024; color: var(--ink); }
     :root[data-theme="dark"] .topic-options { background: var(--white); }
+    :root[data-theme="dark"] .topic-option,
+    :root[data-theme="dark"] .topic-create-button { color: var(--ink); }
+    :root[data-theme="dark"] .topic-create-button { background: #272a3b; border-color: #3f445b; }
     :root[data-theme="dark"] .text-area, :root[data-theme="dark"] .transcript, :root[data-theme="dark"] .practice-status,
     :root[data-theme="dark"] .source-switch, :root[data-theme="dark"] .reference-editor,
     :root[data-theme="dark"] .deepl-guide, :root[data-theme="dark"] .media-mix-panel,
@@ -832,6 +835,111 @@
     :root[data-theme="dark"] .save-status.is-loading { background: #1d2938; color: #93c5fd; }
     :root[data-theme="dark"] .sync-toast { border-color: #713f12; }
     :root[data-theme="dark"] .ocr-status.is-error { color: #fda4af; }
+    :root[data-theme="dark"] .local-media-dropzone {
+      border-color: #52525b;
+      background: #202024;
+      color: var(--ink);
+    }
+    :root[data-theme="dark"] .local-media-dropzone.is-dragging {
+      border-color: #818cf8;
+      background: #272a3b;
+    }
+    :root[data-theme="dark"] input[type="file"] {
+      color: var(--ink);
+    }
+    :root[data-theme="dark"] input[type="file"]::file-selector-button {
+      margin-right: 8px;
+      border: 1px solid #3f3f46;
+      border-radius: 6px;
+      background: #27272a;
+      color: #f4f4f5;
+      padding: 7px 10px;
+      cursor: pointer;
+    }
+    :root[data-theme="dark"] input[type="file"]::file-selector-button:hover {
+      background: #3f445b;
+      color: #fff;
+    }
+    :root[data-theme="dark"] .mic-state {
+      background: #18181b;
+      color: #b4b4be;
+    }
+    :root[data-theme="dark"] .mic-state.is-listening {
+      background: #2b2118;
+      border-color: #7c2d12;
+      color: #fdba74;
+    }
+    :root[data-theme="dark"] .practice-status,
+    :root[data-theme="dark"] .speech-recording-status,
+    :root[data-theme="dark"] .youtube-status,
+    :root[data-theme="dark"] .local-media-status,
+    :root[data-theme="dark"] .local-media-drop-hint,
+    :root[data-theme="dark"] .media-mix-panel p,
+    :root[data-theme="dark"] .media-mix-speed-control,
+    :root[data-theme="dark"] .media-mix-control,
+    :root[data-theme="dark"] .media-seek-control,
+    :root[data-theme="dark"] .transcript-foot,
+    :root[data-theme="dark"] .page-foot { color: #b4b4be; }
+    :root[data-theme="dark"] .transcript:empty::before,
+    :root[data-theme="dark"] input::placeholder,
+    :root[data-theme="dark"] textarea::placeholder { color: #9f9faa; opacity: 1; }
+    :root[data-theme="dark"] #media-mix-status { background: #202024; color: #b4b4be; }
+    :root[data-theme="dark"] #media-mix-status.is-loading { background: #2b2417; color: #fde68a; }
+    :root[data-theme="dark"] #media-mix-status.is-playing { background: #14251c; color: #86efac; }
+    :root[data-theme="dark"] .practice-action-key {
+      border-color: #52525b;
+      background: #27272a;
+      color: #f4f4f5;
+    }
+    :root[data-theme="dark"] audio { color-scheme: dark; }
+    :root[data-theme="dark"] select option {
+      background: #18181b;
+      color: #f4f4f5;
+    }
+    :root[data-theme="dark"] .collapse-toggle,
+    :root[data-theme="dark"] .sidebar-collapse,
+    :root[data-theme="dark"] .history-sidebar-collapse,
+    :root[data-theme="dark"] .topic-list-toggle,
+    :root[data-theme="dark"] .auth-password-toggle {
+      background: #18181b;
+      color: #b4b4be;
+      border-color: #27272a;
+    }
+    :root[data-theme="dark"] .collapse-toggle:hover,
+    :root[data-theme="dark"] .sidebar-collapse:hover,
+    :root[data-theme="dark"] .history-sidebar-collapse:hover,
+    :root[data-theme="dark"] .topic-list-toggle:hover,
+    :root[data-theme="dark"] .auth-password-toggle:hover {
+      background: #272a3b;
+      color: #c7d2fe;
+    }
+    :root[data-theme="dark"] .brand-note,
+    :root[data-theme="dark"] .account-identity,
+    :root[data-theme="dark"] .sidebar-section-description,
+    :root[data-theme="dark"] .history-meta,
+    :root[data-theme="dark"] .history-empty,
+    :root[data-theme="dark"] .progress-sync-status,
+    :root[data-theme="dark"] .sync-toast-copy,
+    :root[data-theme="dark"] .ocr-status,
+    :root[data-theme="dark"] .topic-required-copy,
+    :root[data-theme="dark"] .topic-required-status,
+    :root[data-theme="dark"] .personal-status { color: #b4b4be; }
+    :root[data-theme="dark"] .history-item:hover {
+      border-color: #3f445b;
+      box-shadow: 0 12px 32px rgba(0, 0, 0, .24);
+    }
+    :root[data-theme="dark"] .progress-sync-status {
+      background: #202024;
+      color: #b4b4be;
+    }
+    :root[data-theme="dark"] .progress-sync-status.is-error {
+      background: #2b2118;
+      color: #fdba74;
+    }
+    :root[data-theme="dark"] .sync-toast {
+      background: #18181b;
+      color: #f4f4f5;
+    }
 
     [hidden] { display: none !important; }
 
