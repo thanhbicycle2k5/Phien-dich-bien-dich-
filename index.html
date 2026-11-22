@@ -6443,6 +6443,12 @@
       if (source.value.trim()) runAiTranslation();
     });
     document.querySelector("#run-ai-translation").addEventListener("click", runAiTranslation);
+    document.querySelector("#ai-translator-source").addEventListener("input", (event) => {
+      if (event.currentTarget.value === "") {
+        document.querySelector("#ai-translator-output").value = "";
+        setAiTranslatorStatus("");
+      }
+    });
     document.querySelector("#ai-translator-source").addEventListener("keydown", (event) => {
       if (event.key === "Enter" && event.shiftKey) {
         return;
