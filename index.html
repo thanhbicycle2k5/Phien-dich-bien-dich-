@@ -1002,9 +1002,9 @@
               <span>Phiên dịch</span>
             </button>
           </nav>
-          <button class="mode-tab history-nav-button" id="toggle-history-nav" type="button" aria-expanded="true" aria-pressed="true" aria-controls="app-history-sidebar" aria-label="Thu gọn cột lịch sử" title="Thu gọn cột lịch sử">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M3 12a9 9 0 1 0 2.64-6.36L3 8"/><path d="M3 3v5h5m4-1v5l4 2"/></svg>
-            <span>Lịch sử</span>
+          <button class="mode-tab history-nav-button" id="toggle-history-nav" type="button" aria-expanded="true" aria-pressed="true" aria-controls="app-history-sidebar" aria-label="Thu gọn cột mục đã lưu" title="Thu gọn cột mục đã lưu">
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M5 3h12l3 3v14H4V4a1 1 0 0 1 1-1Z"/><path d="M8 3v6h9V3M8 20v-7h8v7"/></svg>
+            <span>Đã lưu</span>
           </button>
           </section>
 
@@ -1404,24 +1404,24 @@
         <span>Nhấn biểu tượng lưu để giữ lại bài làm</span>
       </footer>
       </div>
-      <aside class="app-history-sidebar" id="app-history-sidebar" aria-label="Lịch sử theo chế độ">
-        <button class="history-sidebar-collapse" id="toggle-history-sidebar" type="button" aria-label="Thu gọn cột lịch sử" aria-expanded="true" title="Thu gọn cột lịch sử">
+      <aside class="app-history-sidebar" id="app-history-sidebar" aria-label="Mục đã lưu theo chế độ">
+        <button class="history-sidebar-collapse" id="toggle-history-sidebar" type="button" aria-label="Thu gọn cột mục đã lưu" aria-expanded="true" title="Thu gọn cột mục đã lưu">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M15 5v14M9 8l4 4-4 4"/></svg>
         </button>
         <div class="history-sidebar-card">
           <section class="history" id="translation-history-panel">
-            <h2 class="history-sidebar-title" id="translation-history-summary">Lịch sử biên dịch (0)</h2>
+            <h2 class="history-sidebar-title" id="translation-history-summary">Đã lưu - biên dịch (0)</h2>
             <div class="history-tools">
               <span class="history-message" id="translation-history-message" role="status" aria-live="polite"></span>
-              <button class="quiet-button" id="clear-translation-history" type="button">Xóa lịch sử</button>
+              <button class="quiet-button" id="clear-translation-history" type="button">Xóa mục đã lưu</button>
             </div>
             <ul class="history-list" id="translation-history-list"></ul>
           </section>
           <section class="history" id="history-panel" hidden>
-            <h2 class="history-sidebar-title" id="history-summary">Lịch sử phiên dịch (0)</h2>
+            <h2 class="history-sidebar-title" id="history-summary">Đã lưu - phiên dịch (0)</h2>
             <div class="history-tools">
               <span class="history-message" id="history-message" role="status" aria-live="polite"></span>
-              <button class="quiet-button" id="clear-history" type="button">Xóa lịch sử</button>
+              <button class="quiet-button" id="clear-history" type="button">Xóa mục đã lưu</button>
             </div>
             <ul class="history-list" id="history-list"></ul>
           </section>
@@ -3287,7 +3287,7 @@
     function renderTranslationHistory() {
       const entries = readTranslationHistory();
       const list = document.querySelector("#translation-history-list");
-      document.querySelector("#translation-history-summary").textContent = `Lịch sử biên dịch (${entries.length})`;
+      document.querySelector("#translation-history-summary").textContent = `Đã lưu - biên dịch (${entries.length})`;
       list.replaceChildren();
       if (!entries.length) {
         const empty = document.createElement("li");
@@ -3455,7 +3455,7 @@
     }
 
     function deleteTranslationHistoryEntry(id) {
-      if (!window.confirm("Xóa bài biên dịch này khỏi lịch sử?")) return;
+      if (!window.confirm("Xóa bài biên dịch này khỏi mục đã lưu?")) return;
       try {
         const entries = readTranslationHistory();
         const removed = entries.find((entry) => entry.id === id);
@@ -3463,7 +3463,7 @@
         markTranslationHistoryDeleted([removed]);
         window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(entries.filter((entry) => entry.id !== id)));
         notifyProgressChanged();
-        document.querySelector("#translation-history-message").textContent = "Đã xóa bài biên dịch khỏi lịch sử.";
+        document.querySelector("#translation-history-message").textContent = "Đã xóa bài biên dịch khỏi mục đã lưu.";
         renderTranslationHistory();
       } catch (error) {
         document.querySelector("#translation-history-message").textContent = `Không thể xóa bài biên dịch: ${error.message}`;
@@ -3845,13 +3845,13 @@
       document.querySelector(".app-layout").classList.toggle("is-history-collapsed", !expanded);
       const collapseButton = document.querySelector("#toggle-history-sidebar");
       collapseButton.setAttribute("aria-expanded", String(expanded));
-      collapseButton.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
-      collapseButton.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
+      collapseButton.setAttribute("aria-label", expanded ? "Thu gọn cột mục đã lưu" : "Mở rộng cột mục đã lưu");
+      collapseButton.title = expanded ? "Thu gọn cột mục đã lưu" : "Mở rộng cột mục đã lưu";
       const navigationButton = document.querySelector("#toggle-history-nav");
       navigationButton.setAttribute("aria-expanded", String(expanded));
       navigationButton.setAttribute("aria-pressed", String(expanded));
-      navigationButton.setAttribute("aria-label", expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử");
-      navigationButton.title = expanded ? "Thu gọn cột lịch sử" : "Mở rộng cột lịch sử";
+      navigationButton.setAttribute("aria-label", expanded ? "Thu gọn cột mục đã lưu" : "Mở rộng cột mục đã lưu");
+      navigationButton.title = expanded ? "Thu gọn cột mục đã lưu" : "Mở rộng cột mục đã lưu";
       saveAppPreferences({ historySidebarExpanded: expanded });
     }
 
@@ -5427,7 +5427,7 @@
       const entries = readPracticeHistory();
       const historyList = document.querySelector("#history-list");
       historyList.replaceChildren();
-      document.querySelector("#history-summary").textContent = `Lịch sử phiên dịch (${entries.length})`;
+      document.querySelector("#history-summary").textContent = `Đã lưu - phiên dịch (${entries.length})`;
       if (entries.length === 0) {
         const empty = document.createElement("li");
         empty.className = "history-empty";
@@ -5598,7 +5598,7 @@
     }
 
     async function deletePracticeHistoryEntry(index) {
-      if (!window.confirm("Xóa buổi luyện này khỏi lịch sử?")) return;
+      if (!window.confirm("Xóa buổi luyện này khỏi mục đã lưu?")) return;
       const historyMessage = document.querySelector("#history-message");
       try {
         const entries = readPracticeHistory();
@@ -5613,7 +5613,7 @@
           releaseStoredPracticeMediaUrls(media);
           storedPracticeMedia.delete(removedEntry.storageId);
         }
-        historyMessage.textContent = "Đã xóa buổi luyện khỏi lịch sử.";
+        historyMessage.textContent = "Đã xóa buổi luyện khỏi mục đã lưu.";
         renderPracticeHistory();
       } catch (error) {
         historyMessage.textContent = `Không thể xóa buổi luyện: ${error.message}`;
@@ -6172,29 +6172,29 @@
     });
     document.querySelector("#save-practice").addEventListener("click", savePractice);
     document.querySelector("#clear-history").addEventListener("click", async () => {
-      if (!window.confirm("Xóa toàn bộ lịch sử luyện tập trên trình duyệt này?")) return;
+      if (!window.confirm("Xóa toàn bộ mục đã lưu của phần phiên dịch trên trình duyệt này?")) return;
       try {
         markHistoryDeleted(readPracticeHistory());
         window.localStorage.removeItem(HISTORY_KEY);
         notifyProgressChanged();
         await clearStoredPracticeMedia();
-        document.querySelector("#history-message").textContent = "Đã xóa lịch sử luyện tập.";
+        document.querySelector("#history-message").textContent = "Đã xóa các mục đã lưu của phần phiên dịch.";
         document.querySelector("#media-mix-panel").hidden = true;
         renderPracticeHistory();
       } catch (error) {
-        document.querySelector("#history-message").textContent = `Không thể xóa lịch sử: ${error.message}`;
+        document.querySelector("#history-message").textContent = `Không thể xóa mục đã lưu: ${error.message}`;
       }
     });
     document.querySelector("#clear-translation-history").addEventListener("click", () => {
-      if (!window.confirm("Xóa toàn bộ lịch sử biên dịch trên trình duyệt này?")) return;
+      if (!window.confirm("Xóa toàn bộ mục đã lưu của phần biên dịch trên trình duyệt này?")) return;
       try {
         markTranslationHistoryDeleted(readTranslationHistory());
         window.localStorage.setItem(TRANSLATION_HISTORY_KEY, "[]");
         notifyProgressChanged();
-        document.querySelector("#translation-history-message").textContent = "Đã xóa lịch sử biên dịch.";
+        document.querySelector("#translation-history-message").textContent = "Đã xóa các mục đã lưu của phần biên dịch.";
         renderTranslationHistory();
       } catch (error) {
-        document.querySelector("#translation-history-message").textContent = `Không thể xóa lịch sử: ${error.message}`;
+        document.querySelector("#translation-history-message").textContent = `Không thể xóa mục đã lưu: ${error.message}`;
       }
     });
 
