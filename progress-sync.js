@@ -240,21 +240,21 @@
   }
 
   function mergeDrafts(cloudDrafts, localDrafts, topics) {
-    const drafts = { ...cloudDrafts };
-    Object.entries(localDrafts).forEach(([topic, draft]) => {
-      if (!drafts[topic] || canonical(drafts[topic]) === canonical(draft)) {
-        drafts[topic] = draft;
-        return;
+    const drafts = {};
+    const mergeOne = (topic, draft) => {
+      if (typeof topic !== "string" || !topic.trim() || !draft) return;
+      const baseTopic = topic.trim().replace(/\s+\(thiết bị(?: \d+)?\)$/iu, "").trim();
+      if (!baseTopic) return;
+      drafts[baseTopic] = draft;
+      if (!topics.some((item) => item.toLocaleLowerCase() === baseTopic.toLocaleLowerCase())) {
+        topics.push(baseTopic);
       }
-      let copyTopic = `${topic} (thiết bị)`;
-      let suffix = 2;
-      while (drafts[copyTopic]) {
-        copyTopic = `${topic} (thiết bị ${suffix})`;
-        suffix += 1;
-      }
-      drafts[copyTopic] = draft;
-      if (uniqueTopic(topics, copyTopic)) topics.push(copyTopic);
-    });
+    };
+    Object.entries(cloudDrafts).forEach(([topic, draft]) => mergeOne(topic, draft));
+    Object.entries(localDrafts).forEach(([topic, draft]) => mergeOne(topic, draft));
+    for (let index = topics.length - 1; index >= 0; index--) {
+      if (/^.*\s+\(thiết bị(?: \d+)?\)$/iu.test(topics[index])) topics.splice(index, 1);
+    }
     return drafts;
   }
 

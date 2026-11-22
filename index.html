@@ -233,6 +233,9 @@
     .topic-list-toggle[aria-expanded="true"] svg { transform: rotate(180deg); }
     .topic-options { position: absolute; z-index: 5; top: calc(100% + 4px); right: 0; left: 0; display: grid; max-height: 240px; overflow-y: auto; padding: 5px; border: 1px solid var(--line); border-radius: 7px; background: var(--white); box-shadow: 0 8px 20px rgba(29, 78, 216, .14); }
     .topic-options[hidden] { display: none; }
+    .topic-create-button { width: 100%; min-height: 38px; justify-content: flex-start; margin-bottom: 4px; border: 1px solid #c7d2fe; background: #eef2ff; color: var(--blue-dark); text-align: left; }
+    .topic-create-button svg { width: 15px; height: 15px; flex: 0 0 auto; }
+    .topic-create-button .topic-create-search { margin-left: auto; color: var(--muted); font-size: 12px; }
     .topic-option { width: 100%; min-height: 36px; justify-content: flex-start; border: 0; text-align: left; }
     .topic-option[aria-selected="true"] { background: var(--soft-accent); color: var(--blue-dark); }
     .topic-options-empty { margin: 0; padding: 8px; color: var(--muted); font-size: 12px; }
@@ -1043,7 +1046,7 @@
             <div class="topic-combobox">
               <input class="topic-name-input" id="translation-topic" type="text" maxlength="60" placeholder="Chọn hoặc nhập chủ đề" aria-label="Chủ đề" aria-controls="topic-options" aria-expanded="false" autocomplete="off">
               <button class="topic-list-toggle" id="topic-list-toggle" type="button" aria-label="Hiện danh sách chủ đề" aria-expanded="false" aria-controls="topic-options">
-                <svg viewBox="0 0 24 24" aria-hidden="true"><path d="m6 9 6 6 6-6"/></svg>
+                <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="11" cy="11" r="6"/><path d="m16 16 4 4"/></svg>
               </button>
             </div>
             <div class="topic-options" id="topic-options" role="listbox" aria-label="Danh sách chủ đề" hidden></div>
@@ -2008,8 +2011,15 @@
         ? exerciseGroups.map((group) => ({ value: group.id, label: group.label }))
         : [...new Set([
             ...readPersonalTopics(),
-            ...readPersonalMaterials().map(getMaterialTopic)
-          ])].map((topic) => ({ value: topic, label: topic }))
+            ...readPersonalMaterials().map(getMaterialTopic),
+            ...Object.keys(readPersonalDrafts() || {})
+          ].map((topic) => String(topic).replace(/\s+\(thiết bị(?: \d+)?\)$/iu, "").trim())
+            .filter(Boolean))].map((topic) => ({ value: topic, label: topic }))
+          .filter((topic, index, topics) =>
+            topics.findIndex((candidate) =>
+              candidate.label.toLocaleLowerCase() === topic.label.toLocaleLowerCase()
+            ) === index
+          )
           .sort((first, second) => first.label.localeCompare(second.label, "vi"));
     }
 
@@ -2037,14 +2047,41 @@
     function renderTopicOptions(topics) {
       const options = document.querySelector("#topic-options");
       options.replaceChildren();
-      if (!topics.length) {
+      const search = activeTranslationMode === "personal"
+        ? translationTopicInput.value.trim().toLocaleLowerCase()
+        : "";
+      const filteredTopics = search
+        ? topics.filter((topic) => topic.label.toLocaleLowerCase().includes(search))
+        : topics;
+
+      if (activeTranslationMode === "personal" && search) {
+        const exactMatch = topics.some((topic) => topic.label.toLocaleLowerCase() === search);
+        if (!exactMatch) {
+          const createButton = document.createElement("button");
+          createButton.className = "quiet-button topic-create-button";
+          createButton.type = "button";
+          createButton.innerHTML = '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><path d="M12 5v14M5 12h14"/></svg><span>Tạo chủ đề mới</span><span class="topic-create-search"></span>';
+          createButton.querySelector(".topic-create-search").textContent = `“${translationTopicInput.value.trim()}”`;
+          createButton.addEventListener("pointerdown", () => { topicOptionPointerDown = true; });
+          createButton.addEventListener("mousedown", (event) => event.preventDefault());
+          createButton.addEventListener("click", () => {
+            topicOptionPointerDown = false;
+            if (addPersonalTopic(translationTopicInput.value.trim())) {
+              closeTopicOptions();
+              sourceText.focus();
+            }
+          });
+          options.append(createButton);
+        }
+      }
+      if (!filteredTopics.length && !search) {
         const empty = document.createElement("p");
         empty.className = "topic-options-empty";
         empty.textContent = "Chưa có chủ đề. Nhập tên chủ đề mới.";
         options.append(empty);
         return;
       }
-      topics.forEach(({ value, label }) => {
+      filteredTopics.forEach(({ value, label }) => {
         const button = document.createElement("button");
         button.className = "quiet-button topic-option";
         button.type = "button";
@@ -5543,6 +5580,9 @@
       }
     });
     translationTopicInput.addEventListener("focus", openTopicOptions);
+    translationTopicInput.addEventListener("input", () => {
+      openTopicOptions();
+    });
     translationTopicInput.addEventListener("keydown", (event) => {
       if (event.key === "Escape") {
         closeTopicOptions();
