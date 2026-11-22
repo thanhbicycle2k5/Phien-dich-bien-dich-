@@ -726,8 +726,8 @@
     .practice-controls-panel { position: fixed; z-index: 25; left: max(12px, 16.5vw); bottom: 20px; display: grid; width: min(360px, calc(100vw - 24px)); max-height: min(52dvh, 420px); align-content: start; gap: 6px; overflow: auto; overscroll-behavior: contain; background: var(--white); box-shadow: 0 16px 48px rgba(15, 23, 42, .2); cursor: move; }
     .practice-controls-panel[hidden] { display: none; }
     .practice-controls-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -2px 0 2px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .5px; text-transform: uppercase; }
-    .practice-shortcuts { display: flex; flex-wrap: wrap; gap: 5px; margin: 0; color: var(--muted); font-size: 10px; }
-    .practice-shortcuts kbd { min-width: 20px; min-height: 20px; display: inline-grid; place-items: center; margin-right: 2px; border: 1px solid var(--line); border-bottom-width: 2px; border-radius: 5px; background: var(--white); color: var(--ink); font: 700 10px var(--sans); }
+    .practice-action-key { min-width: 22px; height: 22px; display: inline-grid; place-items: center; margin-left: 7px; border: 1px solid rgba(255, 255, 255, .55); border-bottom-width: 2px; border-radius: 5px; background: rgba(255, 255, 255, .16); color: inherit; font: 800 10px var(--sans); }
+    .quiet-button .practice-action-key { border-color: var(--line); background: var(--white); color: var(--ink); }
     .practice-controls-drag { width: 34px; min-width: 34px; min-height: 32px; border-color: var(--panel-border); cursor: grab; touch-action: none; }
     .practice-controls-drag:active { cursor: grabbing; }
     .practice-controls-drag svg { width: 16px; height: 16px; }
@@ -1438,13 +1438,6 @@
           </button>
         </div>
       </header>
-      <p class="practice-shortcuts" aria-label="Phím tắt điều khiển">
-        <span><kbd>Ctrl</kbd>Mở/đóng</span>
-        <span><kbd>L</kbd>Bắt đầu nghe</span>
-        <span><kbd>S</kbd>Dừng/dịch</span>
-        <span><kbd>C</kbd>Tiếp tục</span>
-        <span><kbd>R</kbd>Bắt đầu lại</span>
-      </p>
       <label class="practice-mode-control">
         <span class="field-label field-label-icon">
           <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4m4-6h4m4 8h4"/></svg>
@@ -1468,9 +1461,9 @@
       <p class="practice-status" id="speech-status" aria-live="polite">Chọn ngôn ngữ rồi nhấn bắt đầu</p>
       <div class="interpret-actions practice-controls">
         <div class="action-group">
-          <button class="primary-button" id="start-listening" type="button" aria-keyshortcuts="L" title="L: Bắt đầu nghe nguồn luyện tập"><span aria-hidden="true">●</span> Bắt đầu nói</button>
-          <button class="quiet-button" id="stop-listening" type="button" aria-keyshortcuts="S" title="S: Dừng mic và kết thúc ghi âm song song" disabled>Dừng mic</button>
-          <button class="quiet-button" id="restart-practice" type="button" aria-keyshortcuts="R" title="R: Bắt đầu lại hoặc kết thúc buổi luyện">Bắt đầu lại</button>
+          <button class="primary-button" id="start-listening" type="button" aria-keyshortcuts="L" title="L: Bắt đầu nghe nguồn luyện tập"><span aria-hidden="true">●</span> Bắt đầu nói<kbd class="practice-action-key">L</kbd></button>
+          <button class="quiet-button" id="stop-listening" type="button" aria-keyshortcuts="S" title="S: Dừng mic và kết thúc ghi âm song song" disabled>Dừng mic<kbd class="practice-action-key">S</kbd></button>
+          <button class="quiet-button" id="restart-practice" type="button" aria-keyshortcuts="R" title="R: Bắt đầu lại hoặc kết thúc buổi luyện">Bắt đầu lại<kbd class="practice-action-key">R</kbd></button>
           <button class="quiet-button icon-button save-practice-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu transcript, nguồn và bản ghi của buổi luyện" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
             <span>Lưu</span>
@@ -3794,14 +3787,15 @@
       localMediaInput.disabled = sourceLocked;
       const isConsecutive = activePracticeMode === "consecutive";
       stopButton.hidden = isConsecutive;
-      restartButton.textContent = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
+      const restartLabel = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
         ? "Kết thúc"
         : "Bắt đầu lại";
+      restartButton.innerHTML = `${restartLabel}<kbd class="practice-action-key">R</kbd>`;
       restartButton.title = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
         ? "R: Kết thúc buổi luyện nối tiếp"
         : "R: Đưa nguồn, đồng hồ và bản ghi về trạng thái ban đầu";
       if (!isConsecutive) {
-        startButton.textContent = "● Bắt đầu nói";
+        startButton.innerHTML = '● Bắt đầu nói<kbd class="practice-action-key">L</kbd>';
         startButton.disabled = Boolean(speechSessionActive) || (!SpeechRecognition && !canRecordAudio);
         startButton.title = speechSessionActive
           ? "Buổi nghe đang chạy"
@@ -3816,7 +3810,12 @@
         translating: "Tiếp tục",
         finished: "Tiếp tục"
       };
-      startButton.textContent = labels[consecutivePhase];
+      const startKey = consecutivePhase === "idle" || consecutivePhase === "finished"
+        ? "L"
+        : consecutivePhase === "listening"
+          ? "S"
+          : "C";
+      startButton.innerHTML = `${labels[consecutivePhase]}<kbd class="practice-action-key">${startKey}</kbd>`;
       startButton.disabled = !canRecordAudio;
       const startButtonHelp = {
         idle: "L: Bắt đầu nghe nguồn luyện tập",
