@@ -774,19 +774,20 @@
     .practice-controls-toggle:hover { border-color: var(--blue-dark); background: var(--blue-dark); }
     .ai-translator-launcher {
       position: fixed;
-      z-index: 30;
+      z-index: 1001;
       right: 22px;
       bottom: 22px;
-      min-width: 112px;
-      min-height: 48px;
+      width: 52px;
+      min-width: 52px;
+      height: 52px;
+      min-height: 52px;
       display: flex;
       align-items: center;
       justify-content: center;
-      gap: 8px;
       touch-action: none;
       user-select: none;
       border: 1px solid #4338ca;
-      border-radius: 24px;
+      border-radius: 50%;
       background: #4f46e5;
       color: #fff;
       box-shadow: 0 12px 28px rgba(79, 70, 229, .28);
@@ -870,6 +871,17 @@
     }
     .ai-translator-status { min-height: 18px; margin: 0; color: var(--muted); font-size: 12px; }
     .ai-translator-status.is-error { color: #9a3412; }
+    :root[data-theme="dark"] .ai-translator-popup,
+    :root[data-theme="dark"] .ai-translator-head { background: #18181b; border-color: #3f3f46; }
+    :root[data-theme="dark"] .ai-translator-title { color: #f4f4f5; }
+    :root[data-theme="dark"] .ai-translator-label { color: #a5b4fc; }
+    :root[data-theme="dark"] .ai-translator-text,
+    :root[data-theme="dark"] .ai-translator-output { background: #202024; color: #f4f4f5; border-color: #52525b; caret-color: #a5b4fc; }
+    :root[data-theme="dark"] .ai-translator-text::placeholder { color: #a1a1aa; opacity: 1; }
+    :root[data-theme="dark"] .ai-translator-swap { background: #27272a; color: #c7d2fe; border-color: #52525b; }
+    :root[data-theme="dark"] .ai-translator-swap:hover { background: #30303a; color: #fff; }
+    :root[data-theme="dark"] .ai-translator-status { color: #d4d4d8; }
+    :root[data-theme="dark"] .ai-translator-status.is-error { color: #fda4af; }
     .practice-mode-control { margin: 0; }
     .practice-mode-control select { width: 100%; }
     .language-control { width: 100%; }
@@ -1120,7 +1132,7 @@
       .practice-controls-panel { right: 12px; bottom: 12px; left: 12px; width: auto; max-height: min(55dvh, 420px); }
       .practice-resize-handle { display: none; }
       .practice-controls-toggle { right: 12px; bottom: 12px; left: 12px; width: max-content; max-width: calc(100vw - 24px); justify-self: start; }
-      .ai-translator-launcher { right: 14px; bottom: 14px; min-width: 104px; min-height: 44px; }
+      .ai-translator-launcher { right: 14px; bottom: 14px; width: 48px; min-width: 48px; height: 48px; min-height: 48px; }
       .ai-translator-popup { right: 12px; bottom: 68px; width: calc(100vw - 24px); max-height: calc(100dvh - 88px); overflow-y: auto; }
       .ai-translator-grid { grid-template-columns: 1fr; gap: 6px; }
       .ai-translator-swap { transform: rotate(90deg); }
@@ -1683,7 +1695,6 @@
     </main>
     <button class="ai-translator-launcher" id="ai-translator-launcher" type="button" aria-expanded="false" aria-controls="ai-translator-popup" title="Mở AI dịch">
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7-7 7 7"/><path d="M12 1v20"/><path d="M5 16h14"/><path d="m8 13-3 3 3 3M16 13l3 3-3 3"/></svg>
-      <span>AI dịch</span>
     </button>
     <section class="ai-translator-popup" id="ai-translator-popup" aria-label="AI dịch bằng DeepL" hidden>
       <header class="ai-translator-head">
@@ -4063,8 +4074,7 @@
       document.querySelector("#tab-translate").setAttribute("aria-selected", String(translating));
       document.querySelector("#tab-interpret").setAttribute("aria-selected", String(!translating));
       const aiLauncher = document.querySelector("#ai-translator-launcher");
-      aiLauncher.hidden = !translating;
-      if (!translating) document.querySelector("#ai-translator-popup").hidden = true;
+      aiLauncher.hidden = false;
       if (translating) {
         setPracticeControlsOpen(false);
       } else if (localPracticeMediaFile || activePracticeSource === "youtube") {
@@ -6434,7 +6444,10 @@
     });
     document.querySelector("#run-ai-translation").addEventListener("click", runAiTranslation);
     document.querySelector("#ai-translator-source").addEventListener("keydown", (event) => {
-      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+      if (event.key === "Enter" && (event.ctrlKey || event.metaKey)) {
+        return;
+      }
+      if (event.key === "Enter" && !event.shiftKey) {
         event.preventDefault();
         runAiTranslation();
       }
@@ -6443,8 +6456,12 @@
     try {
       const savedPosition = JSON.parse(window.localStorage.getItem("interslation-ai-translator-position-v1") || "null");
       if (savedPosition?.left && savedPosition?.top) {
-        aiTranslatorLauncher.style.left = savedPosition.left;
-        aiTranslatorLauncher.style.top = savedPosition.top;
+        const left = Number.parseFloat(savedPosition.left);
+        const top = Number.parseFloat(savedPosition.top);
+        const safeLeft = Math.max(8, Math.min(Number.isFinite(left) ? left : window.innerWidth - aiTranslatorLauncher.offsetWidth - 22, window.innerWidth - aiTranslatorLauncher.offsetWidth - 8));
+        const safeTop = Math.max(8, Math.min(Number.isFinite(top) ? top : window.innerHeight - aiTranslatorLauncher.offsetHeight - 22, window.innerHeight - aiTranslatorLauncher.offsetHeight - 8));
+        aiTranslatorLauncher.style.left = `${safeLeft}px`;
+        aiTranslatorLauncher.style.top = `${safeTop}px`;
         aiTranslatorLauncher.style.right = "auto";
         aiTranslatorLauncher.style.bottom = "auto";
       }
@@ -6783,6 +6800,7 @@
       document.querySelector("#speech-language").value = savedSpeechLanguage;
     }
     setMode(initialAppPreferences.appMode === "interpret" ? "interpret" : "translate");
+    document.querySelector("#ai-translator-launcher").hidden = false;
     setSidebarExpanded(initialAppPreferences.sidebarCollapsed !== true);
     setHistorySidebarExpanded(initialAppPreferences.historySidebarExpanded !== false);
     setTranslationSettingsExpanded(initialAppPreferences.translationSettingsExpanded !== false);
