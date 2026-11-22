@@ -772,6 +772,104 @@
     .practice-controls-close svg, .practice-controls-toggle svg { width: 17px; height: 17px; }
     .practice-controls-toggle { position: fixed; z-index: 24; left: max(12px, 16.5vw); bottom: 20px; min-height: 42px; border-color: var(--blue); background: var(--blue); color: var(--white); box-shadow: 0 8px 24px rgba(15, 23, 42, .2); }
     .practice-controls-toggle:hover { border-color: var(--blue-dark); background: var(--blue-dark); }
+    .ai-translator-launcher {
+      position: fixed;
+      z-index: 30;
+      right: 22px;
+      bottom: 22px;
+      min-width: 112px;
+      min-height: 48px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      touch-action: none;
+      user-select: none;
+      border: 1px solid #4338ca;
+      border-radius: 24px;
+      background: #4f46e5;
+      color: #fff;
+      box-shadow: 0 12px 28px rgba(79, 70, 229, .28);
+      cursor: grab;
+      font-weight: 800;
+    }
+    .ai-translator-launcher:active { cursor: grabbing; }
+    .ai-translator-launcher svg { width: 20px; height: 20px; flex: 0 0 20px; }
+    .ai-translator-launcher[hidden] { display: none; }
+    .ai-translator-popup {
+      position: fixed;
+      z-index: 29;
+      right: 22px;
+      bottom: 82px;
+      width: min(620px, calc(100vw - 44px));
+      overflow: hidden;
+      border: 1px solid var(--line);
+      border-radius: 16px;
+      background: var(--white);
+      box-shadow: 0 18px 52px rgba(15, 23, 42, .22);
+    }
+    .ai-translator-popup[hidden] { display: none; }
+    .ai-translator-head {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      min-height: 48px;
+      padding: 8px 10px 8px 16px;
+      border-bottom: 1px solid var(--line);
+    }
+    .ai-translator-title { display: flex; align-items: center; gap: 8px; margin: 0; font-size: 15px; }
+    .ai-translator-title svg { width: 18px; height: 18px; color: var(--blue); }
+    .ai-translator-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+      align-items: center;
+      padding: 12px;
+    }
+    .ai-translator-side { min-width: 0; }
+    .ai-translator-label {
+      display: block;
+      min-height: 24px;
+      margin-bottom: 5px;
+      color: var(--blue-dark);
+      font-size: 12px;
+      font-weight: 800;
+    }
+    .ai-translator-text {
+      width: 100%;
+      min-height: 150px;
+      resize: vertical;
+      padding: 12px;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      background: var(--soft-blue);
+      color: var(--ink);
+      font: 15px/1.55 var(--sans);
+    }
+    .ai-translator-output { background: #fff; }
+    .ai-translator-swap {
+      width: 36px;
+      height: 36px;
+      display: grid;
+      place-items: center;
+      justify-self: center;
+      padding: 0;
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--white);
+      color: var(--blue);
+      cursor: pointer;
+    }
+    .ai-translator-swap:hover { background: var(--soft-accent); }
+    .ai-translator-swap svg { width: 18px; height: 18px; }
+    .ai-translator-actions {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      padding: 0 12px 12px;
+    }
+    .ai-translator-status { min-height: 18px; margin: 0; color: var(--muted); font-size: 12px; }
+    .ai-translator-status.is-error { color: #9a3412; }
     .practice-mode-control { margin: 0; }
     .practice-mode-control select { width: 100%; }
     .language-control { width: 100%; }
@@ -1022,6 +1120,11 @@
       .practice-controls-panel { right: 12px; bottom: 12px; left: 12px; width: auto; max-height: min(55dvh, 420px); }
       .practice-resize-handle { display: none; }
       .practice-controls-toggle { right: 12px; bottom: 12px; left: 12px; width: max-content; max-width: calc(100vw - 24px); justify-self: start; }
+      .ai-translator-launcher { right: 14px; bottom: 14px; min-width: 104px; min-height: 44px; }
+      .ai-translator-popup { right: 12px; bottom: 68px; width: calc(100vw - 24px); max-height: calc(100dvh - 88px); overflow-y: auto; }
+      .ai-translator-grid { grid-template-columns: 1fr; gap: 6px; }
+      .ai-translator-swap { transform: rotate(90deg); }
+      .ai-translator-text { min-height: 110px; }
       .sidebar-content > .intro, .sidebar-content > .quick-guide { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-content > :not(.sidebar-navigation) { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-navigation { padding: 8px; }
@@ -1578,6 +1681,36 @@
         </div>
       </aside>
     </main>
+    <button class="ai-translator-launcher" id="ai-translator-launcher" type="button" aria-expanded="false" aria-controls="ai-translator-popup" title="Mở AI dịch">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m5 8 7-7 7 7"/><path d="M12 1v20"/><path d="M5 16h14"/><path d="m8 13-3 3 3 3M16 13l3 3-3 3"/></svg>
+      <span>AI dịch</span>
+    </button>
+    <section class="ai-translator-popup" id="ai-translator-popup" aria-label="AI dịch bằng DeepL" hidden>
+      <header class="ai-translator-head">
+        <h2 class="ai-translator-title">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3 3 7l9 4 9-4-9-4Z"/><path d="m3 12 9 4 9-4M3 17l9 4 9-4"/></svg>
+          AI dịch
+        </h2>
+        <button class="quiet-button deepl-modal-close" id="close-ai-translator" type="button" aria-label="Đóng AI dịch" title="Đóng">×</button>
+      </header>
+      <div class="ai-translator-grid">
+        <div class="ai-translator-side">
+          <span class="ai-translator-label" id="ai-source-label">Tiếng Việt</span>
+          <textarea class="ai-translator-text" id="ai-translator-source" maxlength="5000" placeholder="Nhập văn bản để dịch..." aria-label="Văn bản nguồn"></textarea>
+        </div>
+        <button class="ai-translator-swap" id="swap-ai-direction" type="button" aria-label="Đổi chiều dịch" title="Đổi chiều dịch">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M7 7h11l-3-3M18 7l-3 3M17 17H6l3 3M6 17l3-3"/></svg>
+        </button>
+        <div class="ai-translator-side">
+          <span class="ai-translator-label" id="ai-target-label">Tiếng Anh</span>
+          <textarea class="ai-translator-text ai-translator-output" id="ai-translator-output" placeholder="Bản dịch" aria-label="Bản dịch" readonly></textarea>
+        </div>
+      </div>
+      <div class="ai-translator-actions">
+        <p class="ai-translator-status" id="ai-translator-status" role="status" aria-live="polite"></p>
+        <button class="primary-button" id="run-ai-translation" type="button">Dịch</button>
+      </div>
+    </section>
     <button class="primary-button practice-controls-toggle" id="toggle-practice-controls" type="button" aria-expanded="false" aria-controls="practice-controls-panel" aria-keyshortcuts="Control" title="Ctrl: Mở bảng điều khiển phiên dịch" hidden>
       <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 21v-7m0-4V3m8 18v-9m0-4V3m8 18v-5m0-4V3M2 14h4m4-6h4m4 8h4"/></svg>
       Chế độ phiên dịch
@@ -3120,6 +3253,86 @@
       if (!settings.open) settings.showModal();
     }
 
+    let aiTranslatorDirection = "VI_EN";
+    let aiTranslationTimer = null;
+    let aiTranslationInProgress = false;
+
+    function setAiTranslatorDirection(direction) {
+      aiTranslatorDirection = direction === "EN_VI" ? "EN_VI" : "VI_EN";
+      document.querySelector("#ai-source-label").textContent =
+        aiTranslatorDirection === "VI_EN" ? "Tiếng Việt" : "Tiếng Anh";
+      document.querySelector("#ai-target-label").textContent =
+        aiTranslatorDirection === "VI_EN" ? "Tiếng Anh" : "Tiếng Việt";
+    }
+
+    function positionAiTranslatorPopup() {
+      const launcher = document.querySelector("#ai-translator-launcher");
+      const popup = document.querySelector("#ai-translator-popup");
+      if (popup.hidden) return;
+      const popupWidth = Math.min(620, window.innerWidth - 44);
+      const launcherRect = launcher.getBoundingClientRect();
+      const popupRect = popup.getBoundingClientRect();
+      let left = launcherRect.left + (launcherRect.width - popupWidth) / 2;
+      left = Math.max(12, Math.min(left, window.innerWidth - popupWidth - 12));
+      let top = launcherRect.top - popupRect.height - 12;
+      if (top < 12) top = Math.min(launcherRect.bottom + 12, window.innerHeight - popupRect.height - 12);
+      popup.style.left = `${left}px`;
+      popup.style.top = `${Math.max(12, top)}px`;
+      popup.style.right = "auto";
+      popup.style.bottom = "auto";
+    }
+
+    function setAiTranslatorStatus(message, isError = false) {
+      const status = document.querySelector("#ai-translator-status");
+      status.textContent = message;
+      status.classList.toggle("is-error", isError);
+    }
+
+    async function runAiTranslation() {
+      const source = document.querySelector("#ai-translator-source").value.trim();
+      const output = document.querySelector("#ai-translator-output");
+      if (!source) {
+        output.value = "";
+        setAiTranslatorStatus("Hãy nhập văn bản cần dịch.");
+        return;
+      }
+
+      let apiKey = "";
+      try {
+        apiKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
+      } catch (error) {
+        setAiTranslatorStatus("Không thể đọc khóa DeepL.", true);
+        return;
+      }
+      if (!apiKey) {
+        setAiTranslatorStatus("Hãy lưu khóa DeepL API trước khi dịch.", true);
+        openDeepLSettings();
+        deeplApiKeyInput.focus();
+        return;
+      }
+
+      const sourceLanguage = aiTranslatorDirection === "VI_EN" ? "VI" : "EN";
+      const targetLanguage = aiTranslatorDirection === "VI_EN" ? "EN" : "VI";
+      const button = document.querySelector("#run-ai-translation");
+      aiTranslationInProgress = true;
+      button.disabled = true;
+      button.textContent = "Đang dịch...";
+      setAiTranslatorStatus("Đang dịch bằng DeepL...");
+      try {
+        const result = await requestDeepLTranslation(apiKey, source, sourceLanguage, targetLanguage);
+        const translatedText = result.translations?.[0]?.text?.trim();
+        if (!translatedText) throw new Error("DeepL không trả về nội dung bản dịch.");
+        output.value = translatedText;
+        setAiTranslatorStatus("Đã dịch bằng DeepL.");
+      } catch (error) {
+        setAiTranslatorStatus(error.message || "Không thể dịch bằng DeepL.", true);
+      } finally {
+        aiTranslationInProgress = false;
+        button.disabled = false;
+        button.textContent = "Dịch";
+      }
+    }
+
     function loadDeepLKey() {
       try {
         const savedKey = window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "";
@@ -3849,6 +4062,9 @@
       document.querySelector("#history-panel").hidden = translating;
       document.querySelector("#tab-translate").setAttribute("aria-selected", String(translating));
       document.querySelector("#tab-interpret").setAttribute("aria-selected", String(!translating));
+      const aiLauncher = document.querySelector("#ai-translator-launcher");
+      aiLauncher.hidden = !translating;
+      if (!translating) document.querySelector("#ai-translator-popup").hidden = true;
       if (translating) {
         setPracticeControlsOpen(false);
       } else if (localPracticeMediaFile || activePracticeSource === "youtube") {
@@ -6146,6 +6362,93 @@
     document.querySelector("#deepl-settings").addEventListener("click", (event) => {
       if (event.target === event.currentTarget) event.currentTarget.close();
     });
+    const aiTranslatorLauncher = document.querySelector("#ai-translator-launcher");
+    const aiTranslatorPopup = document.querySelector("#ai-translator-popup");
+    let aiDragState = null;
+    let aiDragMoved = false;
+
+    aiTranslatorLauncher.addEventListener("pointerdown", (event) => {
+      if (event.button !== 0) return;
+      const rect = aiTranslatorLauncher.getBoundingClientRect();
+      aiDragState = {
+        pointerId: event.pointerId,
+        offsetX: event.clientX - rect.left,
+        offsetY: event.clientY - rect.top
+      };
+      aiDragMoved = false;
+      aiTranslatorLauncher.setPointerCapture(event.pointerId);
+    });
+    aiTranslatorLauncher.addEventListener("pointermove", (event) => {
+      if (!aiDragState || aiDragState.pointerId !== event.pointerId) return;
+      aiDragMoved = true;
+      const width = aiTranslatorLauncher.offsetWidth;
+      const height = aiTranslatorLauncher.offsetHeight;
+      const left = Math.max(8, Math.min(event.clientX - aiDragState.offsetX, window.innerWidth - width - 8));
+      const top = Math.max(8, Math.min(event.clientY - aiDragState.offsetY, window.innerHeight - height - 8));
+      aiTranslatorLauncher.style.left = `${left}px`;
+      aiTranslatorLauncher.style.top = `${top}px`;
+      aiTranslatorLauncher.style.right = "auto";
+      aiTranslatorLauncher.style.bottom = "auto";
+      positionAiTranslatorPopup();
+    });
+    aiTranslatorLauncher.addEventListener("pointerup", (event) => {
+      if (!aiDragState || aiDragState.pointerId !== event.pointerId) return;
+      if (aiTranslatorLauncher.hasPointerCapture(event.pointerId)) {
+        aiTranslatorLauncher.releasePointerCapture(event.pointerId);
+      }
+      aiDragState = null;
+      try {
+        window.localStorage.setItem("interslation-ai-translator-position-v1", JSON.stringify({
+          left: aiTranslatorLauncher.style.left,
+          top: aiTranslatorLauncher.style.top
+        }));
+      } catch (error) {}
+      window.setTimeout(() => { aiDragMoved = false; }, 0);
+    });
+    aiTranslatorLauncher.addEventListener("pointercancel", () => {
+      aiDragState = null;
+      window.setTimeout(() => { aiDragMoved = false; }, 0);
+    });
+    aiTranslatorLauncher.addEventListener("click", () => {
+      if (aiDragMoved) return;
+      aiTranslatorPopup.hidden = !aiTranslatorPopup.hidden;
+      aiTranslatorLauncher.setAttribute("aria-expanded", String(!aiTranslatorPopup.hidden));
+      if (!aiTranslatorPopup.hidden) {
+        positionAiTranslatorPopup();
+        document.querySelector("#ai-translator-source").focus();
+      }
+    });
+    document.querySelector("#close-ai-translator").addEventListener("click", () => {
+      aiTranslatorPopup.hidden = true;
+      aiTranslatorLauncher.setAttribute("aria-expanded", "false");
+    });
+    document.querySelector("#swap-ai-direction").addEventListener("click", () => {
+      const source = document.querySelector("#ai-translator-source");
+      const output = document.querySelector("#ai-translator-output");
+      const previousOutput = output.value.trim();
+      if (previousOutput) source.value = previousOutput;
+      output.value = "";
+      setAiTranslatorDirection(aiTranslatorDirection === "VI_EN" ? "EN_VI" : "VI_EN");
+      setAiTranslatorStatus(previousOutput ? "Chiều dịch đã đổi." : "Chiều dịch đã đổi.");
+      if (source.value.trim()) runAiTranslation();
+    });
+    document.querySelector("#run-ai-translation").addEventListener("click", runAiTranslation);
+    document.querySelector("#ai-translator-source").addEventListener("keydown", (event) => {
+      if ((event.ctrlKey || event.metaKey) && event.key === "Enter") {
+        event.preventDefault();
+        runAiTranslation();
+      }
+    });
+    window.addEventListener("resize", positionAiTranslatorPopup);
+    try {
+      const savedPosition = JSON.parse(window.localStorage.getItem("interslation-ai-translator-position-v1") || "null");
+      if (savedPosition?.left && savedPosition?.top) {
+        aiTranslatorLauncher.style.left = savedPosition.left;
+        aiTranslatorLauncher.style.top = savedPosition.top;
+        aiTranslatorLauncher.style.right = "auto";
+        aiTranslatorLauncher.style.bottom = "auto";
+      }
+    } catch (error) {}
     document.querySelector("#load-youtube").addEventListener("click", loadYouTubeVideo);
     document.querySelector("#toggle-practice-controls").addEventListener("click", () => {
       setPracticeControlsOpen(true);
