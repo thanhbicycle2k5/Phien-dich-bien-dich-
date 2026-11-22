@@ -327,11 +327,35 @@
 
     .translation-grid {
       display: grid;
-      grid-template-columns: 1fr 1fr;
+      grid-template-columns: minmax(0, 1fr) 44px minmax(0, 1fr);
+      align-items: stretch;
     }
 
     .translation-pane { min-width: 0; padding: 22px; }
-    .translation-pane + .translation-pane { border-left: 1px solid var(--panel-border); }
+    .translation-pane { border-right: 0; }
+    #answer-pane { border-left: 1px solid var(--panel-border); }
+    .swap-direction-button {
+      position: relative;
+      z-index: 2;
+      width: 40px;
+      height: 40px;
+      align-self: start;
+      justify-self: center;
+      display: grid;
+      place-items: center;
+      margin-top: 21px;
+      padding: 0;
+      transform: translateX(-1px);
+      border: 1px solid var(--line);
+      border-radius: 50%;
+      background: var(--white);
+      color: var(--blue);
+      box-shadow: 0 4px 14px rgba(37, 99, 235, .12);
+      cursor: pointer;
+    }
+    .swap-direction-button:hover { background: var(--soft-accent); color: var(--blue-dark); }
+    .swap-direction-button svg { width: 20px; height: 20px; }
+    .swap-direction-button[hidden] { display: none; }
 
     .pane-top {
       min-height: 42px;
@@ -969,7 +993,8 @@
 
     @media (max-width: 950px) and (min-width: 781px) {
       .translation-grid { grid-template-columns: minmax(0, 1fr); gap: 12px; padding: 14px; }
-      .translation-pane + .translation-pane { border-left: 1px solid var(--panel-border); }
+      .swap-direction-button { margin: 0; }
+      #answer-pane { border-top: 1px solid var(--panel-border); border-left: 1px solid var(--panel-border); }
       .translation-pane .text-area { height: clamp(180px, 28vh, 300px); }
       .interpret-body { gap: 14px; }
     }
@@ -1011,7 +1036,8 @@
       .translation-pane .pane-top { align-items: center; flex-wrap: wrap; }
       .translation-pane .pane-tools { gap: 3px; margin-left: auto; }
       .translation-pane .pane-tools .tool-button { width: 32px; min-width: 32px; min-height: 32px; }
-      .translation-pane + .translation-pane { border-top: 1px solid var(--panel-border); border-left: 1px solid var(--panel-border); }
+      .swap-direction-button { margin: 0; }
+      #answer-pane { border-top: 1px solid var(--panel-border); border-left: 1px solid var(--panel-border); }
       .workspace-head { padding: 12px 16px; }
       .translation-settings > .selector-row { padding: 12px 16px; }
       .selector-row, .selector-row label { width: 100%; }
@@ -1174,12 +1200,10 @@
             <select id="industry-select" aria-hidden="true" tabindex="-1" hidden></select>
           </div>
           <div class="personal-controls" id="personal-controls" hidden>
-            <label class="file-control direction-control" for="personal-direction">Chiều dịch
-              <select class="exercise-select" id="personal-direction" aria-label="Chọn chiều dịch">
-                <option value="VI_EN">Tiếng Việt → Tiếng Anh</option>
-                <option value="EN_VI">Tiếng Anh → Tiếng Việt</option>
-              </select>
-            </label>
+            <select id="personal-direction" aria-label="Chọn chiều dịch" hidden>
+              <option value="VI_EN">Tiếng Việt → Tiếng Anh</option>
+              <option value="EN_VI">Tiếng Anh → Tiếng Việt</option>
+            </select>
             <label class="file-control" for="source-file">Tải tài liệu .txt hoặc .docx
               <input id="source-file" type="file" accept=".txt,.docx,text/plain,application/vnd.openxmlformats-officedocument.wordprocessingml.document">
             </label>
@@ -1319,7 +1343,7 @@
         <div class="translation-grid">
           <section class="translation-pane" aria-labelledby="source-label">
             <div class="pane-top">
-              <label class="field-label" id="source-label" for="source-text">Văn bản gốc <span id="source-language">EN</span></label>
+              <label class="field-label" id="source-label" for="source-text">Văn bản gốc <span id="source-language">Tiếng Anh</span></label>
               <div class="pane-tools">
                 <button class="tool-button history-button" id="copy-source" type="button" title="Sao chép văn bản gốc" aria-label="Sao chép văn bản gốc">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
@@ -1345,9 +1369,18 @@
             <p class="ocr-status" id="ocr-status" role="status" aria-live="polite" hidden></p>
           </section>
 
-          <section class="translation-pane" aria-labelledby="answer-label">
+          <button class="swap-direction-button" id="swap-personal-direction" type="button" title="Đổi chiều dịch" aria-label="Đổi chiều dịch" hidden>
+            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M7 7h11l-3-3"/>
+              <path d="m18 7-3 3"/>
+              <path d="M17 17H6l3 3"/>
+              <path d="m6 17 3-3"/>
+            </svg>
+          </button>
+
+          <section class="translation-pane" id="answer-pane" aria-labelledby="answer-label">
             <div class="pane-top">
-              <label class="field-label" id="answer-label" for="answer-text">Bản dịch của bạn <span id="target-language">VI</span></label>
+              <label class="field-label" id="answer-label" for="answer-text">Bản dịch của bạn <span id="target-language">Tiếng Việt</span></label>
               <div class="pane-tools">
                 <button class="tool-button history-button" id="copy-answer" type="button" title="Sao chép bản dịch" aria-label="Sao chép bản dịch">
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a2 2 0 0 0-2-2H5a2 2 0 0 0-2 2v9a2 2 0 0 0 2 2h3"/></svg>
@@ -2438,8 +2471,8 @@
       const exercise = currentExercises()[Number(exerciseSelect.value)];
       if (!exercise) return;
       sourceText.value = exercise.source;
-      document.querySelector("#source-language").textContent = "EN";
-      document.querySelector("#target-language").textContent = "VI";
+      document.querySelector("#source-language").textContent = "Tiếng Anh";
+      document.querySelector("#target-language").textContent = "Tiếng Việt";
       answerText.value = "";
       resetEditHistory(sourceText);
       resetEditHistory(answerText);
@@ -2547,8 +2580,8 @@
     }
 
     function updatePersonalDirectionLabels() {
-      const sourceLanguage = personalDirection === "VI_EN" ? "VI" : "EN";
-      const targetLanguage = personalDirection === "VI_EN" ? "EN" : "VI";
+      const sourceLanguage = personalDirection === "VI_EN" ? "Tiếng Việt" : "Tiếng Anh";
+      const targetLanguage = personalDirection === "VI_EN" ? "Tiếng Anh" : "Tiếng Việt";
       document.querySelector("#source-language").textContent = sourceLanguage;
       document.querySelector("#target-language").textContent = targetLanguage;
       sourceText.placeholder = `Nhập văn bản ${sourceLanguage}...`;
@@ -2601,6 +2634,7 @@
 
       populateTopics(personal ? personalDraftTopic : industrySelect.value);
       closeTopicOptions();
+      document.querySelector("#swap-personal-direction").hidden = !personal;
       if (personal) {
         personalDirection = personalDraft.direction || "VI_EN";
         document.querySelector("#personal-direction").value = personalDirection;
@@ -2614,8 +2648,8 @@
           personalKeywords.value = "";
         }
       } else {
-        document.querySelector("#source-language").textContent = "EN";
-        document.querySelector("#target-language").textContent = "VI";
+        document.querySelector("#source-language").textContent = "Tiếng Anh";
+        document.querySelector("#target-language").textContent = "Tiếng Việt";
         sourceText.placeholder = "";
         answerText.placeholder = "Viết bản dịch của bạn...";
         populateExercises();
@@ -5941,6 +5975,12 @@
     });
     document.querySelector("#personal-direction").addEventListener("change", (event) => {
       changePersonalDirection(event.currentTarget.value);
+    });
+    document.querySelector("#swap-personal-direction").addEventListener("click", () => {
+      if (activeTranslationMode !== "personal") return;
+      const direction = personalDirection === "VI_EN" ? "EN_VI" : "VI_EN";
+      document.querySelector("#personal-direction").value = direction;
+      changePersonalDirection(direction);
     });
     translationTopicInput.addEventListener("input", () => {
       const enteredTopic = translationTopicInput.value.trim();
