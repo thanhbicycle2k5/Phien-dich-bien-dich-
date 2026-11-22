@@ -728,14 +728,22 @@
     .local-media-input { max-width: 100%; }
     .practice-controls-panel { position: fixed; z-index: 25; left: max(12px, 16.5vw); bottom: 20px; display: grid; width: min(360px, calc(100vw - 24px)); max-height: min(52dvh, 420px); align-content: start; gap: 6px; overflow: auto; overscroll-behavior: contain; background: var(--white); box-shadow: 0 16px 48px rgba(15, 23, 42, .2); cursor: move; }
     .practice-controls-panel[hidden] { display: none; }
+    .practice-resize-handle { position: absolute; z-index: 4; width: 16px; height: 16px; touch-action: none; }
+    .practice-resize-handle[data-resize="nw"] { top: 0; left: 0; cursor: nwse-resize; }
+    .practice-resize-handle[data-resize="ne"] { top: 0; right: 0; cursor: nesw-resize; }
+    .practice-resize-handle[data-resize="sw"] { bottom: 0; left: 0; cursor: nesw-resize; }
+    .practice-resize-handle[data-resize="se"] { right: 0; bottom: 0; cursor: nwse-resize; }
+    .practice-resize-handle::after { content: ""; position: absolute; width: 7px; height: 7px; opacity: 0; border-radius: 50%; background: var(--blue); transition: opacity .15s ease, transform .15s ease; }
+    .practice-resize-handle:hover::after, .practice-resize-handle:active::after { opacity: .9; transform: scale(1.15); }
+    .practice-resize-handle[data-resize="nw"]::after { top: 4px; left: 4px; }
+    .practice-resize-handle[data-resize="ne"]::after { top: 4px; right: 4px; }
+    .practice-resize-handle[data-resize="sw"]::after { bottom: 4px; left: 4px; }
+    .practice-resize-handle[data-resize="se"]::after { right: 4px; bottom: 4px; }
     .practice-controls-header { display: flex; align-items: center; justify-content: space-between; gap: 8px; margin: -2px 0 2px; color: var(--muted); font-size: 11px; font-weight: 750; letter-spacing: .5px; text-transform: uppercase; }
     .practice-controls-header { cursor: grab; touch-action: none; user-select: none; }
     .practice-controls-header:active { cursor: grabbing; }
     .practice-action-key { min-width: 22px; height: 22px; display: inline-grid; place-items: center; margin-left: 7px; border: 1px solid rgba(255, 255, 255, .55); border-bottom-width: 2px; border-radius: 5px; background: rgba(255, 255, 255, .16); color: inherit; font: 800 10px var(--sans); }
     .quiet-button .practice-action-key { border-color: var(--line); background: var(--white); color: var(--ink); }
-    .practice-controls-drag { width: 34px; min-width: 34px; min-height: 32px; border-color: var(--panel-border); cursor: grab; touch-action: none; }
-    .practice-controls-drag:active { cursor: grabbing; }
-    .practice-controls-drag svg { width: 16px; height: 16px; }
     .practice-controls-close { width: 34px; min-width: 34px; min-height: 32px; padding: 0; }
     .practice-controls-close svg, .practice-controls-toggle svg { width: 17px; height: 17px; }
     .practice-controls-toggle { position: fixed; z-index: 24; left: max(12px, 16.5vw); bottom: 20px; min-height: 42px; border-color: var(--blue); background: var(--blue); color: var(--white); box-shadow: 0 8px 24px rgba(15, 23, 42, .2); }
@@ -987,6 +995,7 @@
       .history-sidebar-card { max-height: 480px; }
       #toggle-history-nav { display: none; }
       .practice-controls-panel { right: 12px; bottom: 12px; left: 12px; width: auto; max-height: min(55dvh, 420px); }
+      .practice-resize-handle { display: none; }
       .practice-controls-toggle { right: 12px; bottom: 12px; left: 12px; width: max-content; max-width: calc(100vw - 24px); justify-self: start; }
       .sidebar-content > .intro, .sidebar-content > .quick-guide { display: none; }
       .app-layout.is-sidebar-collapsed .sidebar-content > :not(.sidebar-navigation) { display: none; }
@@ -1541,16 +1550,15 @@
       Chế độ phiên dịch
     </button>
     <section class="practice-controls-panel" id="practice-controls-panel" aria-label="Điều khiển buổi luyện tập" hidden>
+      <span class="practice-resize-handle" data-resize="nw" aria-hidden="true"></span>
+      <span class="practice-resize-handle" data-resize="ne" aria-hidden="true"></span>
+      <span class="practice-resize-handle" data-resize="sw" aria-hidden="true"></span>
+      <span class="practice-resize-handle" data-resize="se" aria-hidden="true"></span>
       <header class="practice-controls-header">
         <span>Điều khiển</span>
-        <div class="action-group">
-          <button class="quiet-button practice-controls-drag" id="practice-controls-drag" type="button" aria-label="Di chuyển bảng điều khiển; dùng phím mũi tên để di chuyển, Home để đặt lại" aria-keyshortcuts="ArrowUp ArrowDown ArrowLeft ArrowRight Home">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M8 5h.01M16 5h.01M8 12h.01M16 12h.01M8 19h.01M16 19h.01"/></svg>
-          </button>
-          <button class="quiet-button practice-controls-close" id="close-practice-controls" type="button" aria-label="Đóng bảng điều khiển phiên dịch" title="Đóng">
-            <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg>
-          </button>
-        </div>
+        <button class="quiet-button practice-controls-close" id="close-practice-controls" type="button" aria-label="Đóng bảng điều khiển phiên dịch" title="Đóng">
+          <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m18 6-12 12M6 6l12 12"/></svg>
+        </button>
       </header>
       <label class="practice-mode-control">
         <span class="field-label field-label-icon">
@@ -3831,7 +3839,9 @@
       if (!panel.style.left || !panel.style.top) return;
       window.localStorage.setItem("interslation-practice-panel-position-v1", JSON.stringify({
         left: panel.style.left,
-        top: panel.style.top
+        top: panel.style.top,
+        width: panel.style.width,
+        height: panel.style.height
       }));
     }
 
@@ -3845,12 +3855,21 @@
           const top = Number.parseFloat(position.top);
           if (Number.isFinite(left) && Number.isFinite(top)) {
             const rect = panel.getBoundingClientRect();
-            const width = Math.min(rect.width, window.innerWidth - 16);
-            const height = Math.min(rect.height, window.innerHeight - 16);
+            const savedWidth = Number.parseFloat(position.width);
+            const savedHeight = Number.parseFloat(position.height);
+            const width = Number.isFinite(savedWidth)
+              ? Math.min(Math.max(savedWidth, 240), window.innerWidth - 16)
+              : Math.min(rect.width, window.innerWidth - 16);
+            const height = Number.isFinite(savedHeight)
+              ? Math.min(Math.max(savedHeight, 220), window.innerHeight - 16)
+              : Math.min(rect.height, window.innerHeight - 16);
             const maxLeft = Math.max(8, window.innerWidth - width - 8);
             const maxTop = Math.max(8, window.innerHeight - height - 8);
             panel.style.right = "auto";
             panel.style.bottom = "auto";
+            panel.style.width = `${width}px`;
+            panel.style.height = `${height}px`;
+            panel.style.maxHeight = "none";
             panel.style.left = `${Math.min(maxLeft, Math.max(8, left))}px`;
             panel.style.top = `${Math.min(maxTop, Math.max(8, top))}px`;
           }
@@ -3862,11 +3881,13 @@
 
     function initializePracticePanelDragging() {
       const panel = document.querySelector("#practice-controls-panel");
-      const handle = document.querySelector("#practice-controls-drag");
       const header = panel.querySelector(".practice-controls-header");
       let activePointerId = null;
       let dragOffsetX = 0;
       let dragOffsetY = 0;
+      let resizePointerId = null;
+      let resizeDirection = "";
+      let resizeStart = null;
 
       function placePanel(left, top) {
         const rect = panel.getBoundingClientRect();
@@ -3883,7 +3904,7 @@
 
       function beginDragging(event) {
         if (event.button !== 0) return;
-        if (event.target instanceof Element && event.target.closest("button:not(#practice-controls-drag), select, input")) return;
+        if (event.target instanceof Element && event.target.closest("button, select, input")) return;
         const rect = panel.getBoundingClientRect();
         dragOffsetX = event.clientX - rect.left;
         dragOffsetY = event.clientY - rect.top;
@@ -3895,7 +3916,66 @@
 
       header.addEventListener("pointerdown", beginDragging);
 
+      panel.querySelectorAll(".practice-resize-handle").forEach((resizeHandle) => {
+        resizeHandle.addEventListener("pointerdown", (event) => {
+          if (event.button !== 0) return;
+          const rect = panel.getBoundingClientRect();
+          resizePointerId = event.pointerId;
+          resizeDirection = resizeHandle.dataset.resize || "";
+          resizeStart = {
+            clientX: event.clientX,
+            clientY: event.clientY,
+            left: rect.left,
+            top: rect.top,
+            width: rect.width,
+            height: rect.height
+          };
+          panel.setPointerCapture(event.pointerId);
+          event.preventDefault();
+          event.stopPropagation();
+        });
+      });
+
       panel.addEventListener("pointermove", (event) => {
+        if (event.pointerId === resizePointerId && resizeStart) {
+          const dx = event.clientX - resizeStart.clientX;
+          const dy = event.clientY - resizeStart.clientY;
+          const minWidth = 240;
+          const minHeight = 220;
+          const maxWidth = window.innerWidth - 16;
+          const maxHeight = window.innerHeight - 16;
+          let left = resizeStart.left;
+          let top = resizeStart.top;
+          let width = resizeStart.width;
+          let height = resizeStart.height;
+
+          if (resizeDirection.includes("e")) {
+            width = Math.min(maxWidth, Math.max(minWidth, resizeStart.width + dx));
+          }
+          if (resizeDirection.includes("w")) {
+            width = Math.min(maxWidth, Math.max(minWidth, resizeStart.width - dx));
+            left = resizeStart.left + (resizeStart.width - width);
+          }
+          if (resizeDirection.includes("s")) {
+            height = Math.min(maxHeight, Math.max(minHeight, resizeStart.height + dy));
+          }
+          if (resizeDirection.includes("n")) {
+            height = Math.min(maxHeight, Math.max(minHeight, resizeStart.height - dy));
+            top = resizeStart.top + (resizeStart.height - height);
+          }
+
+          left = Math.min(Math.max(8, left), window.innerWidth - width - 8);
+          top = Math.min(Math.max(8, top), window.innerHeight - height - 8);
+          panel.style.right = "auto";
+          panel.style.bottom = "auto";
+          panel.style.left = `${left}px`;
+          panel.style.top = `${top}px`;
+          panel.style.width = `${width}px`;
+          panel.style.height = `${height}px`;
+          panel.style.maxHeight = "none";
+          event.preventDefault();
+          return;
+        }
         if (event.pointerId !== activePointerId) return;
         placePanel(event.clientX - dragOffsetX, event.clientY - dragOffsetY);
       });
@@ -3909,30 +3989,21 @@
         savePracticePanelPosition();
       }
 
+      function finishResizing(event) {
+        if (event.pointerId !== resizePointerId) return;
+        resizePointerId = null;
+        resizeDirection = "";
+        resizeStart = null;
+        if (panel.hasPointerCapture(event.pointerId)) {
+          panel.releasePointerCapture(event.pointerId);
+        }
+        savePracticePanelPosition();
+      }
+
       panel.addEventListener("pointerup", finishDragging);
       panel.addEventListener("pointercancel", finishDragging);
-      handle.addEventListener("keydown", (event) => {
-        const rect = panel.getBoundingClientRect();
-        const step = event.shiftKey ? 40 : 16;
-        const offsets = {
-          ArrowUp: [0, -step],
-          ArrowDown: [0, step],
-          ArrowLeft: [-step, 0],
-          ArrowRight: [step, 0]
-        };
-        if (event.key === "Home") {
-          event.preventDefault();
-          panel.style.width = "";
-          panel.style.left = "";
-          panel.style.top = "";
-          panel.style.right = "";
-          panel.style.bottom = "";
-          window.localStorage.removeItem("interslation-practice-panel-position-v1");
-        } else if (offsets[event.key]) {
-          event.preventDefault();
-          placePanel(rect.left + offsets[event.key][0], rect.top + offsets[event.key][1]);
-        }
-      });
+      panel.addEventListener("pointerup", finishResizing);
+      panel.addEventListener("pointercancel", finishResizing);
       window.addEventListener("resize", () => {
         if (!panel.style.left || !panel.style.top) return;
         const rect = panel.getBoundingClientRect();
