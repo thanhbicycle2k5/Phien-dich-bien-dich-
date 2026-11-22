@@ -1707,6 +1707,7 @@
     const transcript = document.querySelector("#transcript");
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     let activeTranslationMode = "sample";
+    let activeAppMode = "translate";
     let personalDraft = {
       source: "",
       answer: "",
@@ -3471,7 +3472,11 @@
     }
 
     function setMode(mode) {
+      if (activeTranslationMode === "personal") capturePersonalDraft();
+      if (mode !== "translate" && mode !== "interpret") return;
       const translating = mode === "translate";
+      const modeChanged = activeAppMode !== mode;
+      activeAppMode = mode;
       document.querySelector("#quick-guide-description").textContent = translating
         ? "Dán tài liệu cá nhân để luyện, hoặc tham khảo bài mẫu."
         : "Nghe video, chọn ngôn ngữ rồi luyện nói và theo dõi thời gian.";
@@ -3490,8 +3495,14 @@
       document.querySelector("#history-panel").hidden = translating;
       document.querySelector("#tab-translate").setAttribute("aria-selected", String(translating));
       document.querySelector("#tab-interpret").setAttribute("aria-selected", String(!translating));
-      setPracticeControlsOpen(false);
-      saveAppPreferences({ appMode: translating ? "translate" : "interpret" });
+      if (translating) {
+        setPracticeControlsOpen(false);
+      } else if (localPracticeMediaFile || activePracticeSource === "youtube") {
+        setPracticeControlsOpen(true);
+      }
+      if (modeChanged) {
+        saveAppPreferences({ appMode: translating ? "translate" : "interpret" });
+      }
     }
 
     function setPracticeControlsOpen(open) {
@@ -3505,16 +3516,16 @@
     function initializePracticePanelDragging() {
       const panel = document.querySelector("#practice-controls-panel");
       const handle = document.querySelector("#practice-controls-drag");
-      const interactiveSelector = "button:not(#practice-controls-drag), a, input, select, textarea, label, summary, audio, video, [contenteditable='true'], [role='button']";
       let activePointerId = null;
       let dragOffsetX = 0;
       let dragOffsetY = 0;
 
       function placePanel(left, top) {
         const rect = panel.getBoundingClientRect();
-        const width = Math.min(rect.width, window.innerWidth - 16);
+        const width = Math.min(Math.max(rect.width, 240), window.innerWidth - 16);
+        const height = Math.min(rect.height, window.innerHeight - 16);
         const maxLeft = Math.max(8, window.innerWidth - width - 8);
-        const maxTop = Math.max(8, window.innerHeight - rect.height - 8);
+        const maxTop = Math.max(8, window.innerHeight - height - 8);
         panel.style.width = `${width}px`;
         panel.style.right = "auto";
         panel.style.bottom = "auto";
@@ -3522,22 +3533,18 @@
         panel.style.top = `${Math.min(maxTop, Math.max(8, top))}px`;
       }
 
-      panel.addEventListener("pointerdown", (event) => {
+      handle.addEventListener("pointerdown", (event) => {
         if (event.button !== 0) return;
-        const target = event.target;
-        const isDragHandle = target instanceof Element && target.closest("#practice-controls-drag");
-        if (!isDragHandle && (!(target instanceof Element) || target.closest(interactiveSelector))) return;
-        if (event.pointerType === "touch" && !isDragHandle) return;
         const rect = panel.getBoundingClientRect();
         dragOffsetX = event.clientX - rect.left;
         dragOffsetY = event.clientY - rect.top;
         activePointerId = event.pointerId;
         placePanel(rect.left, rect.top);
-        panel.setPointerCapture(event.pointerId);
+        handle.setPointerCapture(event.pointerId);
         event.preventDefault();
       });
 
-      panel.addEventListener("pointermove", (event) => {
+      handle.addEventListener("pointermove", (event) => {
         if (event.pointerId !== activePointerId) return;
         placePanel(event.clientX - dragOffsetX, event.clientY - dragOffsetY);
       });
@@ -3545,10 +3552,13 @@
       function finishDragging(event) {
         if (event.pointerId !== activePointerId) return;
         activePointerId = null;
+        if (handle.hasPointerCapture(event.pointerId)) {
+          handle.releasePointerCapture(event.pointerId);
+        }
       }
 
-      panel.addEventListener("pointerup", finishDragging);
-      panel.addEventListener("pointercancel", finishDragging);
+      handle.addEventListener("pointerup", finishDragging);
+      handle.addEventListener("pointercancel", finishDragging);
       handle.addEventListener("keydown", (event) => {
         const rect = panel.getBoundingClientRect();
         const step = event.shiftKey ? 40 : 16;
@@ -5881,9 +5891,6 @@
       populateTopics(selectedTopic);
       loadDeepLKey();
       const syncedPreferences = readAppPreferences();
-      if (syncedPreferences.appMode === "interpret" || syncedPreferences.appMode === "translate") {
-        setMode(syncedPreferences.appMode);
-      }
       if (syncedPreferences.translationMode === "sample" || syncedPreferences.translationMode === "personal") {
         setTranslationMode(syncedPreferences.translationMode);
       }

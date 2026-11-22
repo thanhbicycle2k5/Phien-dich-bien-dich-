@@ -480,7 +480,14 @@
     if (activeUserId !== userId) return;
     if (!force && cloud._cloudUpdatedAt && cloud._cloudUpdatedAt === lastCloudUpdatedAt) return;
     lastCloudUpdatedAt = cloud._cloudUpdatedAt || lastCloudUpdatedAt;
-    const merged = mergeProgress(cloud, local);
+    const latestLocal = switchingAccount
+      ? local
+      : readLocalProgress();
+    const localWithLatestPreferences = {
+      ...local,
+      appPreferences: latestLocal.appPreferences || {}
+    };
+    const merged = mergeProgress(cloud, localWithLatestPreferences);
     const media = await synchronizeMedia(userId, cloud.media || [], localMedia, merged.history);
     if (activeUserId !== userId) return;
     await deleteOrphanedMedia(cloud.media || [], media.manifest);
