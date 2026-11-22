@@ -1585,7 +1585,7 @@
         <div class="action-group">
           <button class="primary-button" id="start-listening" type="button" aria-keyshortcuts="L" title="L: Bắt đầu nghe nguồn luyện tập"><span aria-hidden="true">●</span> Bắt đầu nói<kbd class="practice-action-key">L</kbd></button>
           <button class="quiet-button" id="stop-listening" type="button" aria-keyshortcuts="S" title="S: Dừng mic và kết thúc ghi âm song song" disabled>Dừng mic<kbd class="practice-action-key">S</kbd></button>
-          <button class="quiet-button" id="restart-practice" type="button" aria-keyshortcuts="R" title="R: Bắt đầu lại hoặc kết thúc buổi luyện">Bắt đầu lại<kbd class="practice-action-key">R</kbd></button>
+          <button class="quiet-button" id="restart-practice" type="button" aria-keyshortcuts="R" title="R: Bắt đầu lại buổi luyện">Bắt đầu lại<kbd class="practice-action-key">R</kbd></button>
           <button class="quiet-button icon-button save-practice-button" id="save-practice" type="button" aria-label="Lưu buổi phiên dịch" title="Lưu transcript, nguồn và bản ghi của buổi luyện" disabled>
             <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 4h12l3 3v13H4V4h1Zm2 0v6h10V4M7 20v-7h10v7" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/></svg>
             <span>Lưu</span>
@@ -4170,10 +4170,14 @@
       const restartLabel = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
         ? "Kết thúc"
         : "Bắt đầu lại";
-      restartButton.innerHTML = `${restartLabel}<kbd class="practice-action-key">R</kbd>`;
-      restartButton.title = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
-        ? "R: Kết thúc buổi luyện nối tiếp"
+      const restartKey = isConsecutive && consecutivePhase !== "idle" && consecutivePhase !== "finished"
+        ? "E"
+        : "R";
+      restartButton.innerHTML = `${restartLabel}<kbd class="practice-action-key">${restartKey}</kbd>`;
+      restartButton.title = restartKey === "E"
+        ? "E: Kết thúc buổi luyện nối tiếp"
         : "R: Đưa nguồn, đồng hồ và bản ghi về trạng thái ban đầu";
+      restartButton.setAttribute("aria-keyshortcuts", restartKey);
       if (!isConsecutive) {
         startButton.innerHTML = '● Bắt đầu nói<kbd class="practice-action-key">L</kbd>';
         startButton.disabled = Boolean(speechSessionActive) || (!SpeechRecognition && !canRecordAudio);
@@ -6309,7 +6313,7 @@
           event.target.closest("input, textarea, select, [contenteditable='true'], [role='textbox']")) return;
 
       const key = event.key.toLocaleUpperCase();
-      if (!["L", "S", "C", "R"].includes(key)) return;
+      if (!["L", "S", "C", "R", "E"].includes(key)) return;
 
       if (key === "L") {
         if (activePracticeMode === "consecutive") {
@@ -6341,6 +6345,13 @@
             event.preventDefault();
             handleConsecutivePracticeAction();
           }
+        }
+        return;
+      }
+      if (key === "E") {
+        if (activePracticeMode === "consecutive" && consecutivePhase !== "idle" && consecutivePhase !== "finished") {
+          event.preventDefault();
+          finishConsecutivePractice();
         }
         return;
       }
