@@ -1776,6 +1776,7 @@
     </section>
   </div>
 
+  <script src="./draft-storage.js"></script>
   <script src="./lib/lamejs/lame.min.js"></script>
   <script>
     const exerciseGroups = [
@@ -1943,7 +1944,6 @@
     const MAX_PERSONAL_TEXT_LENGTH = 50000;
     const MAX_EDIT_HISTORY = 100;
     const EDIT_HISTORY_DELAY = 500;
-    const PERSONAL_DRAFTS_KEY = "lingua-lab-personal-drafts-v1";
     function readAppPreferences() {
       try {
         const saved = JSON.parse(window.localStorage.getItem(APP_PREFERENCES_KEY) || "{}");
@@ -2264,7 +2264,7 @@
 
     function readPersonalDrafts() {
       try {
-        const saved = JSON.parse(window.localStorage.getItem(PERSONAL_DRAFTS_KEY) || "{}");
+        const saved = window.interslationDraftStorage.getAll();
         if (!saved || typeof saved !== "object" || Array.isArray(saved)) {
           throw new Error("Invalid personal drafts");
         }
@@ -2626,7 +2626,7 @@
       updateCounts();
     }
 
-    function capturePersonalDraft() {
+    async function capturePersonalDraft() {
       const previousDraft = personalDraft;
       personalDraft = {
         source: sourceText.value,
@@ -2651,13 +2651,25 @@
         return false;
       }
       try {
-        savedDrafts[personalDraftTopic] = { ...personalDraft };
-        window.localStorage.setItem(PERSONAL_DRAFTS_KEY, JSON.stringify(savedDrafts));
+        const topic = personalDraftTopic;
+        const draft = { ...personalDraft };
+        const result = await window.interslationDraftStorage.save(topic, draft);
         notifyProgressChanged();
-        setSaveStatus(document.querySelector("#personal-status"), `Đã tự lưu bản nháp cho chủ đề “${personalDraftTopic}”.`, true);
+        if (topic === personalDraftTopic) {
+          setSaveStatus(
+            document.querySelector("#personal-status"),
+            result.usingLocalStorage
+              ? "Đã tự lưu bản nháp trên trình duyệt; IndexedDB không khả dụng nên hạn mức lưu trữ thấp hơn."
+              : `Đã tự lưu bản nháp cho chủ đề “${topic}”.`,
+            true
+          );
+        }
         return true;
       } catch (error) {
-        setSaveStatus(document.querySelector("#personal-status"), "Không thể tự lưu bản nháp. Hãy thử lại hoặc kiểm tra dung lượng thiết bị.");
+        const message = error?.name === "QuotaExceededError"
+          ? "Kho lưu trữ trình duyệt đã đầy. Hãy giải phóng dung lượng thiết bị rồi thử lại."
+          : `Không thể tự lưu bản nháp: ${error.message || "đã xảy ra lỗi."}`;
+        setSaveStatus(document.querySelector("#personal-status"), message);
         return false;
       }
     }
@@ -3927,7 +3939,7 @@
         sourceText.value = content;
         recordEditHistoryInput(sourceText);
         flushEditHistory(sourceText);
-        const saved = capturePersonalDraft();
+        const saved = await capturePersonalDraft();
         invalidateTranslationCheck();
         if (saved) setSaveStatus(status, `Đã nhập ${wordCount(content)} từ từ tệp ${file.name} và tự lưu theo chủ đề.`, true);
         else {
@@ -6763,6 +6775,24 @@
     }
 
     window.addEventListener("pagehide", releaseMediaResources);
+    window.addEventListener("interslation:draft-storage-error", (event) => {
+      setSaveStatus(
+        document.querySelector("#personal-status"),
+        `Không thể mở IndexedDB (${event.detail.message}); bản nháp dùng hạn mức lưu trữ thấp hơn của trình duyệt.`
+      );
+    });
+    window.addEventListener("interslation:drafts-loaded", () => {
+      const selectedTopic = industrySelect.value;
+      const savedDrafts = readPersonalDrafts();
+      if (!savedDrafts) return;
+      personalDraftsByTopic.clear();
+      Object.entries(savedDrafts).forEach(([topic, draft]) => personalDraftsByTopic.set(topic, draft));
+      populateTopics(selectedTopic);
+      const currentInputsAreEmpty = !sourceText.value && !answerText.value && !referenceAnswer.value && !personalKeywords.value;
+      if (activeTranslationMode === "personal" && selectedTopic && currentInputsAreEmpty) {
+        loadPersonalTopicDraft(selectedTopic);
+      }
+    });
     window.addEventListener("interslation:progress-restored", async () => {
       const selectedTopic = industrySelect.value;
       populateTopics(selectedTopic);

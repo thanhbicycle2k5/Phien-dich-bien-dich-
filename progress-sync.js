@@ -60,14 +60,14 @@
     return value;
   }
 
-  function readLocalProgress() {
+  async function readLocalProgress() {
     return {
       history: parseLocalValue(HISTORY_KEY, [], Array.isArray),
       translationHistory: parseLocalValue(TRANSLATION_HISTORY_KEY, [], Array.isArray),
       translationHistoryTombstones: parseLocalValue(DELETED_TRANSLATION_HISTORY_KEY, [], Array.isArray),
       materials: parseLocalValue(MATERIALS_KEY, [], Array.isArray),
       topics: parseLocalValue(TOPICS_KEY, [], Array.isArray),
-      drafts: parseLocalValue(DRAFTS_KEY, {}, (value) => value && typeof value === "object" && !Array.isArray(value)),
+      drafts: await window.interslationDraftStorage.getAllAsync(),
       historyTombstones: parseLocalValue(HISTORY_TOMBSTONES_KEY, [], Array.isArray),
       appPreferences: parseLocalValue(APP_PREFERENCES_KEY, {}, (value) => value && typeof value === "object" && !Array.isArray(value)),
       deeplApiKey: window.localStorage.getItem(DEEPL_KEY_STORAGE_KEY) || "",
@@ -75,13 +75,13 @@
     };
   }
 
-  function writeLocalProgress(progress) {
+  async function writeLocalProgress(progress) {
     window.localStorage.setItem(HISTORY_KEY, JSON.stringify(progress.history));
     window.localStorage.setItem(TRANSLATION_HISTORY_KEY, JSON.stringify(progress.translationHistory || []));
     window.localStorage.setItem(DELETED_TRANSLATION_HISTORY_KEY, JSON.stringify(progress.translationHistoryTombstones || []));
     window.localStorage.setItem(MATERIALS_KEY, JSON.stringify(progress.materials));
     window.localStorage.setItem(TOPICS_KEY, JSON.stringify(progress.topics));
-    window.localStorage.setItem(DRAFTS_KEY, JSON.stringify(progress.drafts));
+    await window.interslationDraftStorage.replaceAll(progress.drafts);
     window.localStorage.setItem(HISTORY_TOMBSTONES_KEY, JSON.stringify(progress.historyTombstones));
     window.localStorage.setItem(APP_PREFERENCES_KEY, JSON.stringify(progress.appPreferences || {}));
     if (typeof progress.deeplApiKey === "string") {
@@ -482,7 +482,7 @@
     lastCloudUpdatedAt = cloud._cloudUpdatedAt || lastCloudUpdatedAt;
     const latestLocal = switchingAccount
       ? local
-      : readLocalProgress();
+      : await readLocalProgress();
     const localWithLatestPreferences = {
       ...local,
       appPreferences: latestLocal.appPreferences || {}
@@ -494,7 +494,7 @@
     await saveCloudProgress(userId, merged, media.manifest);
     applyingRemoteData = true;
     try {
-      writeLocalProgress(merged);
+      await writeLocalProgress(merged);
       await writeLocalMedia(media.combined);
       window.localStorage.setItem(LOCAL_OWNER_KEY, userId);
     } finally {
@@ -557,6 +557,7 @@
   });
 
   window.addEventListener("interslation:progress-changed", () => scheduleSync());
+  window.addEventListener("interslation:drafts-changed", () => scheduleSync());
   window.addEventListener("online", () => scheduleSync(0));
   window.addEventListener("focus", () => scheduleSync(0, false));
   document.addEventListener("visibilitychange", () => {
